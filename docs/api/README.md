@@ -9,3 +9,9 @@ O contrato-base está em [openapi.yaml](./openapi.yaml). Todas as rotas são rel
 - A alteração de um recurso concorrente recebe `version`; conflitos de versão retornam `409`.
 - Valores monetários são strings decimais com duas casas, como `"1250.90"`.
 - A documentação de campos e ordenações permitidas é obrigatória para cada endpoint paginado.
+
+## Escopo de atlética
+
+Os endpoints de domínio usarão a atlética da sessão, e não um `atleticaId` fornecido pelo cliente. Recursos são buscados pelo par `id + atleticaId do contexto`; registros de outra atlética retornam `404`.
+
+Nesta etapa não há endpoint público para criar ou administrar atléticas. O perfil local `dev` cria os dados de demonstração.

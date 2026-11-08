@@ -2,6 +2,7 @@ package br.com.athletix.shared.error;
 
 import br.com.athletix.shared.exception.BusinessRuleException;
 import br.com.athletix.shared.exception.ConflictException;
+import br.com.athletix.shared.exception.ConcurrentModificationException;
 import br.com.athletix.shared.exception.InvalidSortException;
 import br.com.athletix.shared.exception.ResourceNotFoundException;
 import jakarta.persistence.OptimisticLockException;
@@ -112,6 +113,15 @@ public class ApiExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleOptimisticLock(Exception exception, HttpServletRequest request) {
         return response(HttpStatus.CONFLICT, ApiErrorCode.CONCURRENT_MODIFICATION,
                 "O recurso foi alterado por outra operação. Atualize os dados e tente novamente.", List.of(), request);
+    }
+
+    @ExceptionHandler(ConcurrentModificationException.class)
+    public ResponseEntity<ApiErrorResponse> handleConcurrentModification(
+            ConcurrentModificationException exception,
+            HttpServletRequest request
+    ) {
+        return response(HttpStatus.CONFLICT, ApiErrorCode.CONCURRENT_MODIFICATION,
+                exception.getMessage(), List.of(), request);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

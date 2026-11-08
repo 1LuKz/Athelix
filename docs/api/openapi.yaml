@@ -81,6 +81,66 @@ components:
       type: string
       pattern: '^-?\d+\.\d{2}$'
       example: '1250.90'
+    Cnpj:
+      type: string
+      description: CNPJ opcional, normalizado para 14 dígitos quando informado.
+      pattern: '^\d{14}$'
+      example: '11222333000181'
+    TimeZone:
+      type: string
+      description: Identificador IANA do fuso horário da atlética.
+      example: America/Sao_Paulo
+    Atletica:
+      type: object
+      required: [id, nome, fusoHorario, ativa, version, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        nome:
+          type: string
+          maxLength: 120
+        sigla:
+          type: string
+          maxLength: 20
+          nullable: true
+        instituicao:
+          type: string
+          maxLength: 160
+          nullable: true
+        cnpj:
+          allOf:
+            - $ref: '#/components/schemas/Cnpj'
+          nullable: true
+        fusoHorario:
+          $ref: '#/components/schemas/TimeZone'
+        ativa:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    DominioEmailPermitido:
+      type: object
+      required: [id, atleticaId, dominio]
+      properties:
+        id:
+          type: integer
+          format: int64
+        atleticaId:
+          type: integer
+          format: int64
+        dominio:
+          type: string
+          description: Domínio normalizado e comparado por igualdade exata.
+          pattern: '^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$'
+          example: engenharia.exemplo.edu.br
   responses:
     InvalidRequest:
       description: Entrada inválida ou regra de negócio violada.
