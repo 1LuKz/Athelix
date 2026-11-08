@@ -211,6 +211,102 @@ components:
         updatedAt:
           type: string
           format: date-time
+    Usuario:
+      type: object
+      description: Resposta segura de identidade; não inclui senhaHash, senha ou tokens.
+      required: [id, nome, email, credencialAtiva, version, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        nome:
+          type: string
+          minLength: 3
+          maxLength: 120
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        telefone:
+          type: string
+          maxLength: 20
+          nullable: true
+          example: '+5511999999999'
+        credencialAtiva:
+          type: boolean
+        ultimoAcessoEm:
+          type: string
+          format: date-time
+          nullable: true
+        senhaAlteradaEm:
+          type: string
+          format: date-time
+          nullable: true
+        version:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    StatusMembro:
+      type: string
+      enum: [PENDENTE, ATIVO, INATIVO]
+    Membro:
+      type: object
+      required: [id, atleticaId, usuarioId, curso, cargoId, departamentoId, status, membroDesde, version, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        atleticaId:
+          type: integer
+          format: int64
+        usuarioId:
+          type: integer
+          format: int64
+        curso:
+          type: string
+          maxLength: 160
+        periodoCurso:
+          type: integer
+          minimum: 1
+          maximum: 30
+          nullable: true
+        cargoId:
+          type: integer
+          format: int64
+        departamentoId:
+          type: integer
+          format: int64
+        status:
+          $ref: '#/components/schemas/StatusMembro'
+        membroDesde:
+          type: string
+          format: date
+        ativadoEm:
+          type: string
+          format: date-time
+          nullable: true
+        inativadoEm:
+          type: string
+          format: date-time
+          nullable: true
+        validadoPorMembroId:
+          type: integer
+          format: int64
+          nullable: true
+        version:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
   responses:
     InvalidRequest:
       description: Entrada inválida ou regra de negócio violada.

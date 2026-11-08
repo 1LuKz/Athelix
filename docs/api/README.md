@@ -19,3 +19,7 @@ Nesta etapa não há endpoint público para criar ou administrar atléticas. O p
 ## Cargos e departamentos
 
 Os contratos de `Cargo` e `Departamento` já estão descritos no OpenAPI, mas as rotas serão incluídas em B08, quando a autorização por perfil estiver conectada à sessão. Departamentos são criados em configuração e não trazem contagem de membros persistida.
+
+## Usuários e membros
+
+`Usuario` não expõe senha, hash ou token. `Membro` representa o vínculo por atlética, iniciado como pendente; o acesso só é elegível depois de sua ativação e da definição de credencial.

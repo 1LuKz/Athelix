@@ -18,4 +18,6 @@ public interface DepartamentoRepository extends JpaRepository<Departamento, Long
     List<Departamento> findAllByAtletica_IdAndSituacaoOrderByNomeAsc(Long atleticaId, SituacaoDepartamento situacao);
 
     List<Departamento> findAllByAtletica_IdOrderByNomeAsc(Long atleticaId);
+
+    List<Departamento> findAllByAtletica_IdAndResponsavelMembroId(Long atleticaId, Long responsavelMembroId);
 }

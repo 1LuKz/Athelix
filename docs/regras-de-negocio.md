@@ -53,6 +53,17 @@ Este documento concentra as regras transversais do Athletix. Regras específicas
 - A inativação só é permitida após transferir membros ativos e substituir responsabilidades. Antes de B05, a transição é bloqueada para não burlar essa regra.
 - Cargos e departamentos não são apagados quando houver histórico referenciado.
 
+## Usuários e membros
+
+- `Usuario` é uma identidade global: e-mail é normalizado e único globalmente; telefone é opcional e normalizado para `+` seguido dos dígitos informados.
+- Senhas são armazenadas apenas como hash BCrypt. O hash, senhas em texto e tokens nunca são retornados em DTOs ou listagens.
+- Uma conta criada por convite permanece sem hash e sem credencial ativa até a definição da senha.
+- `Membro` é o vínculo entre usuário e atlética. Um mesmo usuário pode ter um vínculo, cargo e status diferentes em cada atlética, mas só um vínculo por atlética.
+- Todo novo membro começa como `PENDENTE`. A ativação exige atlética ativa, cargo ativo, departamento não inativo e credencial ativa com senha definida.
+- A validação do primeiro membro pode ocorrer em um departamento `EM_CONFIGURACAO`, sem validador-membro. Nas demais ativações, um membro ativo da mesma atlética valida o vínculo.
+- Acesso à atlética exige membro `ATIVO`, atlética ativa e credencial definida e ativa.
+- Inativação preserva o histórico. Ela é bloqueada enquanto o membro for responsável por departamento; módulos futuros, como Eventos, registram pendências abertas pelo contrato de responsabilidades antes da conclusão.
+
 ## Paginação
 
 - A página é indexada a partir de zero.
