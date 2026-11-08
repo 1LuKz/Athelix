@@ -45,6 +45,7 @@ public class UsuarioService {
 
     @Transactional
     public void definirSenha(Long usuarioId, SenhaDefinicaoRequest request) {
+        PasswordPolicy.validate(request.senha());
         Usuario usuario = usuarioRepository.findById(usuarioId).orElseThrow(ResourceNotFoundException::new);
         usuario.definirSenhaHash(passwordEncoder.encode(request.senha()));
     }

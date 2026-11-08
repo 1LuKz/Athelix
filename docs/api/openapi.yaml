@@ -8,7 +8,84 @@ info:
 servers:
   - url: /api/v1
     description: Base local da API
-paths: {}
+paths:
+  /auth/csrf:
+    get:
+      summary: Obtém o token CSRF da sessão
+      operationId: getCsrf
+      responses:
+        '200':
+          description: Token CSRF para ser enviado no cabeçalho informado nas operações mutáveis.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CsrfResponse'
+  /auth/login:
+    post:
+      summary: Autentica com e-mail e senha e inicia sessão
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Sessão autenticada e vínculos ativos disponíveis.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthState'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+  /auth/logout:
+    post:
+      summary: Encerra a sessão atual
+      operationId: logout
+      responses:
+        '204':
+          description: Sessão encerrada.
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+  /auth/me:
+    get:
+      summary: Retorna a conta, vínculos ativos e capacidades da sessão
+      operationId: getCurrentSession
+      responses:
+        '200':
+          description: Estado atual da sessão.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthState'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+  /auth/selecionar-atletica:
+    post:
+      summary: Seleciona um vínculo ativo da própria conta
+      operationId: selectAtletica
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SelecionarAtleticaRequest'
+      responses:
+        '200':
+          description: Estado da sessão com a atlética selecionada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthState'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 components:
   schemas:
     ApiError:
@@ -307,6 +384,99 @@ components:
         updatedAt:
           type: string
           format: date-time
+    LoginRequest:
+      type: object
+      required: [email, senha]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          example: admin@athletix.local
+        senha:
+          type: string
+          format: password
+          minLength: 10
+          maxLength: 64
+          writeOnly: true
+    SelecionarAtleticaRequest:
+      type: object
+      required: [membroId]
+      properties:
+        membroId:
+          type: integer
+          format: int64
+          minimum: 1
+    CsrfResponse:
+      type: object
+      required: [token, headerName, parameterName]
+      properties:
+        token:
+          type: string
+          description: Token efêmero que também é entregue no cookie XSRF-TOKEN.
+        headerName:
+          type: string
+          example: X-XSRF-TOKEN
+        parameterName:
+          type: string
+          example: _csrf
+    Capacidade:
+      type: string
+      enum:
+        - CONSULTAR_MEMBROS
+        - CONSULTAR_MEMBROS_DADOS_MINIMOS
+        - CONSULTAR_DEPARTAMENTOS
+        - GERENCIAR_MEMBROS
+        - CONFIGURAR_ESTRUTURA
+        - GERENCIAR_EVENTOS_E_TAREFAS
+        - GERENCIAR_EVENTOS_DO_PROPRIO_ESCOPO
+        - ATUALIZAR_PROPRIA_TAREFA
+        - CONSULTAR_RESUMOS_FINANCEIROS
+        - GERENCIAR_FINANCEIRO
+        - GERENCIAR_PATRIMONIO
+        - GERENCIAR_PATRIMONIO_DO_PROPRIO_DEPARTAMENTO
+        - CONSULTAR_DOCUMENTOS_MEMBROS
+        - CONSULTAR_DOCUMENTOS_DIRETORIA
+        - PUBLICAR_DOCUMENTOS
+        - CONCLUIR_TRANSFERENCIA_GESTAO
+    VinculoAtletica:
+      type: object
+      required: [membroId, atleticaId, atleticaNome, departamentoId, perfilAcesso]
+      properties:
+        membroId:
+          type: integer
+          format: int64
+        atleticaId:
+          type: integer
+          format: int64
+        atleticaNome:
+          type: string
+        departamentoId:
+          type: integer
+          format: int64
+        perfilAcesso:
+          $ref: '#/components/schemas/PerfilAcesso'
+    AuthState:
+      type: object
+      description: Não contém senha, hash, token de sessão ou vínculos inativos.
+      required: [usuario, vinculosAtivos, selecaoNecessaria, capacidades]
+      properties:
+        usuario:
+          $ref: '#/components/schemas/Usuario'
+        vinculosAtivos:
+          type: array
+          items:
+            $ref: '#/components/schemas/VinculoAtletica'
+        membroSelecionadoId:
+          type: integer
+          format: int64
+          nullable: true
+        selecaoNecessaria:
+          type: boolean
+        capacidades:
+          type: array
+          items:
+            $ref: '#/components/schemas/Capacidade'
   responses:
     InvalidRequest:
       description: Entrada inválida ou regra de negócio violada.

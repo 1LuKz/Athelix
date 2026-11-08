@@ -39,6 +39,7 @@ public class MembroService {
     private final AtleticaResourceResolver resourceResolver;
     private final MembroDepartamentoValidators departamentoValidators;
     private final PendenciasResponsabilidadeMembroProvider pendenciasProvider;
+    private final AdministradorAtivoGuard administradorAtivoGuard;
 
     public MembroService(
             MembroRepository membroRepository,
@@ -48,7 +49,8 @@ public class MembroService {
             DepartamentoRepository departamentoRepository,
             AtleticaResourceResolver resourceResolver,
             MembroDepartamentoValidators departamentoValidators,
-            PendenciasResponsabilidadeMembroProvider pendenciasProvider
+            PendenciasResponsabilidadeMembroProvider pendenciasProvider,
+            AdministradorAtivoGuard administradorAtivoGuard
     ) {
         this.membroRepository = membroRepository;
         this.atleticaRepository = atleticaRepository;
@@ -58,6 +60,7 @@ public class MembroService {
         this.resourceResolver = resourceResolver;
         this.departamentoValidators = departamentoValidators;
         this.pendenciasProvider = pendenciasProvider;
+        this.administradorAtivoGuard = administradorAtivoGuard;
     }
 
     @Transactional
@@ -130,6 +133,7 @@ public class MembroService {
             throw new BusinessRuleException("Somente membros ativos podem ser inativados.");
         }
 
+        administradorAtivoGuard.validarInativacaoMembro(membro);
         departamentoValidators.validarSemResponsabilidadesDeDepartamento(membro.getAtleticaId(), membro.getId());
         List<String> pendencias = pendenciasProvider.listarPendencias(membro.getAtleticaId(), membro.getId());
         if (!pendencias.isEmpty()) {

@@ -2,6 +2,7 @@ package br.com.athletix.membro.entity;
 
 import br.com.athletix.atletica.entity.Atletica;
 import br.com.athletix.cargo.entity.Cargo;
+import br.com.athletix.cargo.entity.PerfilAcesso;
 import br.com.athletix.departamento.entity.Departamento;
 import br.com.athletix.shared.persistence.AuditableEntity;
 import br.com.athletix.shared.tenancy.AtleticaScoped;
@@ -104,6 +105,22 @@ public class Membro extends AuditableEntity implements AtleticaScoped {
 
     public Long getCargoId() {
         return cargo.getId();
+    }
+
+    public PerfilAcesso getPerfilAcesso() {
+        return cargo.getPerfilAcesso();
+    }
+
+    public boolean cargoAtivo() {
+        return cargo.isAtivo();
+    }
+
+    public boolean atleticaAtiva() {
+        return atletica.isAtiva();
+    }
+
+    public String getNomeAtletica() {
+        return atletica.getNome();
     }
 
     public Long getDepartamentoId() {

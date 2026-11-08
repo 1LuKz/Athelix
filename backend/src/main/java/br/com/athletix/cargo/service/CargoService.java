@@ -11,6 +11,7 @@ import br.com.athletix.shared.exception.ConcurrentModificationException;
 import br.com.athletix.shared.exception.ConflictException;
 import br.com.athletix.shared.normalization.NomeNormalizado;
 import br.com.athletix.shared.tenancy.AtleticaResourceResolver;
+import br.com.athletix.membro.service.AdministradorAtivoGuard;
 import org.springframework.stereotype.Service;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,15 +25,18 @@ public class CargoService {
     private final CargoRepository cargoRepository;
     private final AtleticaRepository atleticaRepository;
     private final AtleticaResourceResolver resourceResolver;
+    private final AdministradorAtivoGuard administradorAtivoGuard;
 
     public CargoService(
             CargoRepository cargoRepository,
             AtleticaRepository atleticaRepository,
-            AtleticaResourceResolver resourceResolver
+            AtleticaResourceResolver resourceResolver,
+            AdministradorAtivoGuard administradorAtivoGuard
     ) {
         this.cargoRepository = cargoRepository;
         this.atleticaRepository = atleticaRepository;
         this.resourceResolver = resourceResolver;
+        this.administradorAtivoGuard = administradorAtivoGuard;
     }
 
     @Transactional
@@ -63,6 +67,7 @@ public class CargoService {
 
         String nomeNormalizado = NomeNormalizado.fromRequired(request.nome(), "nome");
         ensureNameAvailable(cargo.getAtleticaId(), nomeNormalizado, cargo.getId());
+        administradorAtivoGuard.validarAlteracaoCargo(cargo, request.perfilAcesso(), request.ativo());
         cargo.atualizar(
                 NomeNormalizado.displayValue(request.nome()),
                 nomeNormalizado,

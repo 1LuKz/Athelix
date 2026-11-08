@@ -72,6 +72,11 @@ public class Usuario extends AuditableEntity {
         return senhaHash != null && !senhaHash.isBlank();
     }
 
+    /** Uso exclusivo da infraestrutura de autenticação; nunca integra DTOs ou serialização HTTP. */
+    public String senhaHashParaAutenticacao() {
+        return senhaHash;
+    }
+
     public void atualizarDados(String nome, String telefone) {
         this.nome = nome;
         this.telefone = telefone;

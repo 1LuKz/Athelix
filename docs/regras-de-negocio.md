@@ -27,7 +27,7 @@ Este documento concentra as regras transversais do Athletix. Regras específicas
 - Consultas, alterações, agregados, exportações, arquivos e rotinas agendadas resolvem recursos pelo par `(id do recurso, atleticaId do contexto)`.
 - Um recurso de outra atlética recebe a mesma resposta `404` de um recurso inexistente.
 - Todo relacionamento recebido deve ser resolvido no escopo atual antes de ser associado. Não basta confiar no ID enviado pelo navegador.
-- O preenchimento do contexto a partir da sessão autenticada será implementado em B06. Até lá, apenas carga inicial e fluxos internos controlados podem defini-lo.
+- O filtro de sessão preenche `ContextoAtletica` somente a partir do vínculo ativo selecionado; `atleticaId` informado pelo navegador é ignorado para fins de autorização.
 
 ## Atléticas e domínios de e-mail
 
@@ -41,7 +41,7 @@ Este documento concentra as regras transversais do Athletix. Regras específicas
 
 - Um cargo pertence a uma única atlética, possui perfil de acesso e pode ser inativado sem apagar referências históricas.
 - O nome do cargo é único na atlética desconsiderando maiúsculas, minúsculas e espaços nas extremidades.
-- Apenas administradores podem criar ou alterar um cargo com perfil de acesso. B08 conectará essa regra ao perfil da sessão autenticada.
+- Apenas administradores podem criar ou alterar um cargo com perfil de acesso. A remoção do último administrador ativo é bloqueada.
 - Os perfis disponíveis são `ADMINISTRADOR`, `FINANCEIRO`, `GESTOR` e `MEMBRO`.
 
 ## Departamentos
@@ -63,6 +63,30 @@ Este documento concentra as regras transversais do Athletix. Regras específicas
 - A validação do primeiro membro pode ocorrer em um departamento `EM_CONFIGURACAO`, sem validador-membro. Nas demais ativações, um membro ativo da mesma atlética valida o vínculo.
 - Acesso à atlética exige membro `ATIVO`, atlética ativa e credencial definida e ativa.
 - Inativação preserva o histórico. Ela é bloqueada enquanto o membro for responsável por departamento; módulos futuros, como Eventos, registram pendências abertas pelo contrato de responsabilidades antes da conclusão.
+- A inativação do último administrador ativo também é bloqueada.
+
+## Autenticação, sessão e autorização
+
+- Senhas usam BCrypt. A mesma política é aplicada na definição, alteração e recuperação: de 10 a 64 caracteres e no máximo 72 bytes UTF-8; a senha nunca é truncada silenciosamente.
+- A sessão usa cookie `HttpOnly`, `SameSite=Lax`, expira após 30 minutos de inatividade e troca o identificador após login. Em implantação HTTPS, o cookie deve receber `Secure=true`.
+- CSRF permanece ativo inclusive para login e logout. Primeiro obtenha `GET /api/v1/auth/csrf`; envie o token usando o cabeçalho retornado (por padrão, `X-XSRF-TOKEN`) em toda requisição mutável.
+- `POST /auth/login` responde genericamente a credenciais incorretas e limita a demonstração a 5 falhas em uma janela de 15 minutos por combinação de e-mail normalizado e IP de origem, bloqueando-a por 15 minutos. O limitador é local e reinicia junto com a aplicação.
+- Após login, a API expõe apenas os vínculos `ATIVO` com atlética e cargo ativos. Com um vínculo elegível ele é selecionado automaticamente; com vários, `selecaoNecessaria` obriga `POST /auth/selecionar-atletica` com um `membroId` pertencente à própria conta.
+- A cada requisição de domínio, a API revalida credencial, vínculo, atlética e cargo. Inativar um vínculo, desativar credencial, atlética ou cargo impede o acesso sem exigir novo login.
+- O nome livre do cargo não concede privilégios: as capacidades vêm exclusivamente de `perfilAcesso`. As capacidades retornadas em `/auth/me` são orientativas ao frontend; o backend continua sendo a fonte de autorização por operação e escopo.
+
+| Operação | Administrador | Financeiro | Gestor | Membro |
+| --- | --- | --- | --- | --- |
+| Membros e departamentos | Total | Total | Total | Dados mínimos de membros |
+| Membros, cargos e departamentos | Gerencia | Não | Não | Não |
+| Eventos e tarefas | Gerencia | Se responsável | No próprio escopo | Apenas a própria tarefa |
+| Financeiro | Gerencia | Gerencia | Consulta resumos | Consulta resumos |
+| Patrimônio | Gerencia | Não | No próprio departamento | Não |
+| Documentos `MEMBROS` | Sim | Sim | Sim | Sim, se ativo |
+| Documentos `DIRETORIA` | Sim | Sim | Sim | Não |
+| Publicar documentos / transferência de gestão | Sim | Não por padrão | Somente publicação no escopo futuro | Não |
+
+Os resumos financeiros para associados não devem expor dados pessoais de contrapartes ou anexos restritos. As operações de eventos, patrimônio e documentos receberão a checagem contextual detalhada quando seus endpoints forem implementados.
 
 ## Paginação
 

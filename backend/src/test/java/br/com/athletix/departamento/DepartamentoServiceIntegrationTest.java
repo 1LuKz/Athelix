@@ -34,7 +34,9 @@ class DepartamentoServiceIntegrationTest {
 
     @Test
     void createsDepartmentInConfigurationOutsideTheActiveStructure() {
-        Long atleticaId = atleticaRepository.findAll().get(0).getId();
+        Long atleticaId = atleticaRepository.findAll().stream()
+                .filter(atletica -> "AAS".equals(atletica.getSigla()))
+                .findFirst().orElseThrow().getId();
 
         try (ContextoAtletica.Escopo ignored = contextoAtletica.abrir(atleticaId)) {
             Departamento departamento = departamentoService.criarEmConfiguracao(
