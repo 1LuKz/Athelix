@@ -1,0 +1,13 @@
+package br.com.athletix.shared.error;
+
+public enum ApiErrorCode {
+    INVALID_REQUEST,
+    INVALID_SORT,
+    BUSINESS_RULE_VIOLATION,
+    RESOURCE_NOT_FOUND,
+    RESOURCE_CONFLICT,
+    CONCURRENT_MODIFICATION,
+    UNAUTHENTICATED,
+    FORBIDDEN,
+    INTERNAL_ERROR
+}

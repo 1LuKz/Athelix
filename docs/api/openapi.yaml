@@ -1,0 +1,114 @@
+openapi: 3.0.3
+info:
+  title: Athletix API
+  version: v1
+  description: >-
+    Contratos compartilhados da API. Os caminhos de cada domínio serão documentados
+    nesta especificação ao serem implementados.
+servers:
+  - url: /api/v1
+    description: Base local da API
+paths: {}
+components:
+  schemas:
+    ApiError:
+      type: object
+      required: [status, code, message, fieldErrors, path, timestamp]
+      properties:
+        status:
+          type: integer
+          example: 400
+        code:
+          type: string
+          example: INVALID_REQUEST
+        message:
+          type: string
+          example: A requisição contém dados inválidos.
+        fieldErrors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+        path:
+          type: string
+          example: /api/v1/membros
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-11-08T18:00:00Z'
+    FieldError:
+      type: object
+      required: [field, message]
+      properties:
+        field:
+          type: string
+          example: nome
+        message:
+          type: string
+          example: O nome é obrigatório.
+    PageResponse:
+      type: object
+      required: [items, page, size, totalItems, totalPages]
+      properties:
+        items:
+          type: array
+          items: {}
+        page:
+          type: integer
+          minimum: 0
+          example: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+          example: 20
+        totalItems:
+          type: integer
+          format: int64
+          example: 42
+        totalPages:
+          type: integer
+          example: 3
+    VersionedUpdate:
+      type: object
+      required: [version]
+      properties:
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 3
+    MonetaryValue:
+      type: string
+      pattern: '^-?\d+\.\d{2}$'
+      example: '1250.90'
+  responses:
+    InvalidRequest:
+      description: Entrada inválida ou regra de negócio violada.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Unauthenticated:
+      description: A sessão não foi autenticada.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Forbidden:
+      description: A sessão não tem permissão para a operação.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    NotFound:
+      description: Recurso inexistente ou indisponível para a atlética da sessão.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Conflict:
+      description: Conflito de dados ou versão desatualizada.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
