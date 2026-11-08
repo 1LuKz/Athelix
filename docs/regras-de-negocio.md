@@ -37,6 +37,22 @@ Este documento concentra as regras transversais do Athletix. Regras específicas
 - Domínios são únicos por atlética e são comparados por igualdade exata; uma correspondência por sufixo não é autorização.
 - No protótipo, atléticas são criadas somente pela carga inicial do perfil `dev`; não existe endpoint público de administração global.
 
+## Cargos
+
+- Um cargo pertence a uma única atlética, possui perfil de acesso e pode ser inativado sem apagar referências históricas.
+- O nome do cargo é único na atlética desconsiderando maiúsculas, minúsculas e espaços nas extremidades.
+- Apenas administradores podem criar ou alterar um cargo com perfil de acesso. B08 conectará essa regra ao perfil da sessão autenticada.
+- Os perfis disponíveis são `ADMINISTRADOR`, `FINANCEIRO`, `GESTOR` e `MEMBRO`.
+
+## Departamentos
+
+- Um departamento pertence a uma única atlética e tem situação `EM_CONFIGURACAO`, `ATIVO` ou `INATIVO`.
+- O nome é único por atlética. O total de membros não é armazenado no departamento: será calculado a partir dos vínculos de membros na B05.
+- Departamentos novos começam em `EM_CONFIGURACAO`. Não aparecem na estrutura ativa, mas ficam disponíveis à administração para concluir o cadastro do primeiro membro.
+- A ativação exige responsável ativo, da mesma atlética e vinculado ao próprio departamento. A B05 substituirá o identificador opcional por relação íntegra com `Membro` e efetivará essa validação.
+- A inativação só é permitida após transferir membros ativos e substituir responsabilidades. Antes de B05, a transição é bloqueada para não burlar essa regra.
+- Cargos e departamentos não são apagados quando houver histórico referenciado.
+
 ## Paginação
 
 - A página é indexada a partir de zero.

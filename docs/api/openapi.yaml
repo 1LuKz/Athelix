@@ -141,6 +141,76 @@ components:
           description: Domínio normalizado e comparado por igualdade exata.
           pattern: '^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$'
           example: engenharia.exemplo.edu.br
+    PerfilAcesso:
+      type: string
+      enum: [ADMINISTRADOR, FINANCEIRO, GESTOR, MEMBRO]
+    Cargo:
+      type: object
+      required: [id, atleticaId, nome, perfilAcesso, ativo, version, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        atleticaId:
+          type: integer
+          format: int64
+        nome:
+          type: string
+          maxLength: 100
+        descricao:
+          type: string
+          maxLength: 500
+          nullable: true
+        perfilAcesso:
+          $ref: '#/components/schemas/PerfilAcesso'
+        ativo:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    SituacaoDepartamento:
+      type: string
+      enum: [EM_CONFIGURACAO, ATIVO, INATIVO]
+    Departamento:
+      type: object
+      description: A contagem de membros é calculada pelos vínculos e não é persistida neste recurso.
+      required: [id, atleticaId, nome, situacao, version, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        atleticaId:
+          type: integer
+          format: int64
+        nome:
+          type: string
+          maxLength: 100
+        descricao:
+          type: string
+          maxLength: 1000
+          nullable: true
+        responsavelMembroId:
+          type: integer
+          format: int64
+          nullable: true
+          description: Referência provisória; a integridade com Membro será concluída em B05.
+        situacao:
+          $ref: '#/components/schemas/SituacaoDepartamento'
+        version:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
   responses:
     InvalidRequest:
       description: Entrada inválida ou regra de negócio violada.

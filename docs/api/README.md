@@ -15,3 +15,7 @@ O contrato-base está em [openapi.yaml](./openapi.yaml). Todas as rotas são rel
 Os endpoints de domínio usarão a atlética da sessão, e não um `atleticaId` fornecido pelo cliente. Recursos são buscados pelo par `id + atleticaId do contexto`; registros de outra atlética retornam `404`.
 
 Nesta etapa não há endpoint público para criar ou administrar atléticas. O perfil local `dev` cria os dados de demonstração.
+
+## Cargos e departamentos
+
+Os contratos de `Cargo` e `Departamento` já estão descritos no OpenAPI, mas as rotas serão incluídas em B08, quando a autorização por perfil estiver conectada à sessão. Departamentos são criados em configuração e não trazem contagem de membros persistida.

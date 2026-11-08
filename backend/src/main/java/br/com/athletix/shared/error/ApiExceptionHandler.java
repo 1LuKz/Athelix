@@ -12,6 +12,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
@@ -131,6 +132,12 @@ public class ApiExceptionHandler {
     ) {
         return response(HttpStatus.CONFLICT, ApiErrorCode.RESOURCE_CONFLICT,
                 "A operação conflita com dados existentes.", List.of(), request);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiErrorResponse> handleAccessDenied(AccessDeniedException exception, HttpServletRequest request) {
+        return response(HttpStatus.FORBIDDEN, ApiErrorCode.FORBIDDEN,
+                "Você não tem permissão para acessar este recurso.", List.of(), request);
     }
 
     @ExceptionHandler(Exception.class)
