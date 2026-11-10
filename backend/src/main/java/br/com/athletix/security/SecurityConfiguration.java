@@ -51,9 +51,13 @@ public class SecurityConfiguration {
             RestAuthenticationEntryPoint authenticationEntryPoint,
             RestAccessDeniedHandler accessDeniedHandler,
             SecurityContextRepository securityContextRepository,
-            AtleticaContextFilter atleticaContextFilter,
-            SessionRegistry sessionRegistry
+            SessionRegistry sessionRegistry,
+            br.com.athletix.shared.tenancy.ContextoAtletica contextoAtletica,
+            br.com.athletix.auth.service.SessaoAtleticaService sessaoAtleticaService,
+            br.com.athletix.shared.error.ApiErrorResponseWriter errorWriter
     ) throws Exception {
+        AtleticaContextFilter atleticaContextFilter = new AtleticaContextFilter(
+                contextoAtletica, sessaoAtleticaService, errorWriter);
         return http
                 .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
                 .securityContext(context -> context.securityContextRepository(securityContextRepository)
@@ -72,8 +76,8 @@ public class SecurityConfiguration {
                                 "/auth/redefinir-senha", "/auth/definir-senha").permitAll()
                         .requestMatchers("/auth/logout", "/auth/me", "/auth/selecionar-atletica").authenticated()
                         .anyRequest().authenticated())
-                .addFilterAfter(atleticaContextFilter,
-                        org.springframework.security.web.context.SecurityContextHolderFilter.class)
+                .addFilterBefore(atleticaContextFilter,
+                        org.springframework.security.web.access.intercept.AuthorizationFilter.class)
                 .build();
     }
 }

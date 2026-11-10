@@ -16,10 +16,17 @@ Os endpoints de domínio usarão a atlética da sessão, e não um `atleticaId` 
 
 Nesta etapa não há endpoint público para criar ou administrar atléticas. O perfil local `dev` cria os dados de demonstração.
 
+## Membros
+
+- `GET /membros` aceita `busca`, `departamentoId`, `status`, `page`, `size` e `sort`; os únicos campos ordenáveis são `nome`, `email`, `curso`, `status`, `cargo`, `departamento` e `membroDesde`.
+- `POST /membros` sempre cria o vínculo como `PENDENTE`. Caso o e-mail já pertença a uma conta, nome e telefone do pedido não mudam essa identidade global.
+- `PUT /membros/{id}`, `PATCH /membros/{id}/aprovar` e `PATCH /membros/{id}/inativar` requerem `version`; são operações administrativas e retornam `409` em versão desatualizada.
+- `GET /membros/exportacao` gera um CSV UTF-8 completo para os filtros informados, não apenas a página exibida. A saída escapa CSV e neutraliza fórmulas de planilha.
+- Senhas, hashes e tokens nunca aparecem. E-mail e telefone são retornados apenas ao administrador; outros perfis autorizados recebem a visão sem contato.
+
 ## Cargos e departamentos
 
-Os contratos de `Cargo` e `Departamento` já estão descritos no OpenAPI, mas as rotas serão incluídas em B08, quando a autorização por perfil estiver conectada à sessão. Departamentos são criados em configuração e não trazem contagem de membros persistida.
-
-## Usuários e membros
-
-`Usuario` não expõe senha, hash ou token. `Membro` representa o vínculo por atlética, iniciado como pendente; o acesso só é elegível depois de sua ativação e da definição de credencial.
+- `GET/POST /cargos` e `PUT /cargos/{id}` são administrativos. A inativação de cargo é feita por `PUT` com `ativo: false`, sem apagar histórico.
+- `GET/POST /departamentos`, `GET/PUT /departamentos/{id}` e as ações `PATCH /responsavel`, `/ativar` e `/inativar` usam o mesmo escopo da sessão.
+- Departamentos são criados em `EM_CONFIGURACAO`. A administração pode criar, aprovar e designar o primeiro responsável antes de ativá-los. A resposta inclui responsável e `quantidadeMembros`, calculada pelos vínculos `ATIVO` e nunca persistida manualmente.
+- A inativação exige transferências e substituição das responsabilidades antes de preservar o departamento como `INATIVO`.

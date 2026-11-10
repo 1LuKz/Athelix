@@ -95,6 +95,18 @@ public class Membro extends AuditableEntity implements AtleticaScoped {
         return usuario.getId();
     }
 
+    public String getNomeUsuario() {
+        return usuario.getNome();
+    }
+
+    public String getEmailUsuario() {
+        return usuario.getEmail();
+    }
+
+    public String getTelefoneUsuario() {
+        return usuario.getTelefone();
+    }
+
     public String getCurso() {
         return curso;
     }
@@ -105,6 +117,10 @@ public class Membro extends AuditableEntity implements AtleticaScoped {
 
     public Long getCargoId() {
         return cargo.getId();
+    }
+
+    public String getNomeCargo() {
+        return cargo.getNome();
     }
 
     public PerfilAcesso getPerfilAcesso() {
@@ -125,6 +141,10 @@ public class Membro extends AuditableEntity implements AtleticaScoped {
 
     public Long getDepartamentoId() {
         return departamento.getId();
+    }
+
+    public String getNomeDepartamento() {
+        return departamento.getNome();
     }
 
     public StatusMembro getStatus() {
@@ -157,5 +177,12 @@ public class Membro extends AuditableEntity implements AtleticaScoped {
     public void inativar() {
         this.status = StatusMembro.INATIVO;
         this.inativadoEm = Instant.now();
+    }
+
+    public void atualizarVinculo(String curso, Integer periodoCurso, Cargo cargo, Departamento departamento) {
+        this.curso = curso;
+        this.periodoCurso = periodoCurso;
+        this.cargo = cargo;
+        this.departamento = departamento;
     }
 }

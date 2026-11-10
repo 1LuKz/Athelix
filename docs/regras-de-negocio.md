@@ -64,6 +64,11 @@ Este documento concentra as regras transversais do Athletix. Regras específicas
 - Acesso à atlética exige membro `ATIVO`, atlética ativa e credencial definida e ativa.
 - Inativação preserva o histórico. Ela é bloqueada enquanto o membro for responsável por departamento; módulos futuros, como Eventos, registram pendências abertas pelo contrato de responsabilidades antes da conclusão.
 - A inativação do último administrador ativo também é bloqueada.
+- A API de membros é paginada e pesquisa nome, curso e e-mail sem distinguir maiúsculas de minúsculas. Os filtros `departamentoId` e `status` são sempre combinados com a atlética selecionada.
+- O cadastro administrativo recebe dados de identidade e de vínculo, mas fixa o status inicial como `PENDENTE`. Ao encontrar uma conta pelo e-mail normalizado, a operação só cria o vínculo e não altera nome, telefone, senha ou qualquer dado pessoal dessa conta.
+- A alteração do vínculo recebe versão e pode trocar curso, período, cargo e departamento somente por recursos pertencentes à atlética atual. Não altera a identidade global do usuário.
+- E-mail e telefone do diretório são dados de contato administrativos: só são retornados para administrador. Senhas, hashes, tokens e BLOBs não são retornados em nenhuma consulta.
+- A exportação de membros é exclusiva de administrador, usa todos os registros filtrados no escopo atual, codificação UTF-8 e escape de CSV. Valores com aparência de fórmula de planilha recebem prefixo seguro antes da exportação.
 
 ## Autenticação, sessão e autorização
 

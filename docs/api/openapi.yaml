@@ -144,6 +144,408 @@ paths:
                 $ref: '#/components/schemas/MensagemResponse'
         '400':
           $ref: '#/components/responses/InvalidRequest'
+  /membros:
+    get:
+      summary: Lista os membros da atlética selecionada
+      operationId: listMembros
+      description: >-
+        Pesquisa sem distinção de caixa por nome, e-mail ou curso. Aceita somente
+        `sort=nome|email|curso|status|cargo|departamento|membroDesde,direcao`;
+        `direcao` é `asc` ou `desc`. Administradores recebem contato; os demais
+        perfis autorizados não recebem e-mail ou telefone.
+      parameters:
+        - $ref: '#/components/parameters/BuscaMembro'
+        - $ref: '#/components/parameters/DepartamentoId'
+        - $ref: '#/components/parameters/StatusMembroFiltro'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - $ref: '#/components/parameters/SortMembro'
+      responses:
+        '200':
+          description: Página estável de membros no escopo da sessão.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageMembroResumo'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      summary: Cadastra um vínculo pendente de membro
+      operationId: createMembro
+      description: >-
+        Exclusivo de administrador. O status é sempre PENDENTE. Se o e-mail já
+        existir globalmente, os dados pessoais recebidos não alteram a conta existente.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembroCadastroRequest'
+      responses:
+        '201':
+          description: Vínculo pendente criado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembroResumo'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /membros/{id}:
+    get:
+      summary: Consulta um membro da atlética selecionada
+      operationId: getMembro
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Membro encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembroResumo'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      summary: Altera dados do vínculo de membro
+      operationId: updateMembro
+      description: Exclusivo de administrador; não altera a identidade global da conta.
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembroUpdateRequest'
+      responses:
+        '200':
+          description: Vínculo alterado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembroResumo'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /membros/{id}/aprovar:
+    patch:
+      summary: Aprova um membro pendente
+      operationId: approveMembro
+      description: Requer credencial definida, atlética ativa e um validador elegível, salvo o primeiro membro de departamento em configuração.
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembroActivationRequest'
+      responses:
+        '200':
+          description: Membro ativado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembroResumo'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /membros/{id}/inativar:
+    patch:
+      summary: Inativa um membro ativo sem apagar seu histórico
+      operationId: deactivateMembro
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembroInactivationRequest'
+      responses:
+        '200':
+          description: Membro inativado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembroResumo'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /membros/exportacao:
+    get:
+      summary: Exporta todos os membros filtrados em CSV UTF-8
+      operationId: exportMembros
+      description: >-
+        Exclusivo de administrador. Usa os mesmos filtros e ordenações da listagem,
+        mas não é limitado pela página visível. Células são escapadas e valores que
+        iniciam fórmula de planilha são neutralizados.
+      parameters:
+        - $ref: '#/components/parameters/BuscaMembro'
+        - $ref: '#/components/parameters/DepartamentoId'
+        - $ref: '#/components/parameters/StatusMembroFiltro'
+        - $ref: '#/components/parameters/SortMembro'
+      responses:
+        '200':
+          description: Arquivo CSV UTF-8.
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /cargos:
+    get:
+      summary: Lista cargos da atlética selecionada
+      operationId: listCargos
+      responses:
+        '200':
+          description: Cargos, inclusive os inativos, visíveis à administração.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cargo'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      summary: Cria um cargo
+      operationId: createCargo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CargoCreateRequest'
+      responses:
+        '201':
+          description: Cargo criado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cargo'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /cargos/{id}:
+    put:
+      summary: Atualiza ou inativa um cargo
+      operationId: updateCargo
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CargoUpdateRequest'
+      responses:
+        '200':
+          description: Cargo atualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cargo'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /departamentos:
+    get:
+      summary: Lista departamentos da atlética selecionada
+      operationId: listDepartamentos
+      description: Administração também recebe departamentos em configuração; os demais perfis recebem apenas a estrutura ativa.
+      responses:
+        '200':
+          description: Departamentos com responsável e contagem derivada de membros ativos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Departamento'
+    post:
+      summary: Cria departamento em configuração
+      operationId: createDepartamento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartamentoCreateRequest'
+      responses:
+        '201':
+          description: Departamento criado em configuração.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Departamento'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /departamentos/{id}:
+    get:
+      summary: Consulta um departamento da atlética selecionada
+      operationId: getDepartamento
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Departamento encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Departamento'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      summary: Atualiza dados básicos de departamento
+      operationId: updateDepartamento
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartamentoUpdateRequest'
+      responses:
+        '200':
+          description: Departamento atualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Departamento'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /departamentos/{id}/responsavel:
+    patch:
+      summary: Define o responsável do departamento
+      operationId: assignDepartamentoResponsavel
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResponsavelDepartamentoUpdateRequest'
+      responses:
+        '200':
+          description: Responsável definido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Departamento'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /departamentos/{id}/ativar:
+    patch:
+      summary: Ativa departamento em configuração
+      operationId: activateDepartamento
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartamentoTransitionRequest'
+      responses:
+        '200':
+          description: Departamento ativado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Departamento'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /departamentos/{id}/inativar:
+    patch:
+      summary: Inativa departamento sem apagar histórico
+      operationId: deactivateDepartamento
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartamentoTransitionRequest'
+      responses:
+        '200':
+          description: Departamento inativado após transferências e substituições exigidas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Departamento'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 components:
   schemas:
     ApiError:
@@ -334,7 +736,15 @@ components:
           type: integer
           format: int64
           nullable: true
-          description: Referência provisória; a integridade com Membro será concluída em B05.
+          description: Membro ativo da mesma atlética e departamento.
+        responsavelNome:
+          type: string
+          nullable: true
+        quantidadeMembros:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Contagem derivada de vínculos ATIVO; não é persistida.
         situacao:
           $ref: '#/components/schemas/SituacaoDepartamento'
         version:
@@ -442,6 +852,197 @@ components:
         updatedAt:
           type: string
           format: date-time
+    MembroResumo:
+      type: object
+      description: >-
+        Resposta de diretório. `email` e `telefone` são nulos para perfis que não
+        precisam de dados de contato; credenciais nunca são expostas.
+      required: [id, usuarioId, nome, curso, cargoId, cargo, departamentoId, departamento, status, membroDesde, version]
+      properties:
+        id:
+          type: integer
+          format: int64
+        usuarioId:
+          type: integer
+          format: int64
+        nome:
+          type: string
+        email:
+          type: string
+          format: email
+          nullable: true
+        telefone:
+          type: string
+          nullable: true
+        curso:
+          type: string
+        periodoCurso:
+          type: integer
+          minimum: 1
+          maximum: 30
+          nullable: true
+        cargoId:
+          type: integer
+          format: int64
+        cargo:
+          type: string
+        departamentoId:
+          type: integer
+          format: int64
+        departamento:
+          type: string
+        status:
+          $ref: '#/components/schemas/StatusMembro'
+        membroDesde:
+          type: string
+          format: date
+        ativadoEm:
+          type: string
+          format: date-time
+          nullable: true
+        inativadoEm:
+          type: string
+          format: date-time
+          nullable: true
+        version:
+          type: integer
+          format: int64
+    PageMembroResumo:
+      type: object
+      required: [items, page, size, totalItems, totalPages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MembroResumo'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalItems:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+    MembroCadastroRequest:
+      type: object
+      required: [nome, email, curso, cargoId, departamentoId]
+      properties:
+        nome:
+          type: string
+          minLength: 3
+          maxLength: 120
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        telefone:
+          type: string
+          maxLength: 20
+          nullable: true
+        curso:
+          type: string
+          maxLength: 160
+        periodoCurso:
+          type: integer
+          minimum: 1
+          maximum: 30
+          nullable: true
+        cargoId:
+          type: integer
+          format: int64
+          minimum: 1
+        departamentoId:
+          type: integer
+          format: int64
+          minimum: 1
+        membroDesde:
+          type: string
+          format: date
+          nullable: true
+    MembroUpdateRequest:
+      allOf:
+        - type: object
+          required: [curso, cargoId, departamentoId]
+          properties:
+            curso:
+              type: string
+              maxLength: 160
+            periodoCurso:
+              type: integer
+              minimum: 1
+              maximum: 30
+              nullable: true
+            cargoId:
+              type: integer
+              format: int64
+              minimum: 1
+            departamentoId:
+              type: integer
+              format: int64
+              minimum: 1
+        - $ref: '#/components/schemas/VersionedUpdate'
+    MembroActivationRequest:
+      allOf:
+        - type: object
+          properties:
+            validadoPorMembroId:
+              type: integer
+              format: int64
+              minimum: 1
+              nullable: true
+        - $ref: '#/components/schemas/VersionedUpdate'
+    MembroInactivationRequest:
+      $ref: '#/components/schemas/VersionedUpdate'
+    CargoCreateRequest:
+      type: object
+      required: [nome, perfilAcesso, ativo]
+      properties:
+        nome:
+          type: string
+          maxLength: 100
+        descricao:
+          type: string
+          maxLength: 500
+          nullable: true
+        perfilAcesso:
+          $ref: '#/components/schemas/PerfilAcesso'
+        ativo:
+          type: boolean
+    CargoUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/CargoCreateRequest'
+        - $ref: '#/components/schemas/VersionedUpdate'
+    DepartamentoCreateRequest:
+      type: object
+      required: [nome]
+      properties:
+        nome:
+          type: string
+          maxLength: 100
+        descricao:
+          type: string
+          maxLength: 1000
+          nullable: true
+    DepartamentoUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/DepartamentoCreateRequest'
+        - $ref: '#/components/schemas/VersionedUpdate'
+    DepartamentoTransitionRequest:
+      $ref: '#/components/schemas/VersionedUpdate'
+    ResponsavelDepartamentoUpdateRequest:
+      allOf:
+        - type: object
+          required: [responsavelMembroId]
+          properties:
+            responsavelMembroId:
+              type: integer
+              format: int64
+              minimum: 1
+        - $ref: '#/components/schemas/VersionedUpdate'
     LoginRequest:
       type: object
       required: [email, senha]
@@ -624,3 +1225,54 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ApiError'
+  parameters:
+    ResourceId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+    BuscaMembro:
+      name: busca
+      in: query
+      description: Texto pesquisado sem distinção de caixa em nome, e-mail ou curso.
+      schema:
+        type: string
+    DepartamentoId:
+      name: departamentoId
+      in: query
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+    StatusMembroFiltro:
+      name: status
+      in: query
+      schema:
+        $ref: '#/components/schemas/StatusMembro'
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    Size:
+      name: size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    SortMembro:
+      name: sort
+      in: query
+      description: "Pode ser repetido. Campo permitido e direção: `nome`, `email`, `curso`, `status`, `cargo`, `departamento` ou `membroDesde`, com `asc` ou `desc`."
+      schema:
+        type: array
+        items:
+          type: string
+          pattern: '^(nome|email|curso|status|cargo|departamento|membroDesde)(,(asc|desc|ASC|DESC))?$'

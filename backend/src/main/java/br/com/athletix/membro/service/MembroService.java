@@ -9,7 +9,9 @@ import br.com.athletix.departamento.entity.SituacaoDepartamento;
 import br.com.athletix.departamento.repository.DepartamentoRepository;
 import br.com.athletix.membro.dto.MembroActivationRequest;
 import br.com.athletix.membro.dto.MembroCreateRequest;
+import br.com.athletix.membro.dto.MembroCadastroRequest;
 import br.com.athletix.membro.dto.MembroInactivationRequest;
+import br.com.athletix.membro.dto.MembroUpdateRequest;
 import br.com.athletix.membro.entity.Membro;
 import br.com.athletix.membro.entity.StatusMembro;
 import br.com.athletix.membro.repository.MembroRepository;
@@ -21,6 +23,9 @@ import br.com.athletix.shared.normalization.NomeNormalizado;
 import br.com.athletix.shared.tenancy.AtleticaResourceResolver;
 import br.com.athletix.usuario.entity.Usuario;
 import br.com.athletix.usuario.repository.UsuarioRepository;
+import br.com.athletix.usuario.dto.UsuarioConviteCreateRequest;
+import br.com.athletix.usuario.service.EmailNormalizado;
+import br.com.athletix.usuario.service.UsuarioService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +45,7 @@ public class MembroService {
     private final MembroDepartamentoValidators departamentoValidators;
     private final PendenciasResponsabilidadeMembroProvider pendenciasProvider;
     private final AdministradorAtivoGuard administradorAtivoGuard;
+    private final UsuarioService usuarioService;
 
     public MembroService(
             MembroRepository membroRepository,
@@ -50,7 +56,8 @@ public class MembroService {
             AtleticaResourceResolver resourceResolver,
             MembroDepartamentoValidators departamentoValidators,
             PendenciasResponsabilidadeMembroProvider pendenciasProvider,
-            AdministradorAtivoGuard administradorAtivoGuard
+            AdministradorAtivoGuard administradorAtivoGuard,
+            UsuarioService usuarioService
     ) {
         this.membroRepository = membroRepository;
         this.atleticaRepository = atleticaRepository;
@@ -61,6 +68,20 @@ public class MembroService {
         this.departamentoValidators = departamentoValidators;
         this.pendenciasProvider = pendenciasProvider;
         this.administradorAtivoGuard = administradorAtivoGuard;
+        this.usuarioService = usuarioService;
+    }
+
+    /** Associa uma identidade existente pelo e-mail sem alterar seus dados pessoais. */
+    @Transactional
+    public Membro cadastrar(MembroCadastroRequest request) {
+        String email = EmailNormalizado.normalize(request.email());
+        Usuario usuario = usuarioRepository.findByEmail(email).orElseGet(() -> usuarioService.criarPorConvite(
+                new UsuarioConviteCreateRequest(request.nome(), email, request.telefone())
+        ));
+        return criarPendente(new MembroCreateRequest(
+                usuario.getId(), request.curso(), request.periodoCurso(), request.cargoId(), request.departamentoId(),
+                request.membroDesde()
+        ));
     }
 
     @Transactional
@@ -140,6 +161,30 @@ public class MembroService {
             throw new BusinessRuleException("O membro possui pendências: " + String.join("; ", pendencias));
         }
         membro.inativar();
+        return membro;
+    }
+
+    @Transactional
+    public Membro atualizar(Long membroId, MembroUpdateRequest request) {
+        Membro membro = buscarDaAtleticaAtual(membroId);
+        assertVersion(membro, request.version());
+        if (membro.getStatus() == StatusMembro.INATIVO) {
+            throw new BusinessRuleException("Um membro inativo não pode ser alterado.");
+        }
+        Cargo cargo = resourceResolver.requireByIdAndAtleticaId(request.cargoId(), cargoRepository::findByIdAndAtletica_Id);
+        Departamento departamento = resourceResolver.requireByIdAndAtleticaId(
+                request.departamentoId(), departamentoRepository::findByIdAndAtletica_Id
+        );
+        validarAtribuicoes(cargo, departamento);
+        NomeNormalizado.fromRequired(request.curso(), "curso");
+        String curso = NomeNormalizado.displayValue(request.curso());
+        if (curso.length() > 160) {
+            throw new BusinessRuleException("O curso deve ter no máximo 160 caracteres.");
+        }
+        if (request.periodoCurso() != null && (request.periodoCurso() < 1 || request.periodoCurso() > 30)) {
+            throw new BusinessRuleException("O período do curso deve estar entre 1 e 30.");
+        }
+        membro.atualizarVinculo(curso, request.periodoCurso(), cargo, departamento);
         return membro;
     }
 
