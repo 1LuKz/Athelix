@@ -2,10 +2,15 @@ package br.com.athletix.auth.controller;
 
 import br.com.athletix.auth.dto.AuthStateResponse;
 import br.com.athletix.auth.dto.CsrfResponse;
+import br.com.athletix.auth.dto.EsqueciSenhaRequest;
 import br.com.athletix.auth.dto.LoginRequest;
+import br.com.athletix.auth.dto.MensagemResponse;
+import br.com.athletix.auth.dto.RedefinirSenhaRequest;
 import br.com.athletix.auth.dto.SelecionarAtleticaRequest;
+import br.com.athletix.auth.service.CredentialDeliveryException;
 import br.com.athletix.auth.service.LoginAttemptService;
 import br.com.athletix.auth.service.SessaoAtleticaService;
+import br.com.athletix.auth.service.TokenCredencialService;
 import br.com.athletix.security.AuthenticatedUserPrincipal;
 import br.com.athletix.shared.exception.BusinessRuleException;
 import br.com.athletix.usuario.service.EmailNormalizado;
@@ -25,6 +30,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -39,15 +45,20 @@ public class AuthController {
     private final SessaoAtleticaService sessaoAtleticaService;
     private final LoginAttemptService loginAttemptService;
     private final UsuarioService usuarioService;
+    private final TokenCredencialService tokenCredencialService;
+    private final SessionRegistry sessionRegistry;
 
     public AuthController(AuthenticationManager authenticationManager, SecurityContextRepository securityContextRepository,
                           SessaoAtleticaService sessaoAtleticaService, LoginAttemptService loginAttemptService,
-                          UsuarioService usuarioService) {
+                          UsuarioService usuarioService, TokenCredencialService tokenCredencialService,
+                          SessionRegistry sessionRegistry) {
         this.authenticationManager = authenticationManager;
         this.securityContextRepository = securityContextRepository;
         this.sessaoAtleticaService = sessaoAtleticaService;
         this.loginAttemptService = loginAttemptService;
         this.usuarioService = usuarioService;
+        this.tokenCredencialService = tokenCredencialService;
+        this.sessionRegistry = sessionRegistry;
     }
 
     @GetMapping("/csrf")
@@ -70,13 +81,15 @@ public class AuthController {
             );
             // O repositório CSRF em cookie não precisa criar sessão. Garanta uma antes de trocar o id
             // para manter a proteção contra fixação tanto no primeiro login quanto em reautenticações.
-            servletRequest.getSession();
+            String sessionIdAnterior = servletRequest.getSession().getId();
             servletRequest.changeSessionId();
             SecurityContext context = SecurityContextHolder.createEmptyContext();
             context.setAuthentication(authentication);
             SecurityContextHolder.setContext(context);
             securityContextRepository.saveContext(context, servletRequest, servletResponse);
             AuthenticatedUserPrincipal principal = (AuthenticatedUserPrincipal) authentication.getPrincipal();
+            sessionRegistry.removeSessionInformation(sessionIdAnterior);
+            sessionRegistry.registerNewSession(servletRequest.getSession().getId(), principal);
             usuarioService.registrarAcesso(principal.usuarioId());
             AuthStateResponse state = sessaoAtleticaService.estado(principal.usuarioId(), null);
             if (state.membroSelecionadoId() != null) {
@@ -89,6 +102,28 @@ public class AuthController {
             loginAttemptService.registrarFalha(email, origem);
             throw new BadCredentialsException("Credenciais inválidas.");
         }
+    }
+
+    @PostMapping("/esqueci-senha")
+    public MensagemResponse esqueciSenha(@RequestBody(required = false) EsqueciSenhaRequest request) {
+        try {
+            tokenCredencialService.solicitarRecuperacao(request == null ? null : request.email());
+        } catch (CredentialDeliveryException exception) {
+            // A resposta continua anti-enumeração e não afirma que uma entrega ocorreu.
+        }
+        return mensagemRecuperacao();
+    }
+
+    @PostMapping("/redefinir-senha")
+    public MensagemResponse redefinirSenha(@Valid @RequestBody RedefinirSenhaRequest request) {
+        tokenCredencialService.redefinirSenha(request.token(), request.novaSenha());
+        return new MensagemResponse("Senha redefinida com sucesso.");
+    }
+
+    @PostMapping("/definir-senha")
+    public MensagemResponse definirSenha(@Valid @RequestBody RedefinirSenhaRequest request) {
+        tokenCredencialService.definirSenha(request.token(), request.novaSenha());
+        return new MensagemResponse("Senha definida com sucesso.");
     }
 
     @GetMapping("/me")
@@ -126,5 +161,9 @@ public class AuthController {
             throw new BusinessRuleException("A autenticação da sessão é inválida.");
         }
         return principal;
+    }
+
+    private MensagemResponse mensagemRecuperacao() {
+        return new MensagemResponse("Se houver uma conta elegível, instruções de recuperação poderão ser enviadas.");
     }
 }

@@ -31,6 +31,19 @@ No perfil `dev`, a carga inicial cria o primeiro acesso:
 
 Antes de chamadas mutáveis da API, obtenha o CSRF em `GET /api/v1/auth/csrf` e envie o token no cabeçalho informado. O Vite já encaminha `/api` para o backend local.
 
+## E-mail de desenvolvimento
+
+Convites e recuperação usam SMTP real; a API não devolve links secretos. Configure uma caixa SMTP de desenvolvimento (por exemplo, Mailtrap) por variáveis de ambiente antes de testar esses fluxos:
+
+```bash
+export ATHLETIX_SMTP_HOST=...
+export ATHLETIX_SMTP_PORT=587
+export ATHLETIX_SMTP_USERNAME=...
+export ATHLETIX_SMTP_PASSWORD=...
+export ATHLETIX_MAIL_FROM=no-reply@athletix.local
+export ATHLETIX_FRONTEND_BASE_URL=http://localhost:5173
+```
+
 ## Organizacao
 
 - `docs/`: regras do negocio e documentacao da API

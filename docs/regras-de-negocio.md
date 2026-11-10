@@ -88,6 +88,17 @@ Este documento concentra as regras transversais do Athletix. Regras específicas
 
 Os resumos financeiros para associados não devem expor dados pessoais de contrapartes ou anexos restritos. As operações de eventos, patrimônio e documentos receberão a checagem contextual detalhada quando seus endpoints forem implementados.
 
+## Convites e recuperação de senha
+
+- `TokenCredencial` é de uso único e guarda somente o resumo SHA-256 de um segredo aleatório de 256 bits. O valor original aparece exclusivamente no link enviado por e-mail, nunca em DTO, log ou resposta HTTP.
+- A finalidade `DEFINIR_SENHA` é associada ao `Membro` quando o fluxo for convite e vale 24 horas. A finalidade `RECUPERAR_SENHA` vale 30 minutos. Ambos registram `criadoEm`, `expiraEm` e `consumidoEm`.
+- Um token inválido, expirado, usado ou de finalidade diferente é rejeitado. Ao consumir um token, os demais tokens ainda disponíveis da mesma conta e finalidade são invalidados na mesma transação.
+- `POST /auth/esqueci-senha` sempre devolve a mesma mensagem. Para uma conta elegível, o token só é persistido se o SMTP aceitar o envio; caso a infraestrutura de e-mail falhe, a resposta não afirma que houve entrega e não deixa token utilizável no banco.
+- `POST /auth/redefinir-senha` reaplica integralmente a política BCrypt e invalida sessões registradas anteriormente para a conta. `POST /auth/definir-senha` aceita apenas tokens de convite.
+- O convite é emitido apenas para uma conta sem credencial definida. Se a conta já possui senha, o vínculo aprovado usa essa conta e nenhuma senha é substituída. O token não aprova nem ativa um vínculo por si só.
+- Links usam somente `athletix.frontend-base-url`, definido no servidor; nenhum host enviado pelo navegador participa da composição do link.
+- SMTP é real, via Spring Mail. Configure `ATHLETIX_SMTP_HOST`, `ATHLETIX_SMTP_PORT`, `ATHLETIX_SMTP_USERNAME`, `ATHLETIX_SMTP_PASSWORD`, `ATHLETIX_SMTP_AUTH`, `ATHLETIX_SMTP_STARTTLS` e `ATHLETIX_MAIL_FROM` no ambiente. Para desenvolvimento, pode-se usar uma caixa SMTP de teste visualizável no navegador, como Mailtrap, sem contêineres.
+
 ## Paginação
 
 - A página é indexada a partir de zero.

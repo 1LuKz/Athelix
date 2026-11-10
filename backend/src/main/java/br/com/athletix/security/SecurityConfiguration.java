@@ -6,13 +6,15 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 /**
  * Sessões HTTP preservam a identidade; a atlética selecionada é validada em filtro próprio.
@@ -34,25 +36,40 @@ public class SecurityConfiguration {
     }
 
     @Bean
+    SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
+    }
+
+    @Bean
+    HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
+    }
+
+    @Bean
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             RestAuthenticationEntryPoint authenticationEntryPoint,
             RestAccessDeniedHandler accessDeniedHandler,
             SecurityContextRepository securityContextRepository,
-            AtleticaContextFilter atleticaContextFilter
+            AtleticaContextFilter atleticaContextFilter,
+            SessionRegistry sessionRegistry
     ) throws Exception {
         return http
                 .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
                 .securityContext(context -> context.securityContextRepository(securityContextRepository)
                         .requireExplicitSave(false))
-                .sessionManagement(session -> session.sessionFixation(fixation -> fixation.changeSessionId()))
+                .sessionManagement(session -> session
+                        .sessionFixation(fixation -> fixation.changeSessionId())
+                        .maximumSessions(-1)
+                        .sessionRegistry(sessionRegistry))
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/h2-console/**").permitAll()
-                        .requestMatchers("/auth/csrf", "/auth/login").permitAll()
+                        .requestMatchers("/auth/csrf", "/auth/login", "/auth/esqueci-senha",
+                                "/auth/redefinir-senha", "/auth/definir-senha").permitAll()
                         .requestMatchers("/auth/logout", "/auth/me", "/auth/selecionar-atletica").authenticated()
                         .anyRequest().authenticated())
                 .addFilterAfter(atleticaContextFilter,
