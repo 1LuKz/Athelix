@@ -5,10 +5,14 @@ import br.com.athletix.membro.dto.MembroCadastroRequest;
 import br.com.athletix.membro.dto.MembroInactivationRequest;
 import br.com.athletix.membro.dto.MembroResumoResponse;
 import br.com.athletix.membro.dto.MembroUpdateRequest;
+import br.com.athletix.membro.dto.SolicitacaoAlteracaoVinculoDecisaoRequest;
+import br.com.athletix.membro.dto.SolicitacaoAlteracaoVinculoResponse;
+import br.com.athletix.membro.entity.StatusSolicitacaoAlteracaoVinculo;
 import br.com.athletix.membro.entity.Membro;
 import br.com.athletix.membro.entity.StatusMembro;
 import br.com.athletix.membro.service.MembroConsultaService;
 import br.com.athletix.membro.service.MembroService;
+import br.com.athletix.membro.service.SolicitacaoAlteracaoVinculoService;
 import br.com.athletix.security.AutorizacaoAtualService;
 import br.com.athletix.cargo.entity.PerfilAcesso;
 import br.com.athletix.shared.pagination.PageQuery;
@@ -50,13 +54,16 @@ public class MembroController {
     private final MembroConsultaService consultaService;
     private final AutorizacaoAtualService autorizacao;
     private final PageableFactory pageableFactory;
+    private final SolicitacaoAlteracaoVinculoService solicitacaoService;
 
     public MembroController(MembroService membroService, MembroConsultaService consultaService,
-                            AutorizacaoAtualService autorizacao, PageableFactory pageableFactory) {
+                            AutorizacaoAtualService autorizacao, PageableFactory pageableFactory,
+                            SolicitacaoAlteracaoVinculoService solicitacaoService) {
         this.membroService = membroService;
         this.consultaService = consultaService;
         this.autorizacao = autorizacao;
         this.pageableFactory = pageableFactory;
+        this.solicitacaoService = solicitacaoService;
     }
 
     @GetMapping
@@ -126,6 +133,29 @@ public class MembroController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename("membros.csv").build().toString())
                 .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
                 .body(csv);
+    }
+
+    @GetMapping("/solicitacoes-vinculo")
+    public PageResponse<SolicitacaoAlteracaoVinculoResponse> listarSolicitacoes(
+            @RequestParam(required = false) StatusSolicitacaoAlteracaoVinculo status,
+            @Valid PageQuery pageQuery, Authentication authentication, HttpServletRequest request) {
+        autorizacao.exigirAdministrador(authentication, request);
+        return PageResponse.from(
+                solicitacaoService.listar(status, pageableFactory.create(pageQuery, Map.of(
+                        "createdAt", "createdAt", "status", "status", "avaliadaEm", "avaliadaEm"
+                ))),
+                SolicitacaoAlteracaoVinculoResponse::from
+        );
+    }
+
+    @PatchMapping("/solicitacoes-vinculo/{id}/decisao")
+    public SolicitacaoAlteracaoVinculoResponse decidirSolicitacao(@PathVariable Long id,
+            @Valid @RequestBody SolicitacaoAlteracaoVinculoDecisaoRequest body,
+            Authentication authentication, HttpServletRequest request) {
+        autorizacao.exigirAdministrador(authentication, request);
+        return SolicitacaoAlteracaoVinculoResponse.from(
+                solicitacaoService.decidir(id, autorizacao.membroAtual(authentication, request), body)
+        );
     }
 
     private boolean podeConsultarContato(Authentication authentication, HttpServletRequest request) {

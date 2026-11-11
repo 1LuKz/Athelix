@@ -15,11 +15,16 @@ public class InvalidacaoSessaoUsuarioService {
     }
 
     public void invalidarSessoesAnteriores(Long usuarioId) {
+        invalidarSessoesExceto(usuarioId, null);
+    }
+
+    public void invalidarSessoesExceto(Long usuarioId, String sessionIdMantida) {
         sessionRegistry.getAllPrincipals().stream()
                 .filter(AuthenticatedUserPrincipal.class::isInstance)
                 .map(AuthenticatedUserPrincipal.class::cast)
                 .filter(principal -> principal.usuarioId().equals(usuarioId))
-                .forEach(principal -> sessionRegistry.getAllSessions(principal, false)
+                .forEach(principal -> sessionRegistry.getAllSessions(principal, false).stream()
+                        .filter(session -> sessionIdMantida == null || !sessionIdMantida.equals(session.getSessionId()))
                         .forEach(SessionInformation::expireNow));
     }
 }

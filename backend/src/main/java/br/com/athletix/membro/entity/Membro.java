@@ -119,6 +119,10 @@ public class Membro extends AuditableEntity implements AtleticaScoped {
         return cargo.getId();
     }
 
+    public Cargo getCargo() {
+        return cargo;
+    }
+
     public String getNomeCargo() {
         return cargo.getNome();
     }
@@ -141,6 +145,10 @@ public class Membro extends AuditableEntity implements AtleticaScoped {
 
     public Long getDepartamentoId() {
         return departamento.getId();
+    }
+
+    public Departamento getDepartamento() {
+        return departamento;
     }
 
     public String getNomeDepartamento() {

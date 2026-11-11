@@ -1,6 +1,7 @@
 package br.com.athletix.cargo.service;
 
 import br.com.athletix.atletica.entity.Atletica;
+import br.com.athletix.auditoria.service.AtividadeUsuarioService;
 import br.com.athletix.atletica.repository.AtleticaRepository;
 import br.com.athletix.cargo.dto.CargoCreateRequest;
 import br.com.athletix.cargo.dto.CargoUpdateRequest;
@@ -26,17 +27,20 @@ public class CargoService {
     private final AtleticaRepository atleticaRepository;
     private final AtleticaResourceResolver resourceResolver;
     private final AdministradorAtivoGuard administradorAtivoGuard;
+    private final AtividadeUsuarioService atividadeService;
 
     public CargoService(
             CargoRepository cargoRepository,
             AtleticaRepository atleticaRepository,
             AtleticaResourceResolver resourceResolver,
-            AdministradorAtivoGuard administradorAtivoGuard
+            AdministradorAtivoGuard administradorAtivoGuard,
+            AtividadeUsuarioService atividadeService
     ) {
         this.cargoRepository = cargoRepository;
         this.atleticaRepository = atleticaRepository;
         this.resourceResolver = resourceResolver;
         this.administradorAtivoGuard = administradorAtivoGuard;
+        this.atividadeService = atividadeService;
     }
 
     @Transactional
@@ -47,7 +51,7 @@ public class CargoService {
         ensureNameAvailable(atleticaId, nomeNormalizado, null);
         Atletica atletica = resourceResolver.requireByIdAndAtleticaId(atleticaId, atleticaRepository::findByIdAndId);
 
-        return cargoRepository.save(new Cargo(
+        Cargo cargo = cargoRepository.save(new Cargo(
                 atletica,
                 NomeNormalizado.displayValue(request.nome()),
                 nomeNormalizado,
@@ -55,6 +59,8 @@ public class CargoService {
                 request.perfilAcesso(),
                 request.ativo()
         ));
+        atividadeService.registrar("CARGO_CRIADO", "CARGO", cargo.getId(), "Cargo criado.");
+        return cargo;
     }
 
     @Transactional
@@ -75,6 +81,7 @@ public class CargoService {
                 request.perfilAcesso(),
                 request.ativo()
         );
+        atividadeService.registrar("CARGO_ATUALIZADO", "CARGO", cargo.getId(), "Cargo e permissões atualizados.");
         return cargo;
     }
 

@@ -546,6 +546,140 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+  /perfil:
+    get:
+      summary: Consulta o perfil do vínculo selecionado
+      operationId: getPerfil
+      responses:
+        '200':
+          description: Perfil com e-mail somente leitura.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Perfil'
+    put:
+      summary: Atualiza nome, telefone, curso e período do próprio perfil
+      operationId: updatePerfil
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PerfilUpdateRequest'
+      responses:
+        '200':
+          description: Perfil atualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Perfil'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /perfil/senha:
+    put:
+      summary: Troca a senha atual e invalida outras sessões da conta
+      operationId: updatePerfilSenha
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PerfilSenhaUpdateRequest'
+      responses:
+        '204':
+          description: Senha alterada.
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /perfil/atividades:
+    get:
+      summary: Lista o histórico de atividades do usuário na atlética selecionada
+      operationId: listPerfilAtividades
+      description: "Ordenações permitidas: `ocorridaEm`, `acao` e `tipoRecurso`."
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - $ref: '#/components/parameters/SortAtividade'
+      responses:
+        '200':
+          description: Página de atividades imutáveis, sem segredos ou conteúdo integral de documentos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageAtividadeUsuario'
+  /perfil/solicitacoes-vinculo:
+    post:
+      summary: Solicita troca de cargo ou departamento do próprio vínculo
+      operationId: createSolicitacaoAlteracaoVinculo
+      description: A solicitação não altera o vínculo até aprovação administrativa.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitacaoAlteracaoVinculoCreateRequest'
+      responses:
+        '201':
+          description: Solicitação pendente criada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolicitacaoAlteracaoVinculo'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /membros/solicitacoes-vinculo:
+    get:
+      summary: Lista solicitações de alteração de vínculo da atlética
+      operationId: listSolicitacoesAlteracaoVinculo
+      description: Exclusivo de administrador; aceita filtro opcional `status`.
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/StatusSolicitacaoAlteracaoVinculo'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Página de solicitações da atlética atual.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageSolicitacaoAlteracaoVinculo'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /membros/solicitacoes-vinculo/{id}/decisao:
+    patch:
+      summary: Aprova ou rejeita solicitação de alteração de vínculo
+      operationId: decideSolicitacaoAlteracaoVinculo
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitacaoAlteracaoVinculoDecisaoRequest'
+      responses:
+        '200':
+          description: Solicitação avaliada; ao aprovar, o vínculo foi atualizado atomicamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolicitacaoAlteracaoVinculo'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 components:
   schemas:
     ApiError:
@@ -1043,6 +1177,246 @@ components:
               format: int64
               minimum: 1
         - $ref: '#/components/schemas/VersionedUpdate'
+    Perfil:
+      type: object
+      required: [usuarioId, nome, email, membroId, curso, cargoId, departamentoId, usuarioVersion, membroVersion]
+      properties:
+        usuarioId:
+          type: integer
+          format: int64
+        nome:
+          type: string
+          maxLength: 120
+        email:
+          type: string
+          format: email
+          readOnly: true
+        telefone:
+          type: string
+          nullable: true
+          maxLength: 20
+        membroId:
+          type: integer
+          format: int64
+        curso:
+          type: string
+          maxLength: 160
+        periodoCurso:
+          type: integer
+          minimum: 1
+          maximum: 30
+          nullable: true
+        cargoId:
+          type: integer
+          format: int64
+        cargo:
+          type: string
+        departamentoId:
+          type: integer
+          format: int64
+        departamento:
+          type: string
+        usuarioVersion:
+          type: integer
+          format: int64
+        membroVersion:
+          type: integer
+          format: int64
+    PerfilUpdateRequest:
+      type: object
+      required: [nome, curso, usuarioVersion, membroVersion]
+      properties:
+        nome:
+          type: string
+          minLength: 3
+          maxLength: 120
+        telefone:
+          type: string
+          maxLength: 20
+          nullable: true
+        curso:
+          type: string
+          maxLength: 160
+        periodoCurso:
+          type: integer
+          minimum: 1
+          maximum: 30
+          nullable: true
+        usuarioVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        membroVersion:
+          type: integer
+          format: int64
+          minimum: 0
+    PerfilSenhaUpdateRequest:
+      type: object
+      required: [senhaAtual, novaSenha, version]
+      properties:
+        senhaAtual:
+          type: string
+          format: password
+          writeOnly: true
+        novaSenha:
+          type: string
+          format: password
+          minLength: 10
+          maxLength: 64
+          writeOnly: true
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+    AtividadeUsuario:
+      type: object
+      description: Registro imutável criado pelo servidor; não contém senhas, tokens nem documentos completos.
+      required: [id, acao, tipoRecurso, resumo, ocorridaEm]
+      properties:
+        id:
+          type: integer
+          format: int64
+        acao:
+          type: string
+        tipoRecurso:
+          type: string
+        recursoId:
+          type: integer
+          format: int64
+          nullable: true
+        resumo:
+          type: string
+          maxLength: 500
+        ocorridaEm:
+          type: string
+          format: date-time
+        gestaoId:
+          type: integer
+          format: int64
+          nullable: true
+    PageAtividadeUsuario:
+      type: object
+      required: [items, page, size, totalItems, totalPages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AtividadeUsuario'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalItems:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+    StatusSolicitacaoAlteracaoVinculo:
+      type: string
+      enum: [PENDENTE, APROVADA, REJEITADA]
+    SolicitacaoAlteracaoVinculo:
+      type: object
+      required: [id, membroId, cargoPretendidoId, departamentoPretendidoId, cargoAnteriorId, departamentoAnteriorId, motivo, status, version]
+      properties:
+        id:
+          type: integer
+          format: int64
+        membroId:
+          type: integer
+          format: int64
+        cargoPretendidoId:
+          type: integer
+          format: int64
+        cargoPretendido:
+          type: string
+        departamentoPretendidoId:
+          type: integer
+          format: int64
+        departamentoPretendido:
+          type: string
+        cargoAnteriorId:
+          type: integer
+          format: int64
+        departamentoAnteriorId:
+          type: integer
+          format: int64
+        motivo:
+          type: string
+          maxLength: 500
+        status:
+          $ref: '#/components/schemas/StatusSolicitacaoAlteracaoVinculo'
+        avaliadaEm:
+          type: string
+          format: date-time
+          nullable: true
+        avaliadaPorMembroId:
+          type: integer
+          format: int64
+          nullable: true
+        observacaoAvaliacao:
+          type: string
+          maxLength: 500
+          nullable: true
+        version:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    PageSolicitacaoAlteracaoVinculo:
+      type: object
+      required: [items, page, size, totalItems, totalPages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SolicitacaoAlteracaoVinculo'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalItems:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+    SolicitacaoAlteracaoVinculoCreateRequest:
+      type: object
+      required: [cargoPretendidoId, departamentoPretendidoId, motivo]
+      properties:
+        cargoPretendidoId:
+          type: integer
+          format: int64
+          minimum: 1
+        departamentoPretendidoId:
+          type: integer
+          format: int64
+          minimum: 1
+        motivo:
+          type: string
+          maxLength: 500
+    SolicitacaoAlteracaoVinculoDecisaoRequest:
+      type: object
+      required: [decisao, version, membroVersion]
+      properties:
+        decisao:
+          type: string
+          enum: [APROVAR, REJEITAR]
+        observacao:
+          type: string
+          maxLength: 500
+          nullable: true
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+        membroVersion:
+          type: integer
+          format: int64
+          minimum: 0
     LoginRequest:
       type: object
       required: [email, senha]
@@ -1276,3 +1650,12 @@ components:
         items:
           type: string
           pattern: '^(nome|email|curso|status|cargo|departamento|membroDesde)(,(asc|desc|ASC|DESC))?$'
+    SortAtividade:
+      name: sort
+      in: query
+      description: "Pode ser repetido: `ocorridaEm`, `acao` ou `tipoRecurso`, com `asc` ou `desc`."
+      schema:
+        type: array
+        items:
+          type: string
+          pattern: '^(ocorridaEm|acao|tipoRecurso)(,(asc|desc|ASC|DESC))?$'

@@ -104,6 +104,16 @@ Os resumos financeiros para associados não devem expor dados pessoais de contra
 - Links usam somente `athletix.frontend-base-url`, definido no servidor; nenhum host enviado pelo navegador participa da composição do link.
 - SMTP é real, via Spring Mail. Configure `ATHLETIX_SMTP_HOST`, `ATHLETIX_SMTP_PORT`, `ATHLETIX_SMTP_USERNAME`, `ATHLETIX_SMTP_PASSWORD`, `ATHLETIX_SMTP_AUTH`, `ATHLETIX_SMTP_STARTTLS` e `ATHLETIX_MAIL_FROM` no ambiente. Para desenvolvimento, pode-se usar uma caixa SMTP de teste visualizável no navegador, como Mailtrap, sem contêineres.
 
+## Perfil, histórico de atividades e solicitações de vínculo
+
+- `AtividadeUsuario` é imutável e registra somente fatos produzidos pelo servidor. A autoria (usuário, membro, atlética) vem da sessão selecionada; data, autor e atlética recebidos pelo navegador são ignorados.
+- As operações de banco registradas no histórico gravam a alteração e o evento de auditoria na mesma transação. Os resumos têm no máximo 500 caracteres e não contêm senhas, tokens, BLOBs ou conteúdo integral de documentos.
+- Nesta etapa são auditadas criação, ativação e inativação de membro, atualização de vínculo, criação e alteração de cargo, atualização de perfil, alteração de senha e decisões de solicitação de vínculo. Eventos, tarefas, financeiro, patrimônio e documentos devem chamar o mesmo serviço ao serem implementados.
+- O perfil permite alterar somente nome, telefone, curso e período do vínculo selecionado. O e-mail é somente leitura. Alterações verificam as versões de usuário e membro.
+- A troca de senha exige a senha atual, reaplica a política BCrypt e encerra todas as outras sessões da conta. A sessão que realizou a troca permanece válida.
+- Uma solicitação de alteração de vínculo nasce `PENDENTE`, guarda os IDs de cargo e departamento anteriores e não muda o vínculo imediatamente. Somente administrador pode aprová-la ou rejeitá-la.
+- A aprovação exige que a solicitação e o membro estejam nas versões informadas, que o vínculo atual ainda corresponda ao estado registrado e que cargo e departamento pretendidos continuem elegíveis. A mudança do vínculo, a decisão e a atividade são atômicas.
+
 ## Paginação
 
 - A página é indexada a partir de zero.

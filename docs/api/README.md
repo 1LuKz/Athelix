@@ -30,3 +30,11 @@ Nesta etapa não há endpoint público para criar ou administrar atléticas. O p
 - `GET/POST /departamentos`, `GET/PUT /departamentos/{id}` e as ações `PATCH /responsavel`, `/ativar` e `/inativar` usam o mesmo escopo da sessão.
 - Departamentos são criados em `EM_CONFIGURACAO`. A administração pode criar, aprovar e designar o primeiro responsável antes de ativá-los. A resposta inclui responsável e `quantidadeMembros`, calculada pelos vínculos `ATIVO` e nunca persistida manualmente.
 - A inativação exige transferências e substituição das responsabilidades antes de preservar o departamento como `INATIVO`.
+
+## Perfil, histórico e solicitações de vínculo
+
+- `GET /perfil` traz o perfil do vínculo selecionado. `PUT /perfil` só altera nome, telefone, curso e período; o e-mail permanece somente leitura.
+- `PUT /perfil/senha` exige senha atual, nova senha e `version`; retorna `204` e encerra as demais sessões da conta.
+- `GET /perfil/atividades` lista os registros de atividade da própria conta na atlética selecionada, por padrão do mais recente ao mais antigo. As ordenações aceitas são `ocorridaEm`, `acao` e `tipoRecurso`.
+- `POST /perfil/solicitacoes-vinculo` cria uma solicitação pendente. `GET /membros/solicitacoes-vinculo` e `PATCH /membros/solicitacoes-vinculo/{id}/decisao` são administrativos; a aprovação aplica a mudança de cargo/departamento na mesma transação.
+- Cada solicitação conserva os IDs de cargo e departamento anteriores, além da decisão, avaliador, datas e versões necessárias para evitar aprovação de dados desatualizados.

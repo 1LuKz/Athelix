@@ -88,5 +88,6 @@ public class InitialAtleticasConfiguration {
         administradorMembro = membroRepository.save(administradorMembro);
         diretoria.definirResponsavel(administradorMembro.getId());
         diretoria.ativar();
+        departamentoRepository.save(diretoria);
     }
 }

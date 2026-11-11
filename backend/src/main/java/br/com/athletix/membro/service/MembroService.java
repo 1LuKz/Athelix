@@ -1,6 +1,7 @@
 package br.com.athletix.membro.service;
 
 import br.com.athletix.atletica.entity.Atletica;
+import br.com.athletix.auditoria.service.AtividadeUsuarioService;
 import br.com.athletix.atletica.repository.AtleticaRepository;
 import br.com.athletix.cargo.entity.Cargo;
 import br.com.athletix.cargo.repository.CargoRepository;
@@ -46,6 +47,7 @@ public class MembroService {
     private final PendenciasResponsabilidadeMembroProvider pendenciasProvider;
     private final AdministradorAtivoGuard administradorAtivoGuard;
     private final UsuarioService usuarioService;
+    private final AtividadeUsuarioService atividadeService;
 
     public MembroService(
             MembroRepository membroRepository,
@@ -57,7 +59,8 @@ public class MembroService {
             MembroDepartamentoValidators departamentoValidators,
             PendenciasResponsabilidadeMembroProvider pendenciasProvider,
             AdministradorAtivoGuard administradorAtivoGuard,
-            UsuarioService usuarioService
+            UsuarioService usuarioService,
+            AtividadeUsuarioService atividadeService
     ) {
         this.membroRepository = membroRepository;
         this.atleticaRepository = atleticaRepository;
@@ -69,6 +72,7 @@ public class MembroService {
         this.pendenciasProvider = pendenciasProvider;
         this.administradorAtivoGuard = administradorAtivoGuard;
         this.usuarioService = usuarioService;
+        this.atividadeService = atividadeService;
     }
 
     /** Associa uma identidade existente pelo e-mail sem alterar seus dados pessoais. */
@@ -110,7 +114,7 @@ public class MembroService {
             throw new BusinessRuleException("O período do curso deve estar entre 1 e 30.");
         }
 
-        return membroRepository.save(new Membro(
+        Membro membro = membroRepository.save(new Membro(
                 atletica,
                 usuario,
                 curso,
@@ -119,6 +123,8 @@ public class MembroService {
                 departamento,
                 request.membroDesde() == null ? LocalDate.now() : request.membroDesde()
         ));
+        atividadeService.registrar("MEMBRO_CRIADO", "MEMBRO", membro.getId(), "Novo vínculo de membro criado.");
+        return membro;
     }
 
     @Transactional
@@ -143,6 +149,7 @@ public class MembroService {
 
         Membro validador = validarValidador(request.validadoPorMembroId(), departamento);
         membro.ativar(validador);
+        atividadeService.registrar("MEMBRO_ATIVADO", "MEMBRO", membro.getId(), "Vínculo de membro ativado.");
         return membro;
     }
 
@@ -161,6 +168,7 @@ public class MembroService {
             throw new BusinessRuleException("O membro possui pendências: " + String.join("; ", pendencias));
         }
         membro.inativar();
+        atividadeService.registrar("MEMBRO_INATIVADO", "MEMBRO", membro.getId(), "Vínculo de membro inativado.");
         return membro;
     }
 
@@ -185,6 +193,7 @@ public class MembroService {
             throw new BusinessRuleException("O período do curso deve estar entre 1 e 30.");
         }
         membro.atualizarVinculo(curso, request.periodoCurso(), cargo, departamento);
+        atividadeService.registrar("VINCULO_ATUALIZADO", "MEMBRO", membro.getId(), "Cargo ou departamento do vínculo atualizado.");
         return membro;
     }
 

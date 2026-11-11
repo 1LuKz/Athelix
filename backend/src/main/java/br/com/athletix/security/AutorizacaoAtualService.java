@@ -28,7 +28,7 @@ public class AutorizacaoAtualService {
         }
     }
 
-    private Membro membro(Authentication authentication, HttpServletRequest request) {
+    public Membro membroAtual(Authentication authentication, HttpServletRequest request) {
         if (!(authentication != null && authentication.getPrincipal() instanceof AuthenticatedUserPrincipal principal)) {
             throw new AccessDeniedException("Sessão inválida.");
         }
@@ -39,5 +39,9 @@ public class AutorizacaoAtualService {
             throw new AccessDeniedException("Selecione uma atlética para continuar.");
         }
         return sessaoAtleticaService.resolverSelecionado(principal.usuarioId(), membroId);
+    }
+
+    private Membro membro(Authentication authentication, HttpServletRequest request) {
+        return membroAtual(authentication, request);
     }
 }

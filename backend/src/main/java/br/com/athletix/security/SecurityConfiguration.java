@@ -54,10 +54,11 @@ public class SecurityConfiguration {
             SessionRegistry sessionRegistry,
             br.com.athletix.shared.tenancy.ContextoAtletica contextoAtletica,
             br.com.athletix.auth.service.SessaoAtleticaService sessaoAtleticaService,
-            br.com.athletix.shared.error.ApiErrorResponseWriter errorWriter
+            br.com.athletix.shared.error.ApiErrorResponseWriter errorWriter,
+            br.com.athletix.auditoria.service.ContextoAtividade contextoAtividade
     ) throws Exception {
         AtleticaContextFilter atleticaContextFilter = new AtleticaContextFilter(
-                contextoAtletica, sessaoAtleticaService, errorWriter);
+                contextoAtletica, sessaoAtleticaService, errorWriter, contextoAtividade);
         return http
                 .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
                 .securityContext(context -> context.securityContextRepository(securityContextRepository)

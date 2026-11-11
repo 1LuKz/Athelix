@@ -1,6 +1,7 @@
 package br.com.athletix.security;
 
 import br.com.athletix.auth.service.SessaoAtleticaService;
+import br.com.athletix.auditoria.service.ContextoAtividade;
 import br.com.athletix.shared.error.ApiErrorCode;
 import br.com.athletix.shared.error.ApiErrorResponseWriter;
 import br.com.athletix.shared.tenancy.ContextoAtletica;
@@ -22,12 +23,14 @@ public class AtleticaContextFilter extends OncePerRequestFilter {
     private final ContextoAtletica contextoAtletica;
     private final SessaoAtleticaService sessaoAtleticaService;
     private final ApiErrorResponseWriter errorWriter;
+    private final ContextoAtividade contextoAtividade;
 
     public AtleticaContextFilter(ContextoAtletica contextoAtletica, SessaoAtleticaService sessaoAtleticaService,
-                                 ApiErrorResponseWriter errorWriter) {
+                                 ApiErrorResponseWriter errorWriter, ContextoAtividade contextoAtividade) {
         this.contextoAtletica = contextoAtletica;
         this.sessaoAtleticaService = sessaoAtleticaService;
         this.errorWriter = errorWriter;
+        this.contextoAtividade = contextoAtividade;
     }
 
     @Override
@@ -64,7 +67,8 @@ public class AtleticaContextFilter extends OncePerRequestFilter {
                     "O vínculo selecionado não está mais disponível.");
             return;
         }
-        try (ContextoAtletica.Escopo ignored = contextoAtletica.abrir(atleticaId)) {
+        try (ContextoAtletica.Escopo ignored = contextoAtletica.abrir(atleticaId);
+             ContextoAtividade.Escopo atividade = contextoAtividade.abrir(atleticaId, principal.usuarioId(), membroId)) {
             chain.doFilter(request, response);
         }
     }
