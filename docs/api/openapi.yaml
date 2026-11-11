@@ -1316,6 +1316,101 @@ paths:
           content: {application/json: {schema: {$ref: '#/components/schemas/Notificacao'}}}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '404': {$ref: '#/components/responses/NotFound'}
+  /financeiro/categorias:
+    get:
+      summary: Lista categorias financeiras da atlética atual
+      operationId: listCategoriasFinanceiras
+      responses:
+        '200':
+          description: Categorias ordenadas por nome.
+          content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/CategoriaFinanceira'}}}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    post:
+      summary: Cria categoria financeira
+      operationId: createCategoriaFinanceira
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/CategoriaFinanceiraCreateRequest'}}}
+      responses:
+        '201':
+          description: Categoria criada.
+          content: {application/json: {schema: {$ref: '#/components/schemas/CategoriaFinanceira'}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /financeiro/lancamentos:
+    get:
+      summary: Lista lançamentos financeiros com filtros
+      operationId: listLancamentosFinanceiros
+      description: >-
+        Os filtros `dataDe` e `dataAte` são inclusivos e aplicados ao campo indicado por `modoData`,
+        cujo padrão é `COMPETENCIA`. `VENCIDA` é condição calculada no fuso da atlética, não um status persistido.
+      parameters:
+        - {name: modoData, in: query, schema: {$ref: '#/components/schemas/ModoDataLancamento'}}
+        - {name: dataDe, in: query, schema: {type: string, format: date}}
+        - {name: dataAte, in: query, schema: {type: string, format: date}}
+        - {name: categoriaId, in: query, schema: {type: integer, format: int64, minimum: 1}}
+        - {name: tipo, in: query, schema: {$ref: '#/components/schemas/TipoLancamentoFinanceiro'}}
+        - {name: situacao, in: query, schema: {$ref: '#/components/schemas/SituacaoLancamento'}}
+        - {name: statusAprovacao, in: query, schema: {$ref: '#/components/schemas/StatusAprovacao'}}
+        - {name: eventoId, in: query, schema: {type: integer, format: int64, minimum: 1}}
+        - {name: gestaoId, in: query, schema: {type: integer, format: int64, minimum: 1}}
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - $ref: '#/components/parameters/SortLancamentoFinanceiro'
+      responses:
+        '200':
+          description: Página de lançamentos.
+          content: {application/json: {schema: {$ref: '#/components/schemas/LancamentoFinanceiroPage'}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    post:
+      summary: Cria lançamento financeiro em aberto
+      operationId: createLancamentoFinanceiro
+      description: Receita inicia com aprovação `NAO_APLICAVEL`; despesa inicia `PENDENTE`. A liquidação será tratada em B17.
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/LancamentoFinanceiroCreateRequest'}}}
+      responses:
+        '201':
+          description: Lançamento criado em aberto.
+          content: {application/json: {schema: {$ref: '#/components/schemas/LancamentoFinanceiro'}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /financeiro/lancamentos/{id}:
+    get:
+      summary: Consulta lançamento financeiro
+      operationId: getLancamentoFinanceiro
+      parameters: [{$ref: '#/components/parameters/ResourceId'}]
+      responses:
+        '200':
+          description: Lançamento.
+          content: {application/json: {schema: {$ref: '#/components/schemas/LancamentoFinanceiro'}}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    put:
+      summary: Altera lançamento financeiro aberto
+      operationId: updateLancamentoFinanceiro
+      description: Tipo, aprovação e liquidação não são alterados nesta etapa. Lançamentos liquidados ou cancelados não podem ser alterados.
+      parameters: [{$ref: '#/components/parameters/ResourceId'}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/LancamentoFinanceiroUpdateRequest'}}}
+      responses:
+        '200':
+          description: Lançamento atualizado.
+          content: {application/json: {schema: {$ref: '#/components/schemas/LancamentoFinanceiro'}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
 components:
   schemas:
     ApiError:
@@ -2547,6 +2642,94 @@ components:
         size: {type: integer}
         totalItems: {type: integer, format: int64}
         totalPages: {type: integer}
+    TipoAplicavelCategoria: {type: string, enum: [RECEITA, DESPESA, AMBOS]}
+    TipoLancamentoFinanceiro: {type: string, enum: [RECEITA, DESPESA]}
+    StatusLiquidacao: {type: string, enum: [ABERTO, LIQUIDADO, CANCELADO]}
+    StatusAprovacao: {type: string, enum: [NAO_APLICAVEL, PENDENTE, APROVADA, REJEITADA]}
+    SituacaoLancamento: {type: string, enum: [ABERTO, LIQUIDADO, CANCELADO, VENCIDA]}
+    ModoDataLancamento: {type: string, enum: [COMPETENCIA, VENCIMENTO, LIQUIDACAO], default: COMPETENCIA}
+    ValorMonetarioPositivo:
+      type: string
+      pattern: '^\d+(\.\d+)?$'
+      description: Decimal positivo transmitido como texto; o servidor aplica `HALF_UP` e responde com duas casas.
+      example: '1250.90'
+    CategoriaFinanceira:
+      type: object
+      required: [id, atleticaId, nome, tipoAplicavel, ativa, createdAt, updatedAt, version]
+      properties:
+        id: {type: integer, format: int64}
+        atleticaId: {type: integer, format: int64}
+        nome: {type: string, maxLength: 100}
+        tipoAplicavel: {$ref: '#/components/schemas/TipoAplicavelCategoria'}
+        ativa: {type: boolean}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+        version: {type: integer, format: int64}
+    CategoriaFinanceiraCreateRequest:
+      type: object
+      required: [nome, tipoAplicavel, ativa]
+      properties:
+        nome: {type: string, maxLength: 100}
+        tipoAplicavel: {$ref: '#/components/schemas/TipoAplicavelCategoria'}
+        ativa: {type: boolean}
+    LancamentoFinanceiro:
+      type: object
+      required: [id, atleticaId, tipo, descricao, categoriaId, valor, dataCompetencia, dataVencimento, statusLiquidacao, statusAprovacao, vencido, criadoPorMembroId, createdAt, updatedAt, version]
+      properties:
+        id: {type: integer, format: int64}
+        atleticaId: {type: integer, format: int64}
+        gestaoOrigemId: {type: integer, format: int64, nullable: true}
+        eventoId: {type: integer, format: int64, nullable: true}
+        tipo: {$ref: '#/components/schemas/TipoLancamentoFinanceiro'}
+        descricao: {type: string, maxLength: 250}
+        categoriaId: {type: integer, format: int64}
+        categoriaNome: {type: string}
+        valor: {$ref: '#/components/schemas/ValorMonetarioPositivo'}
+        dataCompetencia: {type: string, format: date}
+        dataVencimento: {type: string, format: date, nullable: true}
+        dataLiquidacao: {type: string, format: date, nullable: true}
+        statusLiquidacao: {$ref: '#/components/schemas/StatusLiquidacao'}
+        statusAprovacao: {$ref: '#/components/schemas/StatusAprovacao'}
+        vencido: {type: boolean, description: "Em aberto com vencimento anterior a hoje no fuso da atlética."}
+        criadoPorMembroId: {type: integer, format: int64}
+        aprovadoPorMembroId: {type: integer, format: int64, nullable: true}
+        aprovadoEm: {type: string, format: date-time, nullable: true}
+        motivoDecisao: {type: string, maxLength: 1000, nullable: true}
+        liquidadoPorMembroId: {type: integer, format: int64, nullable: true}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+        version: {type: integer, format: int64}
+    LancamentoFinanceiroCreateRequest:
+      type: object
+      required: [tipo, descricao, categoriaId, valor, dataCompetencia, dataVencimento]
+      properties:
+        eventoId: {type: integer, format: int64, minimum: 1}
+        tipo: {$ref: '#/components/schemas/TipoLancamentoFinanceiro'}
+        descricao: {type: string, maxLength: 250}
+        categoriaId: {type: integer, format: int64, minimum: 1}
+        valor: {$ref: '#/components/schemas/ValorMonetarioPositivo'}
+        dataCompetencia: {type: string, format: date}
+        dataVencimento: {type: string, format: date}
+    LancamentoFinanceiroUpdateRequest:
+      type: object
+      required: [descricao, categoriaId, valor, dataCompetencia, dataVencimento, version]
+      properties:
+        eventoId: {type: integer, format: int64, minimum: 1}
+        descricao: {type: string, maxLength: 250}
+        categoriaId: {type: integer, format: int64, minimum: 1}
+        valor: {$ref: '#/components/schemas/ValorMonetarioPositivo'}
+        dataCompetencia: {type: string, format: date}
+        dataVencimento: {type: string, format: date}
+        version: {type: integer, format: int64, minimum: 0}
+    LancamentoFinanceiroPage:
+      type: object
+      required: [items, page, size, totalItems, totalPages]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/LancamentoFinanceiro'}}
+        page: {type: integer}
+        size: {type: integer}
+        totalItems: {type: integer, format: int64}
+        totalPages: {type: integer}
     LoginRequest:
       type: object
       required: [email, senha]
@@ -2808,6 +2991,13 @@ components:
       schema:
         type: array
         items: {type: string, pattern: '^(criadaEm|lidaEm)(,(asc|desc|ASC|DESC))?$'}
+    SortLancamentoFinanceiro:
+      name: sort
+      in: query
+      description: "Pode ser repetido: `dataCompetencia`, `dataVencimento`, `dataLiquidacao`, `descricao`, `valor` ou `createdAt`, com `asc` ou `desc`."
+      schema:
+        type: array
+        items: {type: string, pattern: '^(dataCompetencia|dataVencimento|dataLiquidacao|descricao|valor|createdAt)(,(asc|desc|ASC|DESC))?$'}
     SortMembro:
       name: sort
       in: query

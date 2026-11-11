@@ -174,3 +174,13 @@ Criações retornam `201`, consultas e alterações bem-sucedidas retornam `200`
 - Transições: a fazer → em andamento → revisão → concluído; concluir direto vale para quem pode atualizar a tarefa; retornos a em andamento exigem motivo e ficam na atividade auditada.
 - Tarefa atrasada: prazo anterior ao dia atual (fuso da atlética) e status diferente de concluído.
 - Notificações: no dia anterior ao prazo e uma vez por dia enquanto atrasada; não para tarefas concluídas nem responsáveis não ativos; reatribuição avisa o responsável atual.
+
+## Financeiro: categorias e lançamentos
+
+- Categoria financeira pertence à atlética, possui nome único normalizado e pode ser aplicável a `RECEITA`, `DESPESA` ou ambos. Categorias inativas não podem receber novos lançamentos.
+- Todo lançamento pertence à atlética e guarda a gestão ativa como origem quando houver. Evento e gestão informados são sempre resolvidos no escopo da atlética atual; o navegador não define autor, aprovação nem baixa.
+- Receita inicia `ABERTO` e `NAO_APLICAVEL`; despesa inicia `ABERTO` e `PENDENTE`. Todo lançamento aberto exige data de vencimento. A liquidação e a aprovação são operações atômicas da B17.
+- `VENCIDA` é condição derivada: lançamento `ABERTO` com vencimento anterior ao dia atual no fuso da atlética. Não é status persistido.
+- Valores monetários usam `DECIMAL(19,2)`, arredondamento `HALF_UP` no servidor e contrato textual decimal com duas casas. O valor deve ser maior que zero.
+- A consulta financeira detalhada é exclusiva de administrador e financeiro. Filtros de datas usam modo explícito: competência por padrão, vencimento ou liquidação; intervalos são inclusivos.
+- A criação e a alteração de lançamentos, assim como a criação de categorias, registram atividade de auditoria na mesma transação.

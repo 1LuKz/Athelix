@@ -81,3 +81,10 @@ Nesta etapa não há endpoint público para criar ou administrar atléticas. O p
 - Avisa `PRAZO_PROXIMO` no dia anterior ao prazo e `ATRASADA` uma vez por dia enquanto a tarefa estiver aberta. Não notifica tarefas concluídas nem responsáveis não `ATIVO`. Tarefas pós-evento seguem notificáveis.
 - Unicidade: destinatário + tarefa + tipo + data de referência. A reatribuição passa a avisar o responsável atual.
 - `GET /notificacoes` (paginado; padrão mais recentes primeiro), `GET /notificacoes/resumo` e `PATCH /notificacoes/{id}/ler` só enxergam as notificações da própria pessoa.
+
+## Financeiro — categorias e lançamentos
+
+- `GET/POST /financeiro/categorias` são exclusivos de administrador e financeiro. Categoria é própria da atlética, tem nome único sem distinção de caixa/espaços externos e se aplica a `RECEITA`, `DESPESA` ou ambos.
+- `GET/POST /financeiro/lancamentos` e `GET/PUT /financeiro/lancamentos/{id}` usam `valor` como texto decimal; o servidor persiste `DECIMAL(19,2)`, aplica arredondamento `HALF_UP` e responde com duas casas.
+- Receita nasce em `ABERTO` com aprovação `NAO_APLICAVEL`; despesa nasce em `ABERTO` e `PENDENTE`. Vencimento é obrigatório enquanto aberto. Aprovação e liquidação são operações da B17.
+- A listagem filtra por `modoData` (`COMPETENCIA`, `VENCIMENTO` ou `LIQUIDACAO`), intervalo inclusivo, categoria, tipo, situação, aprovação, evento e gestão. Sem `modoData`, o relatório usa competência. `VENCIDA` é calculada no fuso da atlética.

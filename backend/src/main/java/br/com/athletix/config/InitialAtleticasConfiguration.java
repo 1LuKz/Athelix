@@ -12,6 +12,9 @@ import br.com.athletix.cargo.entity.PerfilAcesso;
 import br.com.athletix.cargo.repository.CargoRepository;
 import br.com.athletix.departamento.entity.Departamento;
 import br.com.athletix.departamento.repository.DepartamentoRepository;
+import br.com.athletix.financeiro.entity.CategoriaFinanceira;
+import br.com.athletix.financeiro.entity.TipoAplicavelCategoria;
+import br.com.athletix.financeiro.repository.CategoriaFinanceiraRepository;
 import br.com.athletix.gestao.entity.Gestao;
 import br.com.athletix.gestao.entity.VinculoGestao;
 import br.com.athletix.gestao.repository.GestaoRepository;
@@ -44,11 +47,12 @@ public class InitialAtleticasConfiguration {
             MembroRepository membroRepository,
             GestaoRepository gestaoRepository,
             VinculoGestaoRepository vinculoGestaoRepository,
+            CategoriaFinanceiraRepository categoriaFinanceiraRepository,
             PasswordEncoder passwordEncoder
     ) {
         return args -> criarSeVazio(atleticaRepository, dominioRepository, cadastroService, cargoRepository,
                 departamentoRepository, usuarioRepository, membroRepository, gestaoRepository,
-                vinculoGestaoRepository, passwordEncoder);
+                vinculoGestaoRepository, categoriaFinanceiraRepository, passwordEncoder);
     }
 
     @Transactional
@@ -62,6 +66,7 @@ public class InitialAtleticasConfiguration {
             MembroRepository membroRepository,
             GestaoRepository gestaoRepository,
             VinculoGestaoRepository vinculoGestaoRepository,
+            CategoriaFinanceiraRepository categoriaFinanceiraRepository,
             PasswordEncoder passwordEncoder
     ) {
         if (atleticaRepository.count() > 0) {
@@ -106,5 +111,17 @@ public class InitialAtleticasConfiguration {
         gestaoRepository.save(gestaoInicial);
         vinculoGestaoRepository.save(new VinculoGestao(administradorMembro, gestaoInicial, administrador,
                 diretoria, java.time.Instant.now()));
+
+        criarCategoriasIniciais(categoriaFinanceiraRepository, engenharia);
+        criarCategoriasIniciais(categoriaFinanceiraRepository, saude);
+    }
+
+    private void criarCategoriasIniciais(CategoriaFinanceiraRepository categorias, Atletica atletica) {
+        categorias.save(new CategoriaFinanceira(atletica, "Eventos",
+                NomeNormalizado.fromRequired("Eventos", "nome"), TipoAplicavelCategoria.AMBOS, true));
+        categorias.save(new CategoriaFinanceira(atletica, "Esportivo",
+                NomeNormalizado.fromRequired("Esportivo", "nome"), TipoAplicavelCategoria.DESPESA, true));
+        categorias.save(new CategoriaFinanceira(atletica, "Patrocínio",
+                NomeNormalizado.fromRequired("Patrocínio", "nome"), TipoAplicavelCategoria.RECEITA, true));
     }
 }
