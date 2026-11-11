@@ -8,6 +8,7 @@ import br.com.athletix.cargo.repository.CargoRepository;
 import br.com.athletix.departamento.entity.Departamento;
 import br.com.athletix.departamento.entity.SituacaoDepartamento;
 import br.com.athletix.departamento.repository.DepartamentoRepository;
+import br.com.athletix.gestao.service.VinculoGestaoService;
 import br.com.athletix.membro.dto.MembroActivationRequest;
 import br.com.athletix.membro.dto.MembroCreateRequest;
 import br.com.athletix.membro.dto.MembroCadastroRequest;
@@ -31,6 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.Instant;
 import java.util.List;
 
 /** Regras do vínculo, incluindo elegibilidade de acesso e preservação de histórico na inativação. */
@@ -48,6 +50,7 @@ public class MembroService {
     private final AdministradorAtivoGuard administradorAtivoGuard;
     private final UsuarioService usuarioService;
     private final AtividadeUsuarioService atividadeService;
+    private final VinculoGestaoService vinculoGestaoService;
 
     public MembroService(
             MembroRepository membroRepository,
@@ -60,7 +63,8 @@ public class MembroService {
             PendenciasResponsabilidadeMembroProvider pendenciasProvider,
             AdministradorAtivoGuard administradorAtivoGuard,
             UsuarioService usuarioService,
-            AtividadeUsuarioService atividadeService
+            AtividadeUsuarioService atividadeService,
+            VinculoGestaoService vinculoGestaoService
     ) {
         this.membroRepository = membroRepository;
         this.atleticaRepository = atleticaRepository;
@@ -73,6 +77,7 @@ public class MembroService {
         this.administradorAtivoGuard = administradorAtivoGuard;
         this.usuarioService = usuarioService;
         this.atividadeService = atividadeService;
+        this.vinculoGestaoService = vinculoGestaoService;
     }
 
     /** Associa uma identidade existente pelo e-mail sem alterar seus dados pessoais. */
@@ -149,6 +154,7 @@ public class MembroService {
 
         Membro validador = validarValidador(request.validadoPorMembroId(), departamento);
         membro.ativar(validador);
+        vinculoGestaoService.abrirParaMembroAtivo(membro, Instant.now());
         atividadeService.registrar("MEMBRO_ATIVADO", "MEMBRO", membro.getId(), "Vínculo de membro ativado.");
         return membro;
     }
@@ -168,6 +174,7 @@ public class MembroService {
             throw new BusinessRuleException("O membro possui pendências: " + String.join("; ", pendencias));
         }
         membro.inativar();
+        vinculoGestaoService.encerrarParaMembro(membro, Instant.now());
         atividadeService.registrar("MEMBRO_INATIVADO", "MEMBRO", membro.getId(), "Vínculo de membro inativado.");
         return membro;
     }
@@ -193,6 +200,7 @@ public class MembroService {
             throw new BusinessRuleException("O período do curso deve estar entre 1 e 30.");
         }
         membro.atualizarVinculo(curso, request.periodoCurso(), cargo, departamento);
+        vinculoGestaoService.registrarMudancaDeAtribuicao(membro, cargo, departamento, Instant.now());
         atividadeService.registrar("VINCULO_ATUALIZADO", "MEMBRO", membro.getId(), "Cargo ou departamento do vínculo atualizado.");
         return membro;
     }

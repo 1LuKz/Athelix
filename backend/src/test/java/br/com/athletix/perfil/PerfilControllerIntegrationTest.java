@@ -79,7 +79,7 @@ class PerfilControllerIntegrationTest {
                         .cookie(csrfResult.getResponse().getCookie("XSRF-TOKEN"))
                         .header(csrf.get("headerName").asText(), csrf.get("token").asText())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nome\":\"Coordenação\",\"descricao\":\"Cargo solicitado\",\"perfilAcesso\":\"GESTOR\",\"ativo\":true}"))
+                        .content("{\"nome\":\"Coordenação\",\"descricao\":\"Cargo solicitado\",\"perfilAcesso\":\"ADMINISTRADOR\",\"ativo\":true}"))
                 .andExpect(status().isCreated()).andReturn();
         long cargoId = objectMapper.readTree(cargo.getResponse().getContentAsString()).get("id").asLong();
 

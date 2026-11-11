@@ -114,6 +114,15 @@ Os resumos financeiros para associados não devem expor dados pessoais de contra
 - Uma solicitação de alteração de vínculo nasce `PENDENTE`, guarda os IDs de cargo e departamento anteriores e não muda o vínculo imediatamente. Somente administrador pode aprová-la ou rejeitá-la.
 - A aprovação exige que a solicitação e o membro estejam nas versões informadas, que o vínculo atual ainda corresponda ao estado registrado e que cargo e departamento pretendidos continuem elegíveis. A mudança do vínculo, a decisão e a atividade são atômicas.
 
+## Gestões e histórico de vínculos
+
+- Uma gestão pertence a uma única atlética, tem nome, início, fim previsto, status `PLANEJADA`, `ATIVA` ou `ENCERRADA` e controle otimista de versão. O início nunca pode ser posterior ao fim previsto.
+- Existe no máximo uma gestão `ATIVA` por atlética. A ativação usa bloqueio pessimista da atlética dentro da transação, verifica o status e só então abre os vínculos vigentes dos membros ativos.
+- `VinculoGestao` preserva o membro, a gestão, o cargo, o departamento, o início e o fim de cada período. Troca de cargo ou departamento encerra o período aberto e abre outro no mesmo instante; o passado não é sobrescrito.
+- Ativação e inativação de membro abrem ou encerram, respectivamente, o período da gestão ativa. Se não houver gestão ativa, nenhuma linha artificial é criada.
+- As atividades registradas com uma gestão ativa recebem seu `gestaoId`. Os módulos futuros devem guardar `gestaoOrigemId` nos recursos para os quais a origem é relevante; patrimônio e biblioteca documental permanecem da atlética, ainda que suas versões tenham origem em uma gestão.
+- Eventos em andamento, tarefas abertas, empréstimos e obrigações financeiras pendentes podem atravessar uma troca de gestão. Mantêm a origem e recebem continuidade auditada, sem desaparecer das obrigações atuais. Consultar uma gestão encerrada é histórico e não restaura privilégios antigos.
+
 ## Paginação
 
 - A página é indexada a partir de zero.

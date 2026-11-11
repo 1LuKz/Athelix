@@ -2,6 +2,8 @@ package br.com.athletix.auditoria.service;
 
 import br.com.athletix.auditoria.entity.AtividadeUsuario;
 import br.com.athletix.auditoria.repository.AtividadeUsuarioRepository;
+import br.com.athletix.gestao.entity.StatusGestao;
+import br.com.athletix.gestao.repository.GestaoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,10 +16,13 @@ import java.time.Instant;
 public class AtividadeUsuarioService {
     private final AtividadeUsuarioRepository repository;
     private final ContextoAtividade contextoAtividade;
+    private final GestaoRepository gestaoRepository;
 
-    public AtividadeUsuarioService(AtividadeUsuarioRepository repository, ContextoAtividade contextoAtividade) {
+    public AtividadeUsuarioService(AtividadeUsuarioRepository repository, ContextoAtividade contextoAtividade,
+                                   GestaoRepository gestaoRepository) {
         this.repository = repository;
         this.contextoAtividade = contextoAtividade;
+        this.gestaoRepository = gestaoRepository;
     }
 
     @Transactional
@@ -28,7 +33,10 @@ public class AtividadeUsuarioService {
         }
         repository.save(new AtividadeUsuario(
                 autor.atleticaId(), autor.usuarioId(), autor.membroId(), acao, tipoRecurso, recursoId,
-                resumo, Instant.now(), null
+                resumo, Instant.now(), gestaoRepository
+                        .findByAtletica_IdAndStatus(autor.atleticaId(), StatusGestao.ATIVA)
+                        .map(gestao -> gestao.getId())
+                        .orElse(null)
         ));
     }
 

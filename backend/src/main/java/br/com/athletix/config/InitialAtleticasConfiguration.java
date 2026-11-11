@@ -12,6 +12,10 @@ import br.com.athletix.cargo.entity.PerfilAcesso;
 import br.com.athletix.cargo.repository.CargoRepository;
 import br.com.athletix.departamento.entity.Departamento;
 import br.com.athletix.departamento.repository.DepartamentoRepository;
+import br.com.athletix.gestao.entity.Gestao;
+import br.com.athletix.gestao.entity.VinculoGestao;
+import br.com.athletix.gestao.repository.GestaoRepository;
+import br.com.athletix.gestao.repository.VinculoGestaoRepository;
 import br.com.athletix.membro.entity.Membro;
 import br.com.athletix.membro.repository.MembroRepository;
 import br.com.athletix.shared.normalization.NomeNormalizado;
@@ -38,10 +42,13 @@ public class InitialAtleticasConfiguration {
             DepartamentoRepository departamentoRepository,
             UsuarioRepository usuarioRepository,
             MembroRepository membroRepository,
+            GestaoRepository gestaoRepository,
+            VinculoGestaoRepository vinculoGestaoRepository,
             PasswordEncoder passwordEncoder
     ) {
         return args -> criarSeVazio(atleticaRepository, dominioRepository, cadastroService, cargoRepository,
-                departamentoRepository, usuarioRepository, membroRepository, passwordEncoder);
+                departamentoRepository, usuarioRepository, membroRepository, gestaoRepository,
+                vinculoGestaoRepository, passwordEncoder);
     }
 
     @Transactional
@@ -53,6 +60,8 @@ public class InitialAtleticasConfiguration {
             DepartamentoRepository departamentoRepository,
             UsuarioRepository usuarioRepository,
             MembroRepository membroRepository,
+            GestaoRepository gestaoRepository,
+            VinculoGestaoRepository vinculoGestaoRepository,
             PasswordEncoder passwordEncoder
     ) {
         if (atleticaRepository.count() > 0) {
@@ -89,5 +98,13 @@ public class InitialAtleticasConfiguration {
         diretoria.definirResponsavel(administradorMembro.getId());
         diretoria.ativar();
         departamentoRepository.save(diretoria);
+
+        Gestao gestaoInicial = gestaoRepository.save(new Gestao(
+                engenharia, "Gestão de Demonstração", java.time.LocalDate.now(), java.time.LocalDate.now().plusYears(1)
+        ));
+        gestaoInicial.ativar();
+        gestaoRepository.save(gestaoInicial);
+        vinculoGestaoRepository.save(new VinculoGestao(administradorMembro, gestaoInicial, administrador,
+                diretoria, java.time.Instant.now()));
     }
 }

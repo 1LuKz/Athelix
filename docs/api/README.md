@@ -38,3 +38,11 @@ Nesta etapa não há endpoint público para criar ou administrar atléticas. O p
 - `GET /perfil/atividades` lista os registros de atividade da própria conta na atlética selecionada, por padrão do mais recente ao mais antigo. As ordenações aceitas são `ocorridaEm`, `acao` e `tipoRecurso`.
 - `POST /perfil/solicitacoes-vinculo` cria uma solicitação pendente. `GET /membros/solicitacoes-vinculo` e `PATCH /membros/solicitacoes-vinculo/{id}/decisao` são administrativos; a aprovação aplica a mudança de cargo/departamento na mesma transação.
 - Cada solicitação conserva os IDs de cargo e departamento anteriores, além da decisão, avaliador, datas e versões necessárias para evitar aprovação de dados desatualizados.
+
+## Gestões
+
+- `GET /gestoes`, `GET /gestoes/{id}` e `POST /gestoes` são administrativos e sempre usam a atlética selecionada.
+- A criação gera uma gestão `PLANEJADA`; sua ativação pertence ao fluxo de sucessão da etapa B24. A consulta de uma gestão `ENCERRADA` é somente histórica e não concede novamente as permissões do período.
+- As datas de início e fim prevista são obrigatórias, e o início não pode ser posterior ao fim previsto.
+- A infraestrutura de ativação bloqueia a atlética na transação e impede duas gestões `ATIVA` simultâneas. Ao ativar, abre os períodos de vínculo dos membros ativos.
+- Mudanças de cargo ou departamento encerram o período de `VinculoGestao` em aberto e criam outro; o histórico anterior não é alterado.

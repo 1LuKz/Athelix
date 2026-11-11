@@ -680,6 +680,66 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+  /gestoes:
+    get:
+      summary: Lista as gestões da atlética selecionada
+      operationId: listGestoes
+      description: A consulta é histórica e administrativa; uma gestão encerrada não restaura privilégios antigos.
+      responses:
+        '200':
+          description: Gestões ordenadas por início, da mais recente para a mais antiga.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Gestao'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      summary: Cria uma gestão planejada
+      operationId: createGestao
+      description: A ativação é uma transição administrativa posterior e não é exposta nesta etapa.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GestaoCreateRequest'
+      responses:
+        '201':
+          description: Gestão criada com status PLANEJADA.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Gestao'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /gestoes/{id}:
+    get:
+      summary: Consulta uma gestão no escopo da atlética selecionada
+      operationId: getGestao
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Gestão encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Gestao'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   schemas:
     ApiError:
@@ -1417,6 +1477,56 @@ components:
           type: integer
           format: int64
           minimum: 0
+    StatusGestao:
+      type: string
+      enum: [PLANEJADA, ATIVA, ENCERRADA]
+    Gestao:
+      type: object
+      required: [id, atleticaId, nome, dataInicio, dataFimPrevista, status, version, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        atleticaId:
+          type: integer
+          format: int64
+        nome:
+          type: string
+          maxLength: 80
+        dataInicio:
+          type: string
+          format: date
+        dataFimPrevista:
+          type: string
+          format: date
+        encerradaEm:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          $ref: '#/components/schemas/StatusGestao'
+        version:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    GestaoCreateRequest:
+      type: object
+      required: [nome, dataInicio, dataFimPrevista]
+      properties:
+        nome:
+          type: string
+          maxLength: 80
+        dataInicio:
+          type: string
+          format: date
+        dataFimPrevista:
+          type: string
+          format: date
     LoginRequest:
       type: object
       required: [email, senha]

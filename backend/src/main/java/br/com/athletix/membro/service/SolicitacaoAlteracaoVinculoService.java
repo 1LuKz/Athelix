@@ -6,6 +6,7 @@ import br.com.athletix.cargo.repository.CargoRepository;
 import br.com.athletix.departamento.entity.Departamento;
 import br.com.athletix.departamento.entity.SituacaoDepartamento;
 import br.com.athletix.departamento.repository.DepartamentoRepository;
+import br.com.athletix.gestao.service.VinculoGestaoService;
 import br.com.athletix.membro.dto.SolicitacaoAlteracaoVinculoCreateRequest;
 import br.com.athletix.membro.dto.SolicitacaoAlteracaoVinculoDecisaoRequest;
 import br.com.athletix.membro.entity.DecisaoSolicitacaoAlteracaoVinculo;
@@ -24,6 +25,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+
 /** Fluxo explícito para trocar cargo ou departamento somente após decisão administrativa. */
 @Service
 public class SolicitacaoAlteracaoVinculoService {
@@ -33,18 +36,21 @@ public class SolicitacaoAlteracaoVinculoService {
     private final DepartamentoRepository departamentoRepository;
     private final AtleticaResourceResolver resourceResolver;
     private final AtividadeUsuarioService atividadeService;
+    private final VinculoGestaoService vinculoGestaoService;
 
     public SolicitacaoAlteracaoVinculoService(SolicitacaoAlteracaoVinculoRepository solicitacaoRepository,
                                               MembroRepository membroRepository, CargoRepository cargoRepository,
                                               DepartamentoRepository departamentoRepository,
                                               AtleticaResourceResolver resourceResolver,
-                                              AtividadeUsuarioService atividadeService) {
+                                              AtividadeUsuarioService activityService,
+                                              VinculoGestaoService vinculoGestaoService) {
         this.solicitacaoRepository = solicitacaoRepository;
         this.membroRepository = membroRepository;
         this.cargoRepository = cargoRepository;
         this.departamentoRepository = departamentoRepository;
         this.resourceResolver = resourceResolver;
-        this.atividadeService = atividadeService;
+        this.atividadeService = activityService;
+        this.vinculoGestaoService = vinculoGestaoService;
     }
 
     @Transactional
@@ -111,6 +117,7 @@ public class SolicitacaoAlteracaoVinculoService {
         Departamento departamento = departamentoAtual(solicitacao.getDepartamentoPretendidoId());
         validarDestino(cargo, departamento);
         membro.atualizarVinculo(membro.getCurso(), membro.getPeriodoCurso(), cargo, departamento);
+        vinculoGestaoService.registrarMudancaDeAtribuicao(membro, cargo, departamento, Instant.now());
         solicitacao.aprovar(avaliador, observacao);
         atividadeService.registrar("SOLICITACAO_VINCULO_APROVADA", "SOLICITACAO_ALTERACAO_VINCULO",
                 solicitacao.getId(), "Solicitação aprovada e vínculo atualizado.");
