@@ -25,11 +25,10 @@ public class TarefaAutorizacaoService {
         PerfilAcesso perfil = membro.getPerfilAcesso();
         if (perfil == PerfilAcesso.ADMINISTRADOR) return true;
         if (perfil == PerfilAcesso.MEMBRO) return false;
-        boolean organizador = membro.getId().equals(evento.getCriadoPorMembroId())
-                || responsabilidades.existsByEvento_IdAndAtletica_IdAndMembro_IdAndAtiva(
-                        evento.getId(), membro.getAtleticaId(), membro.getId(), true);
-        if (perfil == PerfilAcesso.FINANCEIRO) return organizador;
-        return organizador || (departamentoId != null && departamentoId.equals(membro.getDepartamentoId()));
+        boolean responsavelDoEvento = responsabilidades.existsByEvento_IdAndAtletica_IdAndMembro_IdAndAtiva(
+                evento.getId(), membro.getAtleticaId(), membro.getId(), true);
+        if (perfil == PerfilAcesso.FINANCEIRO) return responsavelDoEvento;
+        return responsavelDoEvento || (departamentoId != null && departamentoId.equals(membro.getDepartamentoId()));
     }
 
     public void exigirGerenciar(Membro membro, Evento evento, Long departamentoId) {

@@ -85,6 +85,29 @@ class NotificacaoPrazoServiceMockTest {
     }
 
     @Test
+    void geraAvisoDeAtrasoComNovaReferenciaNoDiaSeguinteAoPrazo() {
+        Atletica atletica = ativa("America/Sao_Paulo");
+        Tarefa tarefa = tarefaComPrazo(LocalDate.of(2027, 6, 10));
+        Evento evento = org.mockito.Mockito.mock(Evento.class);
+        when(tarefa.getTitulo()).thenReturn("Entregar relatório");
+        when(tarefa.getEvento()).thenReturn(evento);
+        when(evento.getNome()).thenReturn("Festival");
+
+        when(atleticas.findById(1L)).thenReturn(Optional.of(atletica));
+        when(contexto.abrir(1L)).thenReturn(escopo);
+        when(tarefas.findNotificaveis(1L, LocalDate.of(2027, 6, 12))).thenReturn(List.of(tarefa));
+        when(notificacoes.existsByDestinatarioMembroIdAndTarefaIdAndTipoAndDataReferencia(
+                7L, 9L, TipoNotificacao.ATRASADA, LocalDate.of(2027, 6, 11))).thenReturn(false);
+
+        assertEquals(1, service.gerarParaAtletica(1L, Instant.parse("2027-06-11T15:00:00Z")));
+
+        ArgumentCaptor<Notificacao> captor = ArgumentCaptor.forClass(Notificacao.class);
+        verify(notificacoes).save(captor.capture());
+        assertEquals(TipoNotificacao.ATRASADA, captor.getValue().getTipo());
+        assertEquals(LocalDate.of(2027, 6, 11), captor.getValue().getDataReferencia());
+    }
+
+    @Test
     void ignoraAtleticaInativaSemAbrirContexto() {
         Atletica atletica = org.mockito.Mockito.mock(Atletica.class);
         when(atletica.isAtiva()).thenReturn(false);

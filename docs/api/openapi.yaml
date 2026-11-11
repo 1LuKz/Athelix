@@ -1198,6 +1198,7 @@ paths:
           description: Página de tarefas.
           content: {application/json: {schema: {$ref: '#/components/schemas/TarefaPage'}}}
         '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
     post:
       summary: Cria tarefa de um evento
@@ -1210,6 +1211,7 @@ paths:
           description: Tarefa criada em A_FAZER.
           content: {application/json: {schema: {$ref: '#/components/schemas/Tarefa'}}}
         '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
   /tarefas/{id}:
@@ -1221,6 +1223,7 @@ paths:
         '200':
           description: Tarefa.
           content: {application/json: {schema: {$ref: '#/components/schemas/Tarefa'}}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
     put:
@@ -1236,6 +1239,7 @@ paths:
           description: Tarefa atualizada.
           content: {application/json: {schema: {$ref: '#/components/schemas/Tarefa'}}}
         '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
@@ -1256,6 +1260,7 @@ paths:
           description: Tarefa com o novo status e a nova versão.
           content: {application/json: {schema: {$ref: '#/components/schemas/Tarefa'}}}
         '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
@@ -1269,6 +1274,7 @@ paths:
         '200':
           description: Checklist.
           content: {application/json: {schema: {$ref: '#/components/schemas/ChecklistEvento'}}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
         '404': {$ref: '#/components/responses/NotFound'}
   /notificacoes:
     get:
@@ -1283,6 +1289,7 @@ paths:
         '200':
           description: Página de notificações (padrão, mais recentes primeiro).
           content: {application/json: {schema: {$ref: '#/components/schemas/NotificacaoPage'}}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
   /notificacoes/resumo:
     get:
       summary: Quantidade de notificações não lidas
@@ -1296,6 +1303,7 @@ paths:
                 type: object
                 required: [naoLidas]
                 properties: {naoLidas: {type: integer, format: int64}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
   /notificacoes/{id}/ler:
     patch:
       summary: Marca como lida uma notificação própria
@@ -1306,6 +1314,7 @@ paths:
         '200':
           description: Notificação lida.
           content: {application/json: {schema: {$ref: '#/components/schemas/Notificacao'}}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
         '404': {$ref: '#/components/responses/NotFound'}
 components:
   schemas:

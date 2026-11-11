@@ -170,7 +170,7 @@ Criações retornam `201`, consultas e alterações bem-sucedidas retornam `200`
 ## Tarefas, checklist e notificações de prazo
 
 - Toda tarefa pertence a um evento e à atlética atual; guarda a gestão ativa como `gestaoOrigemId`. O responsável precisa ser membro `ATIVO` da mesma atlética.
-- Gerenciam tarefas: administrador; financeiro e gestor quando organizadores do evento (criador ou responsável ativo); gestor também no próprio departamento. O responsável atualiza o status da própria tarefa. Membro comum só consulta as suas.
+- Gerenciam tarefas: administrador; financeiro quando responsável ativo do evento; gestor quando responsável ativo do evento ou no próprio departamento. O responsável atualiza o status da própria tarefa. Membro comum só consulta as suas.
 - Transições: a fazer → em andamento → revisão → concluído; concluir direto vale para quem pode atualizar a tarefa; retornos a em andamento exigem motivo e ficam na atividade auditada.
 - Tarefa atrasada: prazo anterior ao dia atual (fuso da atlética) e status diferente de concluído.
 - Notificações: no dia anterior ao prazo e uma vez por dia enquanto atrasada; não para tarefas concluídas nem responsáveis não ativos; reatribuição avisa o responsável atual.
