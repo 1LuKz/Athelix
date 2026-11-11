@@ -131,6 +131,13 @@ Os resumos financeiros para associados não devem expor dados pessoais de contra
 - O status começa em `PLANEJADO`. As transições comuns são `PLANEJADO → INSCRICOES_ABERTAS|EM_ANDAMENTO`, `INSCRICOES_ABERTAS → EM_ANDAMENTO` e `EM_ANDAMENTO → CONCLUIDO`. Retornos a estados anteriores exigem administrador, motivo e atividade auditada; não existe status cancelado nesta etapa.
 - Criação, atualização e transição/correção de status são registradas na mesma transação da alteração. A consulta e os filtros são sempre limitados à atlética selecionada; um `gestaoId` de outra atlética retorna `404`.
 
+## Participações em eventos
+
+- `ParticipacaoEvento` é sempre limitada à atlética e ao evento atual. Para participação interna, o membro precisa estar ativo e não pode repetir inscrição no mesmo evento. Para externa, somente nome e e-mail normalizado são coletados, sem criar usuário, e o e-mail é único no evento.
+- A lista e os dados pessoais de participantes externos são acessíveis apenas ao organizador inicial do evento ou a administrador. Enquanto não há equipe própria de organização, o membro que criou o evento é seu organizador.
+- A participação inicia `INSCRITO`, pode avançar para `CONFIRMADO` e `PRESENTE`, e pode ser `CANCELADO` sem apagar o registro. A correção de `PRESENTE` para `CONFIRMADO` requer motivo e é gravada na atividade do servidor.
+- O resumo é cumulativo por estágio: `inscritos` = INSCRITO + CONFIRMADO + PRESENTE; `confirmados` = CONFIRMADO + PRESENTE; `presentes` = PRESENTE. Cada campo é um total próprio, não uma soma de pessoas novas. `participantesEsperados` permanece uma previsão independente.
+
 ## Paginação
 
 - A página é indexada a partir de zero.

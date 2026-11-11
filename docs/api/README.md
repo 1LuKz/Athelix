@@ -53,3 +53,10 @@ Nesta etapa não há endpoint público para criar ou administrar atléticas. O p
 - `grupoStatus=ATIVOS` inclui apenas `INSCRICOES_ABERTAS` e `EM_ANDAMENTO`. A página traz `contagensPorStatus` e `totalAtivos`, calculados com a mesma busca, período e gestão, sem o filtro da aba atual.
 - `POST /eventos` cria o evento como `PLANEJADO` e associa automaticamente a gestão ativa, quando houver. O orçamento é texto decimal não negativo com duas casas; `"0.00"` é válido para evento gratuito.
 - `PATCH /eventos/{id}/status` permite `PLANEJADO → INSCRICOES_ABERTAS` ou `EM_ANDAMENTO`, `INSCRICOES_ABERTAS → EM_ANDAMENTO` e `EM_ANDAMENTO → CONCLUIDO`. Correções para estado anterior exigem administração e motivo registrado. Não há status de cancelamento.
+
+## Participações de eventos
+
+- `GET/POST /eventos/{eventoId}/participacoes`, a alteração de status e o resumo são exclusivos do organizador (membro que criou o evento) ou da administração. Participantes comuns não recebem a lista que contém dados de convidados externos.
+- Uma participação é interna com `membroId` de vínculo ativo, ou externa com `nomeParticipante` e `emailParticipante`. O e-mail externo é normalizado e único por evento; nenhum convite ou conta é criado.
+- Um membro só participa uma vez de cada evento. O status avança de `INSCRITO` para `CONFIRMADO` e `PRESENTE`; `CANCELADO` preserva o histórico. A retirada de presença volta para `CONFIRMADO`, exige motivo e é auditada.
+- O resumo usa nomes explícitos: `inscritos` inclui inscritos, confirmados e presentes; `confirmados` inclui confirmados e presentes; `presentes` inclui somente presentes. `participantesEsperados` é apenas uma previsão e pode não estar preenchido.

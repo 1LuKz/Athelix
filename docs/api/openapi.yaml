@@ -893,6 +893,123 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+  /eventos/{eventoId}/participacoes:
+    get:
+      summary: Lista participações de um evento
+      operationId: listParticipacoesEvento
+      description: >-
+        Restrito ao organizador (membro criador) ou à administração. Nunca é entregue a participantes comuns,
+        pois pode conter nome e e-mail de convidados externos. Ordenações: `status` e `inscritoEm`.
+      parameters:
+        - $ref: '#/components/parameters/EventoId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - $ref: '#/components/parameters/SortParticipacaoEvento'
+      responses:
+        '200':
+          description: Página de participações do evento.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageParticipacaoEvento'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      summary: Adiciona participante interno ou externo
+      operationId: createParticipacaoEvento
+      description: >-
+        Para membro interno, informe somente `membroId`. Para externo, informe somente nome e e-mail;
+        o e-mail é normalizado e não cria uma conta.
+      parameters:
+        - $ref: '#/components/parameters/EventoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParticipacaoEventoCreateRequest'
+      responses:
+        '201':
+          description: Participação criada como INSCRITO.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipacaoEvento'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /eventos/{eventoId}/participacoes/{participacaoId}/status:
+    patch:
+      summary: Transiciona o status de uma participação
+      operationId: updateParticipacaoEventoStatus
+      description: >-
+        Segue INSCRITO → CONFIRMADO → PRESENTE. CANCELADO preserva a participação. A correção
+        PRESENTE → CONFIRMADO exige `motivoCorrecao` e fica auditada.
+      parameters:
+        - $ref: '#/components/parameters/EventoId'
+        - name: participacaoId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParticipacaoEventoStatusUpdateRequest'
+      responses:
+        '200':
+          description: Participação atualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipacaoEvento'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /eventos/{eventoId}/participacoes/resumo:
+    get:
+      summary: Consulta totais cumulativos de participação
+      operationId: getParticipacoesEventoResumo
+      description: >-
+        `inscritos` soma INSCRITO, CONFIRMADO e PRESENTE; `confirmados` soma CONFIRMADO e PRESENTE;
+        `presentes` conta apenas PRESENTE. Os números não representam pessoas adicionais em cada estágio.
+      parameters:
+        - $ref: '#/components/parameters/EventoId'
+      responses:
+        '200':
+          description: Resumo de previsão e participação.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipacaoEventoResumo'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   schemas:
     ApiError:
@@ -1827,6 +1944,130 @@ components:
           type: integer
           format: int64
           minimum: 0
+    StatusParticipacaoEvento:
+      type: string
+      enum: [INSCRITO, CONFIRMADO, PRESENTE, CANCELADO]
+    ParticipacaoEvento:
+      type: object
+      required: [id, atleticaId, eventoId, status, inscritoEm, version, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        atleticaId:
+          type: integer
+          format: int64
+        eventoId:
+          type: integer
+          format: int64
+        membroId:
+          type: integer
+          format: int64
+          nullable: true
+        nomeParticipante:
+          type: string
+          maxLength: 120
+        emailParticipante:
+          type: string
+          format: email
+          maxLength: 254
+          nullable: true
+          description: Disponível somente ao organizador ou administração; preenchido para participante externo.
+        status:
+          $ref: '#/components/schemas/StatusParticipacaoEvento'
+        inscritoEm:
+          type: string
+          format: date-time
+        confirmadoEm:
+          type: string
+          format: date-time
+          nullable: true
+        presencaEm:
+          type: string
+          format: date-time
+          nullable: true
+        version:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    PageParticipacaoEvento:
+      type: object
+      required: [items, page, size, totalItems, totalPages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParticipacaoEvento'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalItems:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+    ParticipacaoEventoCreateRequest:
+      type: object
+      description: Informe `membroId` ou, para externo, `nomeParticipante` e `emailParticipante`, nunca ambos.
+      properties:
+        membroId:
+          type: integer
+          format: int64
+          minimum: 1
+        nomeParticipante:
+          type: string
+          maxLength: 120
+        emailParticipante:
+          type: string
+          format: email
+          maxLength: 254
+    ParticipacaoEventoStatusUpdateRequest:
+      type: object
+      required: [status, version]
+      properties:
+        status:
+          $ref: '#/components/schemas/StatusParticipacaoEvento'
+        motivoCorrecao:
+          type: string
+          maxLength: 500
+          nullable: true
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+    ParticipacaoEventoResumo:
+      type: object
+      required: [eventoId, inscritos, confirmados, presentes]
+      properties:
+        eventoId:
+          type: integer
+          format: int64
+        participantesEsperados:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: Previsão independente das contagens realizadas.
+        inscritos:
+          type: integer
+          format: int64
+          minimum: 0
+          description: INSCRITO + CONFIRMADO + PRESENTE.
+        confirmados:
+          type: integer
+          format: int64
+          minimum: 0
+          description: CONFIRMADO + PRESENTE.
+        presentes:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Apenas PRESENTE.
     LoginRequest:
       type: object
       required: [email, senha]
@@ -2010,6 +2251,14 @@ components:
           schema:
             $ref: '#/components/schemas/ApiError'
   parameters:
+    EventoId:
+      name: eventoId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
     ResourceId:
       name: id
       in: path
@@ -2069,3 +2318,12 @@ components:
         items:
           type: string
           pattern: '^(ocorridaEm|acao|tipoRecurso)(,(asc|desc|ASC|DESC))?$'
+    SortParticipacaoEvento:
+      name: sort
+      in: query
+      description: "Pode ser repetido: `status` ou `inscritoEm`, com `asc` ou `desc`."
+      schema:
+        type: array
+        items:
+          type: string
+          pattern: '^(status|inscritoEm)(,(asc|desc|ASC|DESC))?$'
