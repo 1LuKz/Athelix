@@ -1,2 +1,43 @@
-package br.com.athletix.notificacao.service; import br.com.athletix.notificacao.entity.*; import br.com.athletix.notificacao.repository.*; import br.com.athletix.tarefa.entity.*; import br.com.athletix.tarefa.repository.*; import org.springframework.scheduling.annotation.*; import org.springframework.stereotype.*; import org.springframework.transaction.annotation.*; import java.time.*;
-@Component @EnableScheduling public class NotificacaoPrazoScheduler{final TarefaRepository t;final NotificacaoRepository n;public NotificacaoPrazoScheduler(TarefaRepository t,NotificacaoRepository n){this.t=t;this.n=n;}@Scheduled(fixedDelayString="${athletix.notificacoes.intervalo-ms:3600000}")@Transactional public void executar(){LocalDate h=LocalDate.now();for(Tarefa x:t.findAllByPrazoIsNotNull()){if(x.getStatus()==StatusTarefa.CONCLUIDO||x.getResponsavelMembroId()==null)continue;TipoNotificacao tipo=x.getPrazo().isBefore(h)?TipoNotificacao.ATRASADA:x.getPrazo().equals(h.plusDays(1))?TipoNotificacao.PRAZO_PROXIMO:null;if(tipo!=null&&!n.existsByDestinatarioMembroIdAndTarefaIdAndTipoAndDataReferencia(x.getResponsavelMembroId(),x.getId(),tipo,h))n.save(new Notificacao(x.getAtleticaId(),x.getResponsavelMembroId(),x.getId(),tipo,h,tipo==TipoNotificacao.ATRASADA?"Tarefa atrasada":"Prazo próximo",x.getTitulo()));}}}
+package br.com.athletix.notificacao.service;
+
+import java.time.Instant;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import br.com.athletix.atletica.entity.Atletica;
+import br.com.athletix.atletica.repository.AtleticaRepository;
+
+@Component
+@EnableScheduling
+public class NotificacaoPrazoScheduler {
+    private static final Logger log = LoggerFactory.getLogger(NotificacaoPrazoScheduler.class);
+
+    private final AtleticaRepository atleticas;
+    private final NotificacaoPrazoService service;
+
+    public NotificacaoPrazoScheduler(AtleticaRepository atleticas, NotificacaoPrazoService service) {
+        this.atleticas = atleticas;
+        this.service = service;
+    }
+
+    @Scheduled(fixedDelayString = "${athletix.notificacoes.intervalo-ms:3600000}",
+            initialDelayString = "${athletix.notificacoes.atraso-inicial-ms:60000}")
+    public void executar() {
+        Instant agora = Instant.now();
+        for (Atletica atletica : atleticas.findAllByAtivaTrue()) {
+            try {
+                int criadas = service.gerarParaAtletica(atletica.getId(), agora);
+                if (criadas > 0) {
+                    log.info("Atlética {}: {} aviso(s) de prazo gerado(s).", atletica.getId(), criadas);
+                }
+            } catch (RuntimeException e) {
+                // uma atlética com erro não impede as demais; a próxima execução tenta de novo
+                log.error("Falha ao gerar avisos de prazo da atlética {}.", atletica.getId(), e);
+            }
+        }
+    }
+}

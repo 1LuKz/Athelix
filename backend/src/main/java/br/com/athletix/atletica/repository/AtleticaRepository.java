@@ -21,4 +21,6 @@ public interface AtleticaRepository extends JpaRepository<Atletica, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select atletica from Atletica atletica where atletica.id = :atleticaId")
     Optional<Atletica> findByIdForUpdate(Long atleticaId);
+
+    java.util.List<Atletica> findAllByAtivaTrue();
 }

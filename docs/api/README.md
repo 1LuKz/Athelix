@@ -66,3 +66,18 @@ Nesta etapa não há endpoint público para criar ou administrar atléticas. O p
 - `GET/POST /eventos/{eventoId}/cronograma`, `PUT/DELETE /eventos/{eventoId}/cronograma/{atividadeId}` são operações de organização. O cronograma ordena por data completa, horário, ordem e ID; início e fim devem caber no período do evento.
 - `GET/POST /eventos/{eventoId}/responsaveis`, `PUT/DELETE /eventos/{eventoId}/responsaveis/{responsabilidadeId}` administram as áreas `COORDENACAO_GERAL`, `FINANCEIRO` e `COMUNICACAO`. Há um responsável ativo por área, mas uma pessoa pode acumular áreas.
 - A substituição encerra a designação anterior e cria outra. A remoção também apenas encerra a designação; `incluirHistorico=true` permite consultar as anteriores. Todas as ações exigem `version` e são auditadas.
+
+## Tarefas e checklist
+
+- `GET /tarefas` aceita `eventoId`, `responsavelMembroId`, `departamentoId`, `prioridade`, `status`, `prazoDe`, `prazoAte`, `atrasada`, `page`, `size` e `sort` (`prazo`, `titulo`, `createdAt`). Membro comum só recebe as tarefas atribuídas a ele.
+- `atrasada` é derivada: prazo anterior ao dia atual no fuso da atlética e status diferente de `CONCLUIDO`. Prioridade e atraso são atributos distintos.
+- O responsável deve ser membro `ATIVO` da atlética; a troca de responsável (`PUT`) é de quem gerencia a tarefa.
+- `PATCH /tarefas/{id}/status` serve ao quadro e ao checklist. Retorno para `EM_ANDAMENTO` (de `REVISAO` ou `CONCLUIDO`) exige `motivo`; concluir direto é permitido ao responsável e à coordenação autorizada.
+- `GET /eventos/{eventoId}/checklist` deriva total, concluídas e progresso (0 quando não há tarefas, com mensagem explicativa).
+
+## Notificações de prazo
+
+- A rotina roda para cada atlética ativa com o fuso dela. Intervalo: `athletix.notificacoes.intervalo-ms` (padrão 1 h); espera inicial: `athletix.notificacoes.atraso-inicial-ms`.
+- Avisa `PRAZO_PROXIMO` no dia anterior ao prazo e `ATRASADA` uma vez por dia enquanto a tarefa estiver aberta. Não notifica tarefas concluídas nem responsáveis não `ATIVO`. Tarefas pós-evento seguem notificáveis.
+- Unicidade: destinatário + tarefa + tipo + data de referência. A reatribuição passa a avisar o responsável atual.
+- `GET /notificacoes` (paginado; padrão mais recentes primeiro), `GET /notificacoes/resumo` e `PATCH /notificacoes/{id}/ler` só enxergam as notificações da própria pessoa.

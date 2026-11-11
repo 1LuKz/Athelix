@@ -1,2 +1,89 @@
-package br.com.athletix.notificacao.entity; import br.com.athletix.shared.persistence.AuditableEntity; import jakarta.persistence.*; import java.time.*;
-@Entity @Table(name="notificacoes",uniqueConstraints=@UniqueConstraint(columnNames={"destinatario_membro_id","tarefa_id","tipo","data_referencia"})) public class Notificacao extends AuditableEntity{@Column(name="atletica_id",nullable=false)Long atleticaId;@Column(name="destinatario_membro_id",nullable=false)Long destinatarioMembroId;@Column(name="tarefa_id",nullable=false)Long tarefaId;@Enumerated(EnumType.STRING)TipoNotificacao tipo;LocalDate dataReferencia;@Column(length=160)String titulo;@Column(length=500)String mensagem;Instant lidaEm;protected Notificacao(){}public Notificacao(Long a,Long d,Long t,TipoNotificacao x,LocalDate r,String ti,String m){atleticaId=a;destinatarioMembroId=d;tarefaId=t;tipo=x;dataReferencia=r;titulo=ti;mensagem=m;}public Long getAtleticaId(){return atleticaId;}public Long getDestinatarioMembroId(){return destinatarioMembroId;}public Long getTarefaId(){return tarefaId;}public TipoNotificacao getTipo(){return tipo;}public LocalDate getDataReferencia(){return dataReferencia;}public String getTitulo(){return titulo;}public String getMensagem(){return mensagem;}public Instant getLidaEm(){return lidaEm;}public void ler(){lidaEm=Instant.now();}}
+package br.com.athletix.notificacao.entity;
+
+import java.time.Instant;
+import java.time.LocalDate;
+
+import br.com.athletix.shared.persistence.AuditableEntity;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+
+@Entity
+@Table(name = "notificacoes", uniqueConstraints = @UniqueConstraint(columnNames = {"destinatario_membro_id", "tarefa_id", "tipo", "data_referencia"}))
+public class Notificacao extends AuditableEntity {
+
+    @Column(name = "atletica_id", nullable = false)
+    Long atleticaId;
+
+    @Column(name = "destinatario_membro_id", nullable = false)
+    Long destinatarioMembroId;
+    
+    @Column(name = "tarefa_id", nullable = false)
+    Long tarefaId;
+    
+    @Enumerated(EnumType.STRING) @Column(nullable=false,length=16)    
+    TipoNotificacao tipo;
+
+    @Column(name="data_referencia",nullable=false) 
+    LocalDate dataReferencia;
+    
+    @Column(nullable=false,length=160)
+    String titulo;
+    
+    @Column(nullable=false,length=500)
+    String mensagem;
+    
+    Instant lidaEm;
+
+    protected Notificacao() {
+    }
+
+    public Notificacao(Long a, Long d, Long t, TipoNotificacao x, LocalDate r, String ti, String m) {
+        atleticaId = a;
+        destinatarioMembroId = d;
+        tarefaId = t;
+        tipo = x;
+        dataReferencia = r;
+        titulo = ti;
+        mensagem = m;
+    }
+
+    public Long getAtleticaId() {
+        return atleticaId;
+    }
+
+    public Long getDestinatarioMembroId() {
+        return destinatarioMembroId;
+    }
+
+    public Long getTarefaId() {
+        return tarefaId;
+    }
+
+    public TipoNotificacao getTipo() {
+        return tipo;
+    }
+
+    public LocalDate getDataReferencia() {
+        return dataReferencia;
+    }
+
+    public String getTitulo() {
+        return titulo;
+    }
+
+    public String getMensagem() {
+        return mensagem;
+    }
+
+    public Instant getLidaEm() {
+        return lidaEm;
+    }
+
+    public void ler(){ 
+        if(lidaEm==null) lidaEm=Instant.now(); 
+    } // idempotente: mantém a primeira leitura
+}

@@ -1,2 +1,47 @@
-package br.com.athletix.notificacao.service; import br.com.athletix.notificacao.entity.*; import br.com.athletix.notificacao.repository.*; import br.com.athletix.shared.exception.*; import br.com.athletix.shared.tenancy.*; import org.springframework.stereotype.*; import org.springframework.transaction.annotation.*; import java.util.*;
-@Service public class NotificacaoService{final NotificacaoRepository r;final AtleticaResourceResolver c;public NotificacaoService(NotificacaoRepository r,AtleticaResourceResolver c){this.r=r;this.c=c;}@Transactional(readOnly=true)public List<Notificacao> listar(Long membro){return r.findAllByDestinatarioMembroIdAndAtleticaIdOrderByCreatedAtDesc(membro,c.atleticaIdAtual());}@Transactional(readOnly=true)public long naoLidas(Long membro){return r.countByDestinatarioMembroIdAndAtleticaIdAndLidaEmIsNull(membro,c.atleticaIdAtual());}@Transactional public Notificacao ler(Long id,Long membro){var n=r.findByIdAndDestinatarioMembroIdAndAtleticaId(id,membro,c.atleticaIdAtual()).orElseThrow(ResourceNotFoundException::new);n.ler();return n;}}
+package br.com.athletix.notificacao.service;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import br.com.athletix.notificacao.dto.NotificacaoResponse;
+import br.com.athletix.notificacao.entity.Notificacao;
+import br.com.athletix.notificacao.repository.NotificacaoRepository;
+import br.com.athletix.shared.exception.ResourceNotFoundException;
+import br.com.athletix.shared.pagination.PageResponse;
+import br.com.athletix.shared.tenancy.AtleticaResourceResolver;
+
+@Service
+public class NotificacaoService {
+    private final NotificacaoRepository repository;
+    private final AtleticaResourceResolver resolver;
+
+    public NotificacaoService(NotificacaoRepository repository, AtleticaResourceResolver resolver) {
+        this.repository = repository;
+        this.resolver = resolver;
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<NotificacaoResponse> listar(Long membroId, boolean apenasNaoLidas, Pageable pageable) {
+        Long atleticaId = resolver.atleticaIdAtual();
+        Page<Notificacao> pagina = apenasNaoLidas
+                ? repository.findAllByDestinatarioMembroIdAndAtleticaIdAndLidaEmIsNull(membroId, atleticaId, pageable)
+                : repository.findAllByDestinatarioMembroIdAndAtleticaId(membroId, atleticaId, pageable);
+        return PageResponse.from(pagina, NotificacaoResponse::from);
+    }
+
+    @Transactional(readOnly = true)
+    public NotificacaoResponse.Resumo resumo(Long membroId) {
+        return new NotificacaoResponse.Resumo(
+                repository.countByDestinatarioMembroIdAndAtleticaIdAndLidaEmIsNull(membroId, resolver.atleticaIdAtual()));
+    }
+
+    @Transactional
+    public NotificacaoResponse ler(Long id, Long membroId) {
+        Notificacao n = repository.findByIdAndDestinatarioMembroIdAndAtleticaId(id, membroId, resolver.atleticaIdAtual())
+                .orElseThrow(ResourceNotFoundException::new); // de outra pessoa = 404
+        n.ler();
+        return NotificacaoResponse.from(n);
+    }
+}
