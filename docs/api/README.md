@@ -60,3 +60,9 @@ Nesta etapa não há endpoint público para criar ou administrar atléticas. O p
 - Uma participação é interna com `membroId` de vínculo ativo, ou externa com `nomeParticipante` e `emailParticipante`. O e-mail externo é normalizado e único por evento; nenhum convite ou conta é criado.
 - Um membro só participa uma vez de cada evento. O status avança de `INSCRITO` para `CONFIRMADO` e `PRESENTE`; `CANCELADO` preserva o histórico. A retirada de presença volta para `CONFIRMADO`, exige motivo e é auditada.
 - O resumo usa nomes explícitos: `inscritos` inclui inscritos, confirmados e presentes; `confirmados` inclui confirmados e presentes; `presentes` inclui somente presentes. `participantesEsperados` é apenas uma previsão e pode não estar preenchido.
+
+## Cronograma e responsáveis
+
+- `GET/POST /eventos/{eventoId}/cronograma`, `PUT/DELETE /eventos/{eventoId}/cronograma/{atividadeId}` são operações de organização. O cronograma ordena por data completa, horário, ordem e ID; início e fim devem caber no período do evento.
+- `GET/POST /eventos/{eventoId}/responsaveis`, `PUT/DELETE /eventos/{eventoId}/responsaveis/{responsabilidadeId}` administram as áreas `COORDENACAO_GERAL`, `FINANCEIRO` e `COMUNICACAO`. Há um responsável ativo por área, mas uma pessoa pode acumular áreas.
+- A substituição encerra a designação anterior e cria outra. A remoção também apenas encerra a designação; `incluirHistorico=true` permite consultar as anteriores. Todas as ações exigem `version` e são auditadas.

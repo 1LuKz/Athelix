@@ -1010,6 +1010,172 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /eventos/{eventoId}/cronograma:
+    get:
+      summary: Lista cronograma do evento
+      operationId: listCronogramaEvento
+      parameters:
+        - $ref: '#/components/parameters/EventoId'
+      responses:
+        '200':
+          description: Itens ordenados por data completa, horário, ordem e ID.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AtividadeCronograma'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      summary: Adiciona atividade ao cronograma
+      operationId: createAtividadeCronograma
+      parameters:
+        - $ref: '#/components/parameters/EventoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AtividadeCronogramaCreateRequest'
+      responses:
+        '201':
+          description: Atividade criada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AtividadeCronograma'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /eventos/{eventoId}/cronograma/{atividadeId}:
+    put:
+      summary: Altera atividade do cronograma
+      operationId: updateAtividadeCronograma
+      parameters:
+        - $ref: '#/components/parameters/EventoId'
+        - $ref: '#/components/parameters/AtividadeCronogramaId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AtividadeCronogramaUpdateRequest'
+      responses:
+        '200':
+          description: Atividade atualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AtividadeCronograma'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      summary: Remove atividade atual do cronograma
+      operationId: deleteAtividadeCronograma
+      parameters:
+        - $ref: '#/components/parameters/EventoId'
+        - $ref: '#/components/parameters/AtividadeCronogramaId'
+        - $ref: '#/components/parameters/VersionQuery'
+      responses:
+        '204':
+          description: Atividade removida com atividade de auditoria preservada.
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /eventos/{eventoId}/responsaveis:
+    get:
+      summary: Lista responsáveis ativos ou histórico do evento
+      operationId: listResponsaveisEvento
+      parameters:
+        - $ref: '#/components/parameters/EventoId'
+        - name: incluirHistorico
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Uma responsabilidade ativa por área; a mesma pessoa pode acumular áreas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ResponsabilidadeEvento'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      summary: Designa responsável ativo para uma área
+      operationId: createResponsabilidadeEvento
+      parameters:
+        - $ref: '#/components/parameters/EventoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResponsabilidadeEventoCreateRequest'
+      responses:
+        '201':
+          description: Responsabilidade criada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsabilidadeEvento'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /eventos/{eventoId}/responsaveis/{responsabilidadeId}:
+    put:
+      summary: Substitui o responsável de uma área
+      operationId: replaceResponsabilidadeEvento
+      description: Encerra a designação atual e cria outra, sem apagar o histórico.
+      parameters:
+        - $ref: '#/components/parameters/EventoId'
+        - $ref: '#/components/parameters/ResponsabilidadeEventoId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResponsabilidadeEventoUpdateRequest'
+      responses:
+        '200':
+          description: Nova designação ativa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsabilidadeEvento'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      summary: Encerra responsabilidade atual sem apagar histórico
+      operationId: deleteResponsabilidadeEvento
+      parameters:
+        - $ref: '#/components/parameters/EventoId'
+        - $ref: '#/components/parameters/ResponsabilidadeEventoId'
+        - $ref: '#/components/parameters/VersionQuery'
+      responses:
+        '204':
+          description: Designação encerrada.
+        '409':
+          $ref: '#/components/responses/Conflict'
 components:
   schemas:
     ApiError:
@@ -2068,6 +2234,73 @@ components:
           format: int64
           minimum: 0
           description: Apenas PRESENTE.
+    StatusAtividadeCronograma:
+      type: string
+      enum: [AGENDADO, EM_ANDAMENTO, CONCLUIDO]
+    AtividadeCronograma:
+      type: object
+      required: [id, atleticaId, eventoId, titulo, inicio, status, ordem, version, createdAt, updatedAt]
+      properties:
+        id: {type: integer, format: int64}
+        atleticaId: {type: integer, format: int64}
+        eventoId: {type: integer, format: int64}
+        titulo: {type: string, maxLength: 160}
+        descricao: {type: string, maxLength: 1000, nullable: true}
+        inicio: {type: string, format: date-time}
+        fim: {type: string, format: date-time, nullable: true}
+        status: {$ref: '#/components/schemas/StatusAtividadeCronograma'}
+        ordem: {type: integer, minimum: 0}
+        version: {type: integer, format: int64}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    AtividadeCronogramaCreateRequest:
+      type: object
+      required: [titulo, inicio, ordem]
+      properties:
+        titulo: {type: string, maxLength: 160}
+        descricao: {type: string, maxLength: 1000}
+        inicio: {type: string, format: date-time}
+        fim: {type: string, format: date-time}
+        status: {$ref: '#/components/schemas/StatusAtividadeCronograma'}
+        ordem: {type: integer, minimum: 0}
+    AtividadeCronogramaUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/AtividadeCronogramaCreateRequest'
+        - type: object
+          required: [status, version]
+          properties:
+            version: {type: integer, format: int64, minimum: 0}
+    AreaResponsabilidadeEvento:
+      type: string
+      enum: [COORDENACAO_GERAL, FINANCEIRO, COMUNICACAO]
+    ResponsabilidadeEvento:
+      type: object
+      required: [id, atleticaId, eventoId, membroId, area, ativa, version, createdAt, updatedAt]
+      properties:
+        id: {type: integer, format: int64}
+        atleticaId: {type: integer, format: int64}
+        eventoId: {type: integer, format: int64}
+        membroId: {type: integer, format: int64}
+        membroNome: {type: string}
+        area: {$ref: '#/components/schemas/AreaResponsabilidadeEvento'}
+        ativa: {type: boolean}
+        encerradaEm: {type: string, format: date-time, nullable: true}
+        encerradaPorMembroId: {type: integer, format: int64, nullable: true}
+        version: {type: integer, format: int64}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    ResponsabilidadeEventoCreateRequest:
+      type: object
+      required: [membroId, area]
+      properties:
+        membroId: {type: integer, format: int64, minimum: 1}
+        area: {$ref: '#/components/schemas/AreaResponsabilidadeEvento'}
+    ResponsabilidadeEventoUpdateRequest:
+      type: object
+      required: [membroId, version]
+      properties:
+        membroId: {type: integer, format: int64, minimum: 1}
+        version: {type: integer, format: int64, minimum: 0}
     LoginRequest:
       type: object
       required: [email, senha]
@@ -2251,6 +2484,21 @@ components:
           schema:
             $ref: '#/components/schemas/ApiError'
   parameters:
+    AtividadeCronogramaId:
+      name: atividadeId
+      in: path
+      required: true
+      schema: {type: integer, format: int64, minimum: 1}
+    ResponsabilidadeEventoId:
+      name: responsabilidadeId
+      in: path
+      required: true
+      schema: {type: integer, format: int64, minimum: 1}
+    VersionQuery:
+      name: version
+      in: query
+      required: true
+      schema: {type: integer, format: int64, minimum: 0}
     EventoId:
       name: eventoId
       in: path

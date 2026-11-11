@@ -138,6 +138,13 @@ Os resumos financeiros para associados não devem expor dados pessoais de contra
 - A participação inicia `INSCRITO`, pode avançar para `CONFIRMADO` e `PRESENTE`, e pode ser `CANCELADO` sem apagar o registro. A correção de `PRESENTE` para `CONFIRMADO` requer motivo e é gravada na atividade do servidor.
 - O resumo é cumulativo por estágio: `inscritos` = INSCRITO + CONFIRMADO + PRESENTE; `confirmados` = CONFIRMADO + PRESENTE; `presentes` = PRESENTE. Cada campo é um total próprio, não uma soma de pessoas novas. `participantesEsperados` permanece uma previsão independente.
 
+## Cronograma e responsabilidades de evento
+
+- `AtividadeCronograma` usa data e horário completos, com início obrigatório, fim opcional e ordem. Os instantes devem estar dentro do período do evento; quando houver fim, ele não pode ser anterior ao início. A ordenação é por início, ordem e ID, para distinguir dias e horários iguais.
+- Atividades podem ser criadas, alteradas ou removidas somente por organizadores ou administração. A remoção exige versão e mantém a atividade de auditoria.
+- `ResponsabilidadeEvento` aceita as áreas `COORDENACAO_GERAL`, `FINANCEIRO` e `COMUNICACAO`. Só membros ativos da mesma atlética podem ser designados; há no máximo uma designação ativa por área, embora o mesmo membro possa acumular áreas.
+- Trocar ou remover responsável encerra a designação, com data e autor, sem apagar o registro anterior. A consulta padrão mostra designações ativas; o histórico é disponível explicitamente. Criação, substituição e remoção são auditadas na mesma transação.
+
 ## Paginação
 
 - A página é indexada a partir de zero.
