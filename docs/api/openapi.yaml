@@ -740,6 +740,159 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /eventos:
+    get:
+      summary: Lista eventos no escopo da atlética selecionada
+      operationId: listEventos
+      description: >-
+        Pesquisa por nome e filtra eventos que se sobrepõem ao intervalo informado. As contagens das abas
+        usam os filtros de busca, data e gestão, sem aplicar o filtro `status` ou `grupoStatus` da própria aba.
+      parameters:
+        - name: busca
+          in: query
+          schema:
+            type: string
+        - name: inicioDe
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: inicioAte
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/StatusEvento'
+        - name: grupoStatus
+          in: query
+          schema:
+            $ref: '#/components/schemas/GrupoStatusEvento'
+        - name: gestaoId
+          in: query
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - $ref: '#/components/parameters/SortEvento'
+      responses:
+        '200':
+          description: Página de eventos e contagens consistentes para as abas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageEvento'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      summary: Cria um evento planejado
+      operationId: createEvento
+      description: Exclusivo de administrador nesta etapa. A origem é a gestão ativa do servidor, quando houver.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventoCreateRequest'
+      responses:
+        '201':
+          description: Evento criado com status PLANEJADO.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evento'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /eventos/{id}:
+    get:
+      summary: Consulta um evento da atlética selecionada
+      operationId: getEvento
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      responses:
+        '200':
+          description: Evento encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evento'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      summary: Atualiza os dados de um evento
+      operationId: updateEvento
+      description: Exclusivo de administrador; a transição de status usa a rota própria.
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventoUpdateRequest'
+      responses:
+        '200':
+          description: Evento atualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evento'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /eventos/{id}/status:
+    patch:
+      summary: Transiciona ou corrige o status de um evento
+      operationId: updateEventoStatus
+      description: >-
+        Avanços seguem PLANEJADO → INSCRICOES_ABERTAS/EM_ANDAMENTO → CONCLUIDO. Uma volta para
+        status anterior exige administrador e `motivoCorrecao`; não existe status de cancelamento nesta API.
+      parameters:
+        - $ref: '#/components/parameters/ResourceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventoStatusUpdateRequest'
+      responses:
+        '200':
+          description: Status atualizado e atividade registrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evento'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 components:
   schemas:
     ApiError:
@@ -1527,6 +1680,153 @@ components:
         dataFimPrevista:
           type: string
           format: date
+    StatusEvento:
+      type: string
+      enum: [PLANEJADO, INSCRICOES_ABERTAS, EM_ANDAMENTO, CONCLUIDO]
+    GrupoStatusEvento:
+      type: string
+      enum: [ATIVOS]
+      description: ATIVOS contém INSCRICOES_ABERTAS e EM_ANDAMENTO.
+    Evento:
+      type: object
+      required: [id, atleticaId, nome, inicio, fim, local, orcamentoPrevisto, status, criadoPorMembroId, version, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        atleticaId:
+          type: integer
+          format: int64
+        gestaoOrigemId:
+          type: integer
+          format: int64
+          nullable: true
+        nome:
+          type: string
+          maxLength: 160
+        descricao:
+          type: string
+          maxLength: 5000
+          nullable: true
+        inicio:
+          type: string
+          format: date-time
+        fim:
+          type: string
+          format: date-time
+        local:
+          type: string
+          maxLength: 200
+        cidade:
+          type: string
+          maxLength: 120
+          nullable: true
+        uf:
+          type: string
+          pattern: '^[A-Z]{2}$'
+          nullable: true
+        orcamentoPrevisto:
+          allOf:
+            - $ref: '#/components/schemas/MonetaryValue'
+          description: Decimal não negativo, com duas casas; zero representa evento gratuito.
+        participantesEsperados:
+          type: integer
+          minimum: 0
+          nullable: true
+        status:
+          $ref: '#/components/schemas/StatusEvento'
+        criadoPorMembroId:
+          type: integer
+          format: int64
+        version:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    PageEvento:
+      type: object
+      required: [items, page, size, totalItems, totalPages, contagensPorStatus, totalAtivos]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Evento'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalItems:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+        contagensPorStatus:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+        totalAtivos:
+          type: integer
+          format: int64
+    EventoCreateRequest:
+      type: object
+      required: [nome, inicio, fim, local, orcamentoPrevisto]
+      properties:
+        nome:
+          type: string
+          maxLength: 160
+        descricao:
+          type: string
+          maxLength: 5000
+        inicio:
+          type: string
+          format: date-time
+        fim:
+          type: string
+          format: date-time
+        local:
+          type: string
+          maxLength: 200
+        cidade:
+          type: string
+          maxLength: 120
+        uf:
+          type: string
+          pattern: '^[A-Za-z]{2}$'
+        orcamentoPrevisto:
+          type: string
+          example: '0.00'
+        participantesEsperados:
+          type: integer
+          minimum: 0
+    EventoUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/EventoCreateRequest'
+        - type: object
+          required: [version]
+          properties:
+            version:
+              type: integer
+              format: int64
+              minimum: 0
+    EventoStatusUpdateRequest:
+      type: object
+      required: [status, version]
+      properties:
+        status:
+          $ref: '#/components/schemas/StatusEvento'
+        motivoCorrecao:
+          type: string
+          maxLength: 500
+          nullable: true
+        version:
+          type: integer
+          format: int64
+          minimum: 0
     LoginRequest:
       type: object
       required: [email, senha]

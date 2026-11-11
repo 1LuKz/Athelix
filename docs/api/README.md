@@ -46,3 +46,10 @@ Nesta etapa não há endpoint público para criar ou administrar atléticas. O p
 - As datas de início e fim prevista são obrigatórias, e o início não pode ser posterior ao fim previsto.
 - A infraestrutura de ativação bloqueia a atlética na transação e impede duas gestões `ATIVA` simultâneas. Ao ativar, abre os períodos de vínculo dos membros ativos.
 - Mudanças de cargo ou departamento encerram o período de `VinculoGestao` em aberto e criam outro; o histórico anterior não é alterado.
+
+## Eventos
+
+- `GET /eventos` recebe `busca`, `inicioDe`, `inicioAte`, `status`, `grupoStatus`, `gestaoId`, `page`, `size` e `sort`. As ordenações permitidas são `nome`, `inicio`, `fim`, `status`, `orcamentoPrevisto` e `createdAt`.
+- `grupoStatus=ATIVOS` inclui apenas `INSCRICOES_ABERTAS` e `EM_ANDAMENTO`. A página traz `contagensPorStatus` e `totalAtivos`, calculados com a mesma busca, período e gestão, sem o filtro da aba atual.
+- `POST /eventos` cria o evento como `PLANEJADO` e associa automaticamente a gestão ativa, quando houver. O orçamento é texto decimal não negativo com duas casas; `"0.00"` é válido para evento gratuito.
+- `PATCH /eventos/{id}/status` permite `PLANEJADO → INSCRICOES_ABERTAS` ou `EM_ANDAMENTO`, `INSCRICOES_ABERTAS → EM_ANDAMENTO` e `EM_ANDAMENTO → CONCLUIDO`. Correções para estado anterior exigem administração e motivo registrado. Não há status de cancelamento.

@@ -123,6 +123,14 @@ Os resumos financeiros para associados não devem expor dados pessoais de contra
 - As atividades registradas com uma gestão ativa recebem seu `gestaoId`. Os módulos futuros devem guardar `gestaoOrigemId` nos recursos para os quais a origem é relevante; patrimônio e biblioteca documental permanecem da atlética, ainda que suas versões tenham origem em uma gestão.
 - Eventos em andamento, tarefas abertas, empréstimos e obrigações financeiras pendentes podem atravessar uma troca de gestão. Mantêm a origem e recebem continuidade auditada, sem desaparecer das obrigações atuais. Consultar uma gestão encerrada é histórico e não restaura privilégios antigos.
 
+## Eventos
+
+- Todo evento pertence à atlética atual e guarda a gestão ativa como `gestaoOrigemId`, quando existir. A autoria vem do membro autenticado; navegador não informa nem autoria nem gestão de origem.
+- Nome, início, fim e local são obrigatórios. O fim não pode ser anterior ao início. UF, quando informada, possui duas letras; participantes esperados não podem ser negativos.
+- O orçamento previsto usa `DECIMAL(19,2)`, arredondamento `HALF_UP` no servidor e contrato textual com duas casas. Valores negativos são inválidos e `0.00` permite evento gratuito.
+- O status começa em `PLANEJADO`. As transições comuns são `PLANEJADO → INSCRICOES_ABERTAS|EM_ANDAMENTO`, `INSCRICOES_ABERTAS → EM_ANDAMENTO` e `EM_ANDAMENTO → CONCLUIDO`. Retornos a estados anteriores exigem administrador, motivo e atividade auditada; não existe status cancelado nesta etapa.
+- Criação, atualização e transição/correção de status são registradas na mesma transação da alteração. A consulta e os filtros são sempre limitados à atlética selecionada; um `gestaoId` de outra atlética retorna `404`.
+
 ## Paginação
 
 - A página é indexada a partir de zero.
