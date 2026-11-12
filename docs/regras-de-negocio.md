@@ -193,3 +193,11 @@ Criações retornam `201`, consultas e alterações bem-sucedidas retornam `200`
 - O saldo disponível usa regime de caixa: recebimentos menos pagamentos, menos estornos de receita, mais estornos de despesa. Contas abertas são pendências a receber/a pagar e não entram no saldo disponível.
 - Todos os associados ativos podem consultar saldos, evolução, contas e relatório agregados; essas respostas não contêm dados pessoais de contrapartes nem anexos restritos. Somente administrador e financeiro gerenciam decisões, baixas, cancelamentos e estornos.
 - A evolução mensal retorna inclusive meses sem movimentos. O saldo inicial cadastrado é zero nesta etapa e não é reiniciado por gestão. Relatório CSV informa período, critérios, saldo inicial, entradas, saídas, estornos, saldo final e pendências separadas.
+
+## Arquivos protegidos e temporários
+
+- `Arquivo` pertence à atlética e guarda nome original seguro, MIME validado, tamanho, hash SHA-256, autor e instante definidos pelo servidor; o conteúdo fica em BLOB e não compõe projeções/listagens de metadados.
+- O envio é interno aos módulos que já autorizaram o recurso pai. Não existe upload público sem finalidade. O módulo vinculante precisa salvar sua referência ao arquivo na mesma transação.
+- Cada arquivo tem limite de 10 MiB e a atlética possui orçamento total configurável. A reserva é serializada no banco para impedir ultrapassar o teto em envios concorrentes.
+- PDF é aceito para documentos; PDF, PNG e JPEG para divulgação. Assinatura binária, extensão e MIME declarado precisam coincidir; SVG, HTML, scripts e executáveis são recusados.
+- A leitura resolve `id + atleticaId`, mas só entrega o BLOB quando o módulo proprietário confirma o acesso ao recurso pai e sua visibilidade. Sem vínculo reconhecido retorna `404`; recusa de visibilidade retorna `403`. O download usa MIME seguro, `Content-Disposition`, `nosniff` e não grava em diretório público.

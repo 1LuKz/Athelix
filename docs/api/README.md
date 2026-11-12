@@ -96,3 +96,10 @@ Nesta etapa não há endpoint público para criar ou administrar atléticas. O p
 - Associados ativos consultam `GET /financeiro/resumo`, `/evolucao-mensal`, `/contas` e `/relatorio`, sempre sem dados pessoais de contrapartes ou anexos. O resumo calcula saldo disponível pelo regime de caixa; a evolução preenche meses sem movimento e contas abertas não entram no saldo disponível. Despesa rejeitada é consultável em lançamentos, mas não é pendência pagável.
 - `GET /financeiro/relatorio` exporta CSV UTF-8 do intervalo solicitado, com saldo inicial, entradas, saídas, estornos, saldo final e pendências a pagar/receber separados. O saldo inicial cadastrado é zero nesta etapa.
 - No perfil `dev`, há um segundo usuário autorizado para validar a separação de aprovação: `financeiro@athletix.local` / `Financeiro@2026`.
+
+## Arquivos protegidos
+
+- Não existe rota pública de upload. Os módulos de documento, divulgação e evento devem autorizar a operação, armazenar o arquivo pela infraestrutura comum e persistir o vínculo ao recurso pai na mesma transação.
+- O limite por arquivo é 10 MiB (`athletix.arquivos.max-tamanho-bytes`); `spring.servlet.multipart.max-file-size` e `max-request-size` têm limite compatível. O teto por atlética é configurável em `athletix.arquivos.orcamento-por-atletica-bytes`.
+- Documento aceita PDF; divulgação aceita PDF, PNG e JPEG. A assinatura binária, extensão e MIME declarado devem coincidir. SVG, HTML, scripts e executáveis são rejeitados.
+- `GET /arquivos/{id}/conteudo` exige sessão, escopo de atlética e autorização explícita do recurso pai. Não há listagem com BLOB. A resposta usa `nosniff`, cache privado sem armazenamento e PDF inline após autorização.

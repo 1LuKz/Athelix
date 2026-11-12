@@ -1523,6 +1523,27 @@ paths:
         '400': {$ref: '#/components/responses/InvalidRequest'}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
+  /arquivos/{id}/conteudo:
+    get:
+      summary: Lê o conteúdo de um arquivo vinculado a recurso autorizado
+      operationId: getArquivoConteudo
+      description: >-
+        Não basta pertencer à atlética: o acesso é decidido pelo recurso pai e sua visibilidade.
+        PDFs podem ser exibidos em linha; imagens são entregues como anexo. A resposta inclui `nosniff` e não é pública.
+      parameters: [{$ref: '#/components/parameters/ResourceId'}]
+      responses:
+        '200':
+          description: "Conteúdo binário autorizado, com Content-Type, Content-Disposition e X-Content-Type-Options: nosniff."
+          headers:
+            Content-Disposition: {schema: {type: string}}
+            X-Content-Type-Options: {schema: {type: string, enum: [nosniff]}}
+          content:
+            application/pdf: {schema: {type: string, format: binary}}
+            image/png: {schema: {type: string, format: binary}}
+            image/jpeg: {schema: {type: string, format: binary}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
 components:
   schemas:
     ApiError:
