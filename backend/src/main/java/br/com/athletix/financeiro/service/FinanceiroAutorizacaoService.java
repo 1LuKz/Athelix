@@ -14,4 +14,11 @@ public class FinanceiroAutorizacaoService {
             throw new AccessDeniedException("Você não tem permissão para gerenciar lançamentos financeiros.");
         }
     }
+
+    /** Associados ativos podem consultar agregados sem dados pessoais de contrapartes ou anexos. */
+    public void exigirConsultaFinanceira(Membro membro) {
+        if (membro == null) {
+            throw new AccessDeniedException("Você não tem permissão para consultar informações financeiras.");
+        }
+    }
 }

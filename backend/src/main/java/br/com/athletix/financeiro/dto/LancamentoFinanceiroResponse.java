@@ -16,7 +16,7 @@ public record LancamentoFinanceiroResponse(
         LocalDate dataCompetencia, LocalDate dataVencimento, LocalDate dataLiquidacao,
         StatusLiquidacao statusLiquidacao, StatusAprovacao statusAprovacao, boolean vencido,
         Long criadoPorMembroId, Long aprovadoPorMembroId, Instant aprovadoEm, String motivoDecisao,
-        Long liquidadoPorMembroId, Instant createdAt, Instant updatedAt, Long version
+        Long liquidadoPorMembroId, String motivoCancelamento, Instant createdAt, Instant updatedAt, Long version
 ) implements ResponseDto {
     public static LancamentoFinanceiroResponse from(LancamentoFinanceiro lancamento, LocalDate hoje) {
         return new LancamentoFinanceiroResponse(lancamento.getId(), lancamento.getAtleticaId(),
@@ -26,7 +26,7 @@ public record LancamentoFinanceiroResponse(
                 lancamento.getDataVencimento(), lancamento.getDataLiquidacao(), lancamento.getStatusLiquidacao(),
                 lancamento.getStatusAprovacao(), lancamento.vencidoEm(hoje), lancamento.getCriadoPorMembroId(),
                 lancamento.getAprovadoPorMembroId(), lancamento.getAprovadoEm(), lancamento.getMotivoDecisao(),
-                lancamento.getLiquidadoPorMembroId(), lancamento.getCreatedAt(), lancamento.getUpdatedAt(),
+                lancamento.getLiquidadoPorMembroId(), lancamento.getMotivoCancelamento(), lancamento.getCreatedAt(), lancamento.getUpdatedAt(),
                 lancamento.getVersion());
     }
 }

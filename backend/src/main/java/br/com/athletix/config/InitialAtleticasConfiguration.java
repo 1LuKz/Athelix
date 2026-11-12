@@ -89,6 +89,10 @@ public class InitialAtleticasConfiguration {
                 engenharia, "Presidência", NomeNormalizado.fromRequired("Presidência", "nome"),
                 "Cargo administrativo inicial de desenvolvimento.", PerfilAcesso.ADMINISTRADOR, true
         ));
+        Cargo financeiro = cargoRepository.save(new Cargo(
+                engenharia, "Tesouraria", NomeNormalizado.fromRequired("Tesouraria", "nome"),
+                "Cargo financeiro inicial de desenvolvimento.", PerfilAcesso.FINANCEIRO, true
+        ));
         Departamento diretoria = departamentoRepository.save(new Departamento(
                 engenharia, "Diretoria", NomeNormalizado.fromRequired("Diretoria", "nome"),
                 "Departamento inicial de desenvolvimento."
@@ -110,6 +114,16 @@ public class InitialAtleticasConfiguration {
         gestaoInicial.ativar();
         gestaoRepository.save(gestaoInicial);
         vinculoGestaoRepository.save(new VinculoGestao(administradorMembro, gestaoInicial, administrador,
+                diretoria, java.time.Instant.now()));
+
+        Usuario financeiroUsuario = new Usuario("Financeiro Athletix", "financeiro@athletix.local", null);
+        financeiroUsuario.definirSenhaHash(passwordEncoder.encode("Financeiro@2026"));
+        financeiroUsuario = usuarioRepository.save(financeiroUsuario);
+        Membro financeiroMembro = new Membro(engenharia, financeiroUsuario, "Administração", null,
+                financeiro, diretoria, java.time.LocalDate.now());
+        financeiroMembro.ativar(administradorMembro);
+        financeiroMembro = membroRepository.save(financeiroMembro);
+        vinculoGestaoRepository.save(new VinculoGestao(financeiroMembro, gestaoInicial, financeiro,
                 diretoria, java.time.Instant.now()));
 
         criarCategoriasIniciais(categoriaFinanceiraRepository, engenharia);

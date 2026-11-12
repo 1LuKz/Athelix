@@ -6,19 +6,29 @@ import br.com.athletix.auditoria.service.AtividadeUsuarioService;
 import br.com.athletix.evento.entity.Evento;
 import br.com.athletix.evento.service.EventoService;
 import br.com.athletix.financeiro.dto.LancamentoFinanceiroCreateRequest;
+import br.com.athletix.financeiro.dto.LancamentoAprovacaoRequest;
+import br.com.athletix.financeiro.dto.LancamentoCancelamentoRequest;
 import br.com.athletix.financeiro.dto.LancamentoFinanceiroFiltro;
 import br.com.athletix.financeiro.dto.LancamentoFinanceiroResponse;
 import br.com.athletix.financeiro.dto.LancamentoFinanceiroUpdateRequest;
+import br.com.athletix.financeiro.dto.LancamentoLiquidacaoRequest;
+import br.com.athletix.financeiro.dto.EstornoFinanceiroCreateRequest;
+import br.com.athletix.financeiro.dto.EstornoFinanceiroResponse;
+import br.com.athletix.financeiro.entity.EstornoFinanceiro;
 import br.com.athletix.financeiro.entity.LancamentoFinanceiro;
 import br.com.athletix.financeiro.entity.ModoDataLancamento;
 import br.com.athletix.financeiro.entity.SituacaoLancamento;
 import br.com.athletix.financeiro.entity.StatusLiquidacao;
+import br.com.athletix.financeiro.entity.StatusAprovacao;
+import br.com.athletix.financeiro.entity.TipoLancamentoFinanceiro;
+import br.com.athletix.financeiro.repository.EstornoFinanceiroRepository;
 import br.com.athletix.financeiro.repository.LancamentoFinanceiroRepository;
 import br.com.athletix.gestao.entity.StatusGestao;
 import br.com.athletix.gestao.repository.GestaoRepository;
 import br.com.athletix.membro.entity.Membro;
 import br.com.athletix.shared.exception.BusinessRuleException;
 import br.com.athletix.shared.exception.ConcurrentModificationException;
+import br.com.athletix.shared.exception.ConflictException;
 import br.com.athletix.shared.money.MoneyValues;
 import br.com.athletix.shared.normalization.NomeNormalizado;
 import br.com.athletix.shared.pagination.PageResponse;
@@ -32,12 +42,14 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class LancamentoFinanceiroService {
     private final LancamentoFinanceiroRepository lancamentos;
+    private final EstornoFinanceiroRepository estornos;
     private final AtleticaRepository atleticas;
     private final EventoService eventos;
     private final GestaoRepository gestoes;
@@ -46,11 +58,13 @@ public class LancamentoFinanceiroService {
     private final FinanceiroAutorizacaoService autorizacao;
     private final AtividadeUsuarioService auditoria;
 
-    public LancamentoFinanceiroService(LancamentoFinanceiroRepository lancamentos, AtleticaRepository atleticas,
+    public LancamentoFinanceiroService(LancamentoFinanceiroRepository lancamentos, EstornoFinanceiroRepository estornos,
+                                       AtleticaRepository atleticas,
                                        EventoService eventos, GestaoRepository gestoes,
                                        CategoriaFinanceiraService categorias, AtleticaResourceResolver resolver,
                                        FinanceiroAutorizacaoService autorizacao, AtividadeUsuarioService auditoria) {
         this.lancamentos = lancamentos;
+        this.estornos = estornos;
         this.atleticas = atleticas;
         this.eventos = eventos;
         this.gestoes = gestoes;
@@ -115,6 +129,82 @@ public class LancamentoFinanceiroService {
         return LancamentoFinanceiroResponse.from(lancamento, hoje());
     }
 
+    @Transactional
+    public LancamentoFinanceiroResponse decidirAprovacao(Long id, LancamentoAprovacaoRequest request, Membro autor) {
+        autorizacao.exigirGerenciamentoFinanceiro(autor);
+        LancamentoFinanceiro lancamento = carregar(id);
+        exigirVersao(lancamento, request.version());
+        if (lancamento.getTipo() != TipoLancamentoFinanceiro.DESPESA) {
+            throw new BusinessRuleException("Somente despesas exigem decisão de aprovação.");
+        }
+        if (lancamento.getStatusLiquidacao() != StatusLiquidacao.ABERTO
+                || lancamento.getStatusAprovacao() != StatusAprovacao.PENDENTE) {
+            throw new BusinessRuleException("Apenas despesas pendentes e em aberto podem ser decididas.");
+        }
+        if (lancamento.getCriadoPorMembroId().equals(autor.getId())) {
+            throw new BusinessRuleException("O autor não pode aprovar ou rejeitar a própria despesa.");
+        }
+        lancamento.decidirAprovacao(request.decisao().paraStatus(), NomeNormalizado.displayValue(request.motivo()),
+                autor.getId(), Instant.now());
+        lancamentos.saveAndFlush(lancamento);
+        auditoria.registrar("LANCAMENTO_FINANCEIRO_" + request.decisao().name(), "LANCAMENTO_FINANCEIRO",
+                lancamento.getId(), "Despesa financeira " + request.decisao().name().toLowerCase() + ".");
+        return LancamentoFinanceiroResponse.from(lancamento, hoje());
+    }
+
+    @Transactional
+    public LancamentoFinanceiroResponse liquidar(Long id, LancamentoLiquidacaoRequest request, Membro autor) {
+        autorizacao.exigirGerenciamentoFinanceiro(autor);
+        LancamentoFinanceiro lancamento = carregar(id);
+        exigirVersao(lancamento, request.version());
+        if (lancamento.getStatusLiquidacao() != StatusLiquidacao.ABERTO) {
+            throw new BusinessRuleException("O lançamento não está disponível para liquidação.");
+        }
+        if (lancamento.getTipo() == TipoLancamentoFinanceiro.DESPESA
+                && lancamento.getStatusAprovacao() != StatusAprovacao.APROVADA) {
+            throw new BusinessRuleException("A despesa precisa estar aprovada antes da liquidação.");
+        }
+        lancamento.liquidar(request.dataLiquidacao(), autor.getId());
+        lancamentos.saveAndFlush(lancamento);
+        auditoria.registrar("LANCAMENTO_FINANCEIRO_LIQUIDADO", "LANCAMENTO_FINANCEIRO", lancamento.getId(),
+                "Lançamento financeiro liquidado.");
+        return LancamentoFinanceiroResponse.from(lancamento, hoje());
+    }
+
+    @Transactional
+    public LancamentoFinanceiroResponse cancelar(Long id, LancamentoCancelamentoRequest request, Membro autor) {
+        autorizacao.exigirGerenciamentoFinanceiro(autor);
+        LancamentoFinanceiro lancamento = carregar(id);
+        exigirVersao(lancamento, request.version());
+        if (lancamento.getStatusLiquidacao() != StatusLiquidacao.ABERTO) {
+            throw new BusinessRuleException("Somente lançamentos em aberto podem ser cancelados.");
+        }
+        lancamento.cancelar(NomeNormalizado.displayValue(request.motivo()));
+        lancamentos.saveAndFlush(lancamento);
+        auditoria.registrar("LANCAMENTO_FINANCEIRO_CANCELADO", "LANCAMENTO_FINANCEIRO", lancamento.getId(),
+                "Lançamento financeiro cancelado.");
+        return LancamentoFinanceiroResponse.from(lancamento, hoje());
+    }
+
+    @Transactional
+    public EstornoFinanceiroResponse estornar(Long id, EstornoFinanceiroCreateRequest request, Membro autor) {
+        autorizacao.exigirGerenciamentoFinanceiro(autor);
+        LancamentoFinanceiro lancamento = carregar(id);
+        if (lancamento.getStatusLiquidacao() != StatusLiquidacao.LIQUIDADO) {
+            throw new BusinessRuleException("Somente lançamento liquidado pode ser estornado.");
+        }
+        Long atleticaId = resolver.atleticaIdAtual();
+        if (estornos.existsByLancamento_IdAndAtletica_Id(id, atleticaId)) {
+            throw new ConflictException("Este lançamento já possui um estorno integral.");
+        }
+        Atletica atletica = resolver.requireByIdAndAtleticaId(atleticaId, atleticas::findByIdAndId);
+        EstornoFinanceiro estorno = estornos.saveAndFlush(new EstornoFinanceiro(atletica, lancamento,
+                request.dataEstorno(), NomeNormalizado.displayValue(request.motivo()), autor.getId(), Instant.now()));
+        auditoria.registrar("LANCAMENTO_FINANCEIRO_ESTORNADO", "LANCAMENTO_FINANCEIRO", lancamento.getId(),
+                "Estorno financeiro integral registrado.");
+        return EstornoFinanceiroResponse.from(estorno);
+    }
+
     private LancamentoFinanceiro carregar(Long id) {
         return resolver.requireByIdAndAtleticaId(id, lancamentos::findByIdAndAtletica_Id);
     }
@@ -124,6 +214,12 @@ public class LancamentoFinanceiroService {
             throw new BusinessRuleException("A data de vencimento é obrigatória para lançamentos em aberto.");
         }
         return dataVencimento;
+    }
+
+    private void exigirVersao(LancamentoFinanceiro lancamento, Long version) {
+        if (!lancamento.getVersion().equals(version)) {
+            throw new ConcurrentModificationException();
+        }
     }
 
     private BigDecimal exigirValorPositivo(String valor) {

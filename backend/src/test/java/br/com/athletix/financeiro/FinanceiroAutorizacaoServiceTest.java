@@ -28,6 +28,13 @@ class FinanceiroAutorizacaoServiceTest {
                 () -> service.exigirGerenciamentoFinanceiro(membro(PerfilAcesso.MEMBRO)));
     }
 
+    @Test
+    void permiteConsultaAgregadaParaTodoAssociadoAtivo() {
+        for (PerfilAcesso perfil : PerfilAcesso.values()) {
+            assertDoesNotThrow(() -> service.exigirConsultaFinanceira(membro(perfil)));
+        }
+    }
+
     private Membro membro(PerfilAcesso perfil) {
         Membro membro = mock(Membro.class);
         when(membro.getPerfilAcesso()).thenReturn(perfil);

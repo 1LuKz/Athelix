@@ -179,8 +179,17 @@ Criações retornam `201`, consultas e alterações bem-sucedidas retornam `200`
 
 - Categoria financeira pertence à atlética, possui nome único normalizado e pode ser aplicável a `RECEITA`, `DESPESA` ou ambos. Categorias inativas não podem receber novos lançamentos.
 - Todo lançamento pertence à atlética e guarda a gestão ativa como origem quando houver. Evento e gestão informados são sempre resolvidos no escopo da atlética atual; o navegador não define autor, aprovação nem baixa.
-- Receita inicia `ABERTO` e `NAO_APLICAVEL`; despesa inicia `ABERTO` e `PENDENTE`. Todo lançamento aberto exige data de vencimento. A liquidação e a aprovação são operações atômicas da B17.
+- Receita inicia `ABERTO` e `NAO_APLICAVEL`; despesa inicia `ABERTO` e `PENDENTE`. Todo lançamento aberto exige data de vencimento.
 - `VENCIDA` é condição derivada: lançamento `ABERTO` com vencimento anterior ao dia atual no fuso da atlética. Não é status persistido.
 - Valores monetários usam `DECIMAL(19,2)`, arredondamento `HALF_UP` no servidor e contrato textual decimal com duas casas. O valor deve ser maior que zero.
 - A consulta financeira detalhada é exclusiva de administrador e financeiro. Filtros de datas usam modo explícito: competência por padrão, vencimento ou liquidação; intervalos são inclusivos.
 - A criação e a alteração de lançamentos, assim como a criação de categorias, registram atividade de auditoria na mesma transação.
+
+## Financeiro: aprovação, baixa, saldos e prestação de contas
+
+- Aprovação e rejeição são exclusivas de administrador e financeiro. A despesa deve estar `PENDENTE` e o autor não pode decidir o próprio lançamento; decisão, autor, instante e motivo são conservados.
+- Receita pode ser liquidada em aberto. Despesa só é liquidada em aberto depois de `APROVADA`; rejeitada permanece consultável e não pode ser paga. Cada liquidação grava a data real e o autor, com versão e estado verificados na mesma transação.
+- Lançamento aberto pode ser cancelado com motivo. Lançamento já liquidado não é apagado nem cancelado: recebe no máximo um `EstornoFinanceiro` integral, imutável e único, na data real. O estorno de receita reduz entrada; o de despesa reduz saída.
+- O saldo disponível usa regime de caixa: recebimentos menos pagamentos, menos estornos de receita, mais estornos de despesa. Contas abertas são pendências a receber/a pagar e não entram no saldo disponível.
+- Todos os associados ativos podem consultar saldos, evolução, contas e relatório agregados; essas respostas não contêm dados pessoais de contrapartes nem anexos restritos. Somente administrador e financeiro gerenciam decisões, baixas, cancelamentos e estornos.
+- A evolução mensal retorna inclusive meses sem movimentos. O saldo inicial cadastrado é zero nesta etapa e não é reiniciado por gestão. Relatório CSV informa período, critérios, saldo inicial, entradas, saídas, estornos, saldo final e pendências separadas.

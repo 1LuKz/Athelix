@@ -79,6 +79,9 @@ public class LancamentoFinanceiro extends AuditableEntity implements AtleticaSco
     @Column(name = "liquidado_por_membro_id")
     private Long liquidadoPorMembroId;
 
+    @Column(name = "motivo_cancelamento", length = 1000)
+    private String motivoCancelamento;
+
     protected LancamentoFinanceiro() {
     }
 
@@ -120,6 +123,7 @@ public class LancamentoFinanceiro extends AuditableEntity implements AtleticaSco
     public Instant getAprovadoEm() { return aprovadoEm; }
     public String getMotivoDecisao() { return motivoDecisao; }
     public Long getLiquidadoPorMembroId() { return liquidadoPorMembroId; }
+    public String getMotivoCancelamento() { return motivoCancelamento; }
 
     public void atualizar(String descricao, CategoriaFinanceira categoria, BigDecimal valor,
                           Evento evento, LocalDate dataCompetencia, LocalDate dataVencimento) {
@@ -129,6 +133,24 @@ public class LancamentoFinanceiro extends AuditableEntity implements AtleticaSco
         this.evento = evento;
         this.dataCompetencia = dataCompetencia;
         this.dataVencimento = dataVencimento;
+    }
+
+    public void decidirAprovacao(StatusAprovacao decisao, String motivo, Long membroId, Instant ocorridaEm) {
+        this.statusAprovacao = decisao;
+        this.motivoDecisao = motivo;
+        this.aprovadoPorMembroId = membroId;
+        this.aprovadoEm = ocorridaEm;
+    }
+
+    public void liquidar(LocalDate data, Long membroId) {
+        this.statusLiquidacao = StatusLiquidacao.LIQUIDADO;
+        this.dataLiquidacao = data;
+        this.liquidadoPorMembroId = membroId;
+    }
+
+    public void cancelar(String motivo) {
+        this.statusLiquidacao = StatusLiquidacao.CANCELADO;
+        this.motivoCancelamento = motivo;
     }
 
     public boolean vencidoEm(LocalDate hoje) {

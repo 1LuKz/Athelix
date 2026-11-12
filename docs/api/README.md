@@ -86,5 +86,13 @@ Nesta etapa não há endpoint público para criar ou administrar atléticas. O p
 
 - `GET/POST /financeiro/categorias` são exclusivos de administrador e financeiro. Categoria é própria da atlética, tem nome único sem distinção de caixa/espaços externos e se aplica a `RECEITA`, `DESPESA` ou ambos.
 - `GET/POST /financeiro/lancamentos` e `GET/PUT /financeiro/lancamentos/{id}` usam `valor` como texto decimal; o servidor persiste `DECIMAL(19,2)`, aplica arredondamento `HALF_UP` e responde com duas casas.
-- Receita nasce em `ABERTO` com aprovação `NAO_APLICAVEL`; despesa nasce em `ABERTO` e `PENDENTE`. Vencimento é obrigatório enquanto aberto. Aprovação e liquidação são operações da B17.
+- Receita nasce em `ABERTO` com aprovação `NAO_APLICAVEL`; despesa nasce em `ABERTO` e `PENDENTE`. Vencimento é obrigatório enquanto aberto.
 - A listagem filtra por `modoData` (`COMPETENCIA`, `VENCIMENTO` ou `LIQUIDACAO`), intervalo inclusivo, categoria, tipo, situação, aprovação, evento e gestão. Sem `modoData`, o relatório usa competência. `VENCIDA` é calculada no fuso da atlética.
+
+## Financeiro — decisões, caixa e prestação de contas
+
+- `PATCH /financeiro/lancamentos/{id}/aprovacao`, `POST /liquidacao` e `PATCH /cancelamento` exigem administrador ou financeiro e `version`. Uma despesa é decidida uma única vez; quem a criou não pode aprová-la ou rejeitá-la.
+- Receitas podem ser liquidadas diretamente; despesas só depois de `APROVADA`. Uma baixa repetida não cria outro movimento. Lançamento aberto pode ser cancelado com motivo; pagamento/recebimento efetivado somente é revertido por `POST /estorno` integral.
+- Associados ativos consultam `GET /financeiro/resumo`, `/evolucao-mensal`, `/contas` e `/relatorio`, sempre sem dados pessoais de contrapartes ou anexos. O resumo calcula saldo disponível pelo regime de caixa; a evolução preenche meses sem movimento e contas abertas não entram no saldo disponível. Despesa rejeitada é consultável em lançamentos, mas não é pendência pagável.
+- `GET /financeiro/relatorio` exporta CSV UTF-8 do intervalo solicitado, com saldo inicial, entradas, saídas, estornos, saldo final e pendências a pagar/receber separados. O saldo inicial cadastrado é zero nesta etapa.
+- No perfil `dev`, há um segundo usuário autorizado para validar a separação de aprovação: `financeiro@athletix.local` / `Financeiro@2026`.

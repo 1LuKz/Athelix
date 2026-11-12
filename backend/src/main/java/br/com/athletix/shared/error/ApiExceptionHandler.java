@@ -21,6 +21,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
@@ -67,7 +68,8 @@ public class ApiExceptionHandler {
                 "A requisição contém dados inválidos.", fieldErrors, request);
     }
 
-    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
+    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class,
+            MissingServletRequestParameterException.class})
     public ResponseEntity<ApiErrorResponse> handleUnreadableInput(Exception exception, HttpServletRequest request) {
         return response(HttpStatus.BAD_REQUEST, ApiErrorCode.INVALID_REQUEST,
                 "A requisição contém dados inválidos.", List.of(), request);

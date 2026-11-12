@@ -1,6 +1,11 @@
 package br.com.athletix.financeiro.controller;
 
 import br.com.athletix.financeiro.dto.LancamentoFinanceiroCreateRequest;
+import br.com.athletix.financeiro.dto.LancamentoAprovacaoRequest;
+import br.com.athletix.financeiro.dto.LancamentoCancelamentoRequest;
+import br.com.athletix.financeiro.dto.LancamentoLiquidacaoRequest;
+import br.com.athletix.financeiro.dto.EstornoFinanceiroCreateRequest;
+import br.com.athletix.financeiro.dto.EstornoFinanceiroResponse;
 import br.com.athletix.financeiro.dto.LancamentoFinanceiroFiltro;
 import br.com.athletix.financeiro.dto.LancamentoFinanceiroResponse;
 import br.com.athletix.financeiro.dto.LancamentoFinanceiroUpdateRequest;
@@ -21,6 +26,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -84,5 +90,34 @@ public class LancamentoFinanceiroController {
                                                   @Valid @RequestBody LancamentoFinanceiroUpdateRequest body,
                                                   Authentication authentication, HttpServletRequest request) {
         return service.atualizar(id, body, autorizacao.membroAtual(authentication, request));
+    }
+
+    @PatchMapping("/{id}/aprovacao")
+    public LancamentoFinanceiroResponse decidirAprovacao(@PathVariable Long id,
+            @Valid @RequestBody LancamentoAprovacaoRequest body,
+            Authentication authentication, HttpServletRequest request) {
+        return service.decidirAprovacao(id, body, autorizacao.membroAtual(authentication, request));
+    }
+
+    @PostMapping("/{id}/liquidacao")
+    public LancamentoFinanceiroResponse liquidar(@PathVariable Long id,
+            @Valid @RequestBody LancamentoLiquidacaoRequest body,
+            Authentication authentication, HttpServletRequest request) {
+        return service.liquidar(id, body, autorizacao.membroAtual(authentication, request));
+    }
+
+    @PatchMapping("/{id}/cancelamento")
+    public LancamentoFinanceiroResponse cancelar(@PathVariable Long id,
+            @Valid @RequestBody LancamentoCancelamentoRequest body,
+            Authentication authentication, HttpServletRequest request) {
+        return service.cancelar(id, body, autorizacao.membroAtual(authentication, request));
+    }
+
+    @PostMapping("/{id}/estorno")
+    public ResponseEntity<EstornoFinanceiroResponse> estornar(@PathVariable Long id,
+            @Valid @RequestBody EstornoFinanceiroCreateRequest body,
+            Authentication authentication, HttpServletRequest request) {
+        return ResponseEntity.status(201).body(service.estornar(id, body,
+                autorizacao.membroAtual(authentication, request)));
     }
 }

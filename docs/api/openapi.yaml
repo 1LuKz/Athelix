@@ -1370,7 +1370,7 @@ paths:
     post:
       summary: Cria lançamento financeiro em aberto
       operationId: createLancamentoFinanceiro
-      description: Receita inicia com aprovação `NAO_APLICAVEL`; despesa inicia `PENDENTE`. A liquidação será tratada em B17.
+      description: Receita inicia com aprovação `NAO_APLICAVEL`; despesa inicia `PENDENTE`. A baixa é registrada pela rota de liquidação.
       requestBody:
         required: true
         content: {application/json: {schema: {$ref: '#/components/schemas/LancamentoFinanceiroCreateRequest'}}}
@@ -1411,6 +1411,118 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
+  /financeiro/lancamentos/{id}/aprovacao:
+    patch:
+      summary: Aprova ou rejeita uma despesa pendente
+      operationId: decideLancamentoFinanceiro
+      description: Administrador ou financeiro. O autor não pode decidir a própria despesa; a decisão é definitiva.
+      parameters: [{$ref: '#/components/parameters/ResourceId'}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/LancamentoAprovacaoRequest'}}}
+      responses:
+        '200': {description: Decisão registrada., content: {application/json: {schema: {$ref: '#/components/schemas/LancamentoFinanceiro'}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /financeiro/lancamentos/{id}/liquidacao:
+    post:
+      summary: Registra recebimento ou pagamento de lançamento aberto
+      operationId: liquidateLancamentoFinanceiro
+      description: Despesa só pode ser liquidada após aprovação. A operação ocorre uma única vez na entidade.
+      parameters: [{$ref: '#/components/parameters/ResourceId'}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/LancamentoLiquidacaoRequest'}}}
+      responses:
+        '200': {description: Liquidação registrada., content: {application/json: {schema: {$ref: '#/components/schemas/LancamentoFinanceiro'}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /financeiro/lancamentos/{id}/cancelamento:
+    patch:
+      summary: Cancela lançamento ainda aberto
+      operationId: cancelLancamentoFinanceiro
+      description: Liquidações não podem ser canceladas; devem ser revertidas por estorno integral.
+      parameters: [{$ref: '#/components/parameters/ResourceId'}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/LancamentoCancelamentoRequest'}}}
+      responses:
+        '200': {description: Lançamento cancelado., content: {application/json: {schema: {$ref: '#/components/schemas/LancamentoFinanceiro'}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /financeiro/lancamentos/{id}/estorno:
+    post:
+      summary: Registra estorno integral de lançamento liquidado
+      operationId: reverseLancamentoFinanceiro
+      description: Há no máximo um estorno, integral e imutável, por lançamento. O efeito entra no caixa na data informada.
+      parameters: [{$ref: '#/components/parameters/ResourceId'}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/EstornoFinanceiroCreateRequest'}}}
+      responses:
+        '201': {description: Estorno registrado., content: {application/json: {schema: {$ref: '#/components/schemas/EstornoFinanceiro'}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /financeiro/resumo:
+    get:
+      summary: Consulta saldo disponível e pendências financeiras
+      operationId: getResumoFinanceiro
+      parameters:
+        - {name: dataReferencia, in: query, schema: {type: string, format: date}, description: "Padrão: dia atual no fuso da atlética."}
+      responses:
+        '200': {description: Resumo por regime de caixa., content: {application/json: {schema: {$ref: '#/components/schemas/FinanceiroResumo'}}}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /financeiro/evolucao-mensal:
+    get:
+      summary: Retorna evolução mensal do caixa
+      operationId: getEvolucaoMensalFinanceira
+      parameters:
+        - {name: mesDe, in: query, required: true, schema: {type: string, pattern: '^\\d{4}-(0[1-9]|1[0-2])$'}, example: '2027-01'}
+        - {name: mesAte, in: query, required: true, schema: {type: string, pattern: '^\\d{4}-(0[1-9]|1[0-2])$'}, example: '2027-12'}
+      responses:
+        '200': {description: Um item para cada mês solicitado, inclusive meses sem movimento., content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/EvolucaoMensalFinanceira'}}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /financeiro/contas:
+    get:
+      summary: Lista contas abertas, a pagar e a receber
+      operationId: listContasAbertas
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - $ref: '#/components/parameters/SortContaAberta'
+      responses:
+        '200': {description: Página de contas abertas., content: {application/json: {schema: {$ref: '#/components/schemas/ContaAbertaPage'}}}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /financeiro/relatorio:
+    get:
+      summary: Exporta relatório financeiro CSV
+      operationId: exportRelatorioFinanceiro
+      parameters:
+        - {name: dataDe, in: query, required: true, schema: {type: string, format: date}}
+        - {name: dataAte, in: query, required: true, schema: {type: string, format: date}}
+      responses:
+        '200':
+          description: CSV UTF-8 com período, critérios, saldo, entradas, saídas, estornos e pendências separadas.
+          content: {text/csv: {schema: {type: string, format: binary}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
 components:
   schemas:
     ApiError:
@@ -2696,6 +2808,7 @@ components:
         aprovadoEm: {type: string, format: date-time, nullable: true}
         motivoDecisao: {type: string, maxLength: 1000, nullable: true}
         liquidadoPorMembroId: {type: integer, format: int64, nullable: true}
+        motivoCancelamento: {type: string, maxLength: 1000, nullable: true}
         createdAt: {type: string, format: date-time}
         updatedAt: {type: string, format: date-time}
         version: {type: integer, format: int64}
@@ -2726,6 +2839,94 @@ components:
       required: [items, page, size, totalItems, totalPages]
       properties:
         items: {type: array, items: {$ref: '#/components/schemas/LancamentoFinanceiro'}}
+        page: {type: integer}
+        size: {type: integer}
+        totalItems: {type: integer, format: int64}
+        totalPages: {type: integer}
+    DecisaoAprovacaoFinanceira: {type: string, enum: [APROVAR, REJEITAR]}
+    LancamentoAprovacaoRequest:
+      type: object
+      required: [decisao, motivo, version]
+      properties:
+        decisao: {$ref: '#/components/schemas/DecisaoAprovacaoFinanceira'}
+        motivo: {type: string, minLength: 1, maxLength: 1000}
+        version: {type: integer, format: int64, minimum: 0}
+    LancamentoLiquidacaoRequest:
+      type: object
+      required: [dataLiquidacao, version]
+      properties:
+        dataLiquidacao: {type: string, format: date}
+        version: {type: integer, format: int64, minimum: 0}
+    LancamentoCancelamentoRequest:
+      type: object
+      required: [motivo, version]
+      properties:
+        motivo: {type: string, minLength: 1, maxLength: 1000}
+        version: {type: integer, format: int64, minimum: 0}
+    EstornoFinanceiroCreateRequest:
+      type: object
+      required: [dataEstorno, motivo]
+      properties:
+        dataEstorno: {type: string, format: date}
+        motivo: {type: string, minLength: 1, maxLength: 1000}
+    EstornoFinanceiro:
+      type: object
+      required: [id, atleticaId, lancamentoId, tipoLancamento, valor, dataEstorno, motivo, registradoPorMembroId, registradoEm]
+      properties:
+        id: {type: integer, format: int64}
+        atleticaId: {type: integer, format: int64}
+        lancamentoId: {type: integer, format: int64}
+        tipoLancamento: {$ref: '#/components/schemas/TipoLancamentoFinanceiro'}
+        valor: {$ref: '#/components/schemas/ValorMonetarioPositivo'}
+        dataEstorno: {type: string, format: date}
+        motivo: {type: string, maxLength: 1000}
+        registradoPorMembroId: {type: integer, format: int64}
+        registradoEm: {type: string, format: date-time}
+    FinanceiroResumo:
+      type: object
+      required: [dataReferencia, saldoInicial, recebimentos, pagamentos, estornosReceitas, estornosDespesas, saldoDisponivel, contasAReceber, contasAPagar, contasVencidas]
+      properties:
+        dataReferencia: {type: string, format: date}
+        saldoInicial: {$ref: '#/components/schemas/ValorMonetarioPositivo'}
+        recebimentos: {$ref: '#/components/schemas/ValorMonetarioPositivo'}
+        pagamentos: {$ref: '#/components/schemas/ValorMonetarioPositivo'}
+        estornosReceitas: {$ref: '#/components/schemas/ValorMonetarioPositivo'}
+        estornosDespesas: {$ref: '#/components/schemas/ValorMonetarioPositivo'}
+        saldoDisponivel: {type: string, pattern: '^-?\\d+(\\.\\d+)?$', example: '0.00'}
+        contasAReceber: {$ref: '#/components/schemas/ValorMonetarioPositivo'}
+        contasAPagar: {$ref: '#/components/schemas/ValorMonetarioPositivo'}
+        contasVencidas: {type: integer, format: int64, minimum: 0}
+    EvolucaoMensalFinanceira:
+      type: object
+      required: [mes, receitas, despesas, estornosReceitas, estornosDespesas, saldo]
+      properties:
+        mes: {type: string, pattern: '^\\d{4}-(0[1-9]|1[0-2])$'}
+        receitas: {$ref: '#/components/schemas/ValorMonetarioPositivo'}
+        despesas: {$ref: '#/components/schemas/ValorMonetarioPositivo'}
+        estornosReceitas: {$ref: '#/components/schemas/ValorMonetarioPositivo'}
+        estornosDespesas: {$ref: '#/components/schemas/ValorMonetarioPositivo'}
+        saldo: {type: string, pattern: '^-?\\d+(\\.\\d+)?$'}
+    ContaAberta:
+      type: object
+      required: [id, tipo, descricao, categoriaId, valor, atrasada, statusAprovacao, version]
+      properties:
+        id: {type: integer, format: int64}
+        tipo: {$ref: '#/components/schemas/TipoLancamentoFinanceiro'}
+        descricao: {type: string, maxLength: 250}
+        categoriaId: {type: integer, format: int64}
+        categoriaNome: {type: string}
+        valor: {$ref: '#/components/schemas/ValorMonetarioPositivo'}
+        dataVencimento: {type: string, format: date, nullable: true}
+        atrasada: {type: boolean}
+        statusAprovacao: {$ref: '#/components/schemas/StatusAprovacao'}
+        eventoId: {type: integer, format: int64, nullable: true}
+        gestaoOrigemId: {type: integer, format: int64, nullable: true}
+        version: {type: integer, format: int64}
+    ContaAbertaPage:
+      type: object
+      required: [items, page, size, totalItems, totalPages]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/ContaAberta'}}
         page: {type: integer}
         size: {type: integer}
         totalItems: {type: integer, format: int64}
@@ -2998,6 +3199,13 @@ components:
       schema:
         type: array
         items: {type: string, pattern: '^(dataCompetencia|dataVencimento|dataLiquidacao|descricao|valor|createdAt)(,(asc|desc|ASC|DESC))?$'}
+    SortContaAberta:
+      name: sort
+      in: query
+      description: "Pode ser repetido: `dataVencimento`, `descricao`, `valor` ou `createdAt`, com `asc` ou `desc`."
+      schema:
+        type: array
+        items: {type: string, pattern: '^(dataVencimento|descricao|valor|createdAt)(,(asc|desc|ASC|DESC))?$'}
     SortMembro:
       name: sort
       in: query
