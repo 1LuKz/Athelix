@@ -215,6 +215,10 @@ Criações retornam `201`, consultas e alterações bem-sucedidas retornam `200`
 - `CategoriaPatrimonio` pertence à atlética, tem nome normalizado único e pode ser inativada sem apagar o histórico. A criação de categorias é administrativa.
 - `ItemPatrimonio` representa um lote de unidades homogêneas: mesmo estado de conservação, local e valor estimado unitário. Unidades com condições distintas são cadastradas como lotes distintos.
 - Conservação (`OTIMO`, `BOM`, `REGULAR`, `RUIM`) é estado físico; situação operacional (`DISPONIVEL`, `EMPRESTADO`, `EM_MANUTENCAO`) é calculada a partir das movimentações e não altera a conservação.
-- Em B20, sem movimentações de B21, toda unidade está disponível. A quantidade disponível e as situações operacionais passarão a ser derivadas de empréstimos/manutenções, nunca gravadas manualmente no item.
-- A redução de quantidade total exige justificativa. B20 só permite reduzir o que está disponível; B21 complementará a validação atômica contra unidades emprestadas ou em manutenção.
+- A quantidade disponível e as situações operacionais são derivadas de empréstimos e manutenções, nunca gravadas manualmente no item.
+- A redução de quantidade total exige justificativa e não pode retirar unidades emprestadas ou em manutenção.
 - O valor estimado total inclui todos os lotes ativos (`quantidade total × valor unitário`), inclusive unidades que futuramente estejam temporariamente emprestadas ou em manutenção. Administrador gerencia todos os itens; gestor atua somente no seu departamento principal.
+- Disponibilidade é calculada, nunca persistida: `total − saldo de empréstimos abertos − quantidade em manutenção aberta`. Retiradas, devoluções e entradas em manutenção bloqueiam o item na transação para impedir reservas concorrentes da mesma unidade.
+- Empréstimos guardam responsável ativo, retirada, previsão e observação. As devoluções são imutáveis e podem ser parciais, mas a soma não supera o saldo emprestado. A quantidade devolvida do empréstimo é sempre derivada dessas linhas.
+- Uma devolução pode iniciar manutenção da mesma quantidade na própria transação, permitindo devolver uma unidade danificada sem colocá-la momentaneamente como disponível.
+- Manutenção somente recebe unidades disponíveis. A conclusão guarda resultado e devolve as unidades à disponibilidade. Itens com empréstimo ou manutenção abertos não podem ser inativados.

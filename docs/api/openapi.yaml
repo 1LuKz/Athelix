@@ -1683,6 +1683,61 @@ paths:
       responses:
         '200': {description: Resumo, content: {application/json: {schema: {$ref: '#/components/schemas/PatrimonioResumo'}}}}
         '401': {$ref: '#/components/responses/Unauthenticated'}
+  /patrimonio/emprestimos:
+    get:
+      summary: Lista empréstimos de patrimônio da atlética
+      operationId: listEmprestimosPatrimonio
+      responses:
+        '200': {description: Empréstimos com saldo devolvido calculado, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/EmprestimoPatrimonio'}}}}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+    post:
+      summary: Registra retirada de unidades disponíveis
+      operationId: createEmprestimoPatrimonio
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/EmprestimoPatrimonioCreateRequest'}}}}
+      responses:
+        '201': {description: Empréstimo registrado, content: {application/json: {schema: {$ref: '#/components/schemas/EmprestimoPatrimonio'}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /patrimonio/emprestimos/{id}/devolucoes:
+    post:
+      summary: Registra devolução parcial ou total
+      operationId: createDevolucaoPatrimonio
+      description: A quantidade não pode superar o saldo aberto. Pode iniciar manutenção da unidade devolvida na mesma transação.
+      parameters: [{$ref: '#/components/parameters/ResourceId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/DevolucaoPatrimonioCreateRequest'}}}}
+      responses:
+        '201': {description: Devolução registrada, content: {application/json: {schema: {$ref: '#/components/schemas/DevolucaoPatrimonio'}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /patrimonio/manutencoes:
+    get:
+      summary: Lista manutenções de patrimônio
+      operationId: listManutencoesPatrimonio
+      responses:
+        '200': {description: Manutenções, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/ManutencaoPatrimonio'}}}}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+    post:
+      summary: Inicia manutenção usando unidades disponíveis
+      operationId: createManutencaoPatrimonio
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ManutencaoPatrimonioCreateRequest'}}}}
+      responses:
+        '201': {description: Manutenção iniciada, content: {application/json: {schema: {$ref: '#/components/schemas/ManutencaoPatrimonio'}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /patrimonio/manutencoes/{id}/concluir:
+    patch:
+      summary: Conclui manutenção e libera as unidades
+      operationId: completeManutencaoPatrimonio
+      parameters: [{$ref: '#/components/parameters/ResourceId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ManutencaoConclusaoRequest'}}}}
+      responses:
+        '200': {description: Manutenção concluída, content: {application/json: {schema: {$ref: '#/components/schemas/ManutencaoPatrimonio'}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
 components:
   schemas:
     ApiError:
@@ -2693,6 +2748,84 @@ components:
         quantidadeEmprestada: {type: integer, format: int64}
         quantidadeEmManutencao: {type: integer, format: int64}
         valorEstimadoTotal: {$ref: '#/components/schemas/MonetaryValue'}
+    EmprestimoPatrimonio:
+      type: object
+      required: [id, itemId, membroResponsavelId, quantidade, quantidadeDevolvida, saldoAberto, retiradoEm, registradoPorMembroId, version]
+      properties:
+        id: {type: integer, format: int64}
+        itemId: {type: integer, format: int64}
+        membroResponsavelId: {type: integer, format: int64}
+        quantidade: {type: integer, minimum: 1}
+        quantidadeDevolvida: {type: integer, minimum: 0, description: Calculada pelas devoluções registradas.}
+        saldoAberto: {type: integer, minimum: 0}
+        retiradoEm: {type: string, format: date-time}
+        devolucaoPrevistaEm: {type: string, format: date-time, nullable: true}
+        observacao: {type: string, maxLength: 1000, nullable: true}
+        registradoPorMembroId: {type: integer, format: int64}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+        version: {type: integer, format: int64}
+    EmprestimoPatrimonioCreateRequest:
+      type: object
+      required: [itemId, membroResponsavelId, quantidade]
+      properties:
+        itemId: {type: integer, format: int64, minimum: 1}
+        membroResponsavelId: {type: integer, format: int64, minimum: 1}
+        quantidade: {type: integer, minimum: 1}
+        devolucaoPrevistaEm: {type: string, format: date-time}
+        observacao: {type: string, maxLength: 1000}
+    DevolucaoPatrimonio:
+      type: object
+      required: [id, emprestimoId, quantidade, devolvidaEm, condicaoRetorno, registradoPorMembroId]
+      properties:
+        id: {type: integer, format: int64}
+        emprestimoId: {type: integer, format: int64}
+        quantidade: {type: integer, minimum: 1}
+        devolvidaEm: {type: string, format: date-time}
+        condicaoRetorno: {$ref: '#/components/schemas/ConservacaoPatrimonio'}
+        observacao: {type: string, maxLength: 1000, nullable: true}
+        registradoPorMembroId: {type: integer, format: int64}
+    DevolucaoPatrimonioCreateRequest:
+      type: object
+      required: [quantidade, condicaoRetorno]
+      properties:
+        quantidade: {type: integer, minimum: 1}
+        devolvidaEm: {type: string, format: date-time}
+        condicaoRetorno: {$ref: '#/components/schemas/ConservacaoPatrimonio'}
+        observacao: {type: string, maxLength: 1000}
+        enviarParaManutencao: {type: boolean, default: false}
+        motivoManutencao: {type: string, maxLength: 1000}
+        previsaoConclusaoManutencao: {type: string, format: date-time}
+    ManutencaoPatrimonio:
+      type: object
+      required: [id, itemId, quantidade, motivo, iniciadaEm, registradoPorMembroId, version]
+      properties:
+        id: {type: integer, format: int64}
+        itemId: {type: integer, format: int64}
+        quantidade: {type: integer, minimum: 1}
+        motivo: {type: string, maxLength: 1000}
+        iniciadaEm: {type: string, format: date-time}
+        previsaoConclusaoEm: {type: string, format: date-time, nullable: true}
+        concluidaEm: {type: string, format: date-time, nullable: true}
+        resultado: {type: string, maxLength: 1000, nullable: true}
+        registradoPorMembroId: {type: integer, format: int64}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+        version: {type: integer, format: int64}
+    ManutencaoPatrimonioCreateRequest:
+      type: object
+      required: [itemId, quantidade, motivo]
+      properties:
+        itemId: {type: integer, format: int64, minimum: 1}
+        quantidade: {type: integer, minimum: 1}
+        motivo: {type: string, maxLength: 1000}
+        previsaoConclusaoEm: {type: string, format: date-time}
+    ManutencaoConclusaoRequest:
+      type: object
+      required: [resultado, version]
+      properties:
+        resultado: {type: string, maxLength: 1000}
+        version: {type: integer, format: int64, minimum: 0}
     AnexoEvento:
       type: object
       required: [id, atleticaId, eventoId, arquivoId, titulo, tipoMaterial, criadoEm, atualizadoEm, version]

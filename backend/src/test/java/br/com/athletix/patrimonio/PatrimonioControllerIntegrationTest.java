@@ -52,7 +52,8 @@ class PatrimonioControllerIntegrationTest {
                 """.formatted(categoriaId, departamentoId, item.get("version").asLong()));
         assertEquals(3, atualizado.get("quantidadeTotal").asInt());
 
-        JsonNode filtrado = enviar(admin, get("/patrimonio/itens?conservacao=BOM&situacao=DISPONIVEL"), 200, "");
+        JsonNode filtrado = enviar(admin, get("/patrimonio/itens").param("nome", "Notebook laboratório")
+                .param("conservacao", "BOM").param("situacao", "DISPONIVEL"), 200, "");
         assertEquals(1, filtrado.get("totalItems").asInt());
         JsonNode emprestado = enviar(admin, get("/patrimonio/itens?situacao=EMPRESTADO"), 200, "");
         assertEquals(0, emprestado.get("totalItems").asInt());

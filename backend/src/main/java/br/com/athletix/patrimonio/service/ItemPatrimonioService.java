@@ -39,19 +39,19 @@ public class ItemPatrimonioService {
     private final DepartamentoRepository departamentos; private final AtleticaRepository atleticas;
     private final GestaoRepository gestoes; private final AtleticaResourceResolver resolver;
     private final PatrimonioAutorizacaoService autorizacao; private final AtividadeUsuarioService auditoria;
+    private final PatrimonioDisponibilidadeService disponibilidade;
     public ItemPatrimonioService(ItemPatrimonioRepository itens, CategoriaPatrimonioService categorias,
             DepartamentoRepository departamentos, AtleticaRepository atleticas, GestaoRepository gestoes,
-            AtleticaResourceResolver resolver, PatrimonioAutorizacaoService autorizacao, AtividadeUsuarioService auditoria) {
+            AtleticaResourceResolver resolver, PatrimonioAutorizacaoService autorizacao, AtividadeUsuarioService auditoria,
+            PatrimonioDisponibilidadeService disponibilidade) {
         this.itens = itens; this.categorias = categorias; this.departamentos = departamentos; this.atleticas = atleticas;
         this.gestoes = gestoes; this.resolver = resolver; this.autorizacao = autorizacao; this.auditoria = auditoria;
+        this.disponibilidade = disponibilidade;
     }
     @Transactional(readOnly = true)
     public PageResponse<ItemPatrimonioResponse> listar(ItemPatrimonioFiltro filtro, Pageable pageable, Membro membro) {
         autorizacao.exigirConsulta(membro);
         if (filtro.categoriaId() != null) categorias.exigirAtiva(filtro.categoriaId());
-        if (filtro.situacao() != null && filtro.situacao() != SituacaoOperacionalPatrimonio.DISPONIVEL) {
-            return new PageResponse<>(java.util.List.of(), pageable.getPageNumber(), pageable.getPageSize(), 0, 0);
-        }
         Long atleticaId = resolver.atleticaIdAtual();
         Specification<ItemPatrimonio> spec = (root, query, cb) -> {
             ArrayList<Predicate> predicates = new ArrayList<>();
@@ -62,7 +62,12 @@ public class ItemPatrimonioService {
             if (filtro.conservacao() != null) predicates.add(cb.equal(root.get("conservacao"), filtro.conservacao()));
             return cb.and(predicates.toArray(Predicate[]::new));
         };
-        return PageResponse.from(itens.findAll(spec, pageable), ItemPatrimonioResponse::from);
+        java.util.List<ItemPatrimonioResponse> todos = itens.findAll(spec, pageable.getSort()).stream()
+                .map(item -> resposta(item, filtro.situacao())).filter(java.util.Objects::nonNull).toList();
+        int inicio = Math.min((int) pageable.getOffset(), todos.size());
+        int fim = Math.min(inicio + pageable.getPageSize(), todos.size());
+        int totalPaginas = todos.isEmpty() ? 0 : (int) Math.ceil((double) todos.size() / pageable.getPageSize());
+        return new PageResponse<>(todos.subList(inicio, fim), pageable.getPageNumber(), pageable.getPageSize(), todos.size(), totalPaginas);
     }
     @Transactional public ItemPatrimonioResponse criar(ItemPatrimonioCreateRequest request, Membro autor) {
         Departamento departamento = departamentoAtivo(request.departamentoResponsavelId());
@@ -76,13 +81,13 @@ public class ItemPatrimonioService {
                 categoria, request.quantidadeTotal(), request.conservacao(), NomeNormalizado.displayValue(request.localizacao()),
                 departamento, valorNaoNegativo(request.valorEstimadoUnitario()), request.ativo()));
         auditoria.registrar("ITEM_PATRIMONIO_CRIADO", "ITEM_PATRIMONIO", item.getId(), "Item de patrimônio criado.");
-        return ItemPatrimonioResponse.from(item);
+        return resposta(item, null);
     }
     @Transactional(readOnly = true) public ItemPatrimonioResponse buscar(Long id, Membro membro) {
-        autorizacao.exigirConsulta(membro); return ItemPatrimonioResponse.from(buscarEntidade(id));
+        autorizacao.exigirConsulta(membro); return resposta(buscarEntidade(id), null);
     }
     @Transactional public ItemPatrimonioResponse atualizar(Long id, ItemPatrimonioUpdateRequest request, Membro autor) {
-        ItemPatrimonio item = buscarEntidade(id);
+        ItemPatrimonio item = buscarEntidadeTravada(id);
         if (!item.getVersion().equals(request.version())) throw new ConcurrentModificationException();
         Departamento novoDepartamento = departamentoAtivo(request.departamentoResponsavelId());
         autorizacao.exigirGerenciamento(autor, item.getDepartamentoResponsavelId());
@@ -90,7 +95,16 @@ public class ItemPatrimonioService {
         if (request.quantidadeTotal() < item.getQuantidadeTotal()) {
             String justificativa = NomeNormalizado.optionalDisplayValue(request.justificativaReducao());
             if (justificativa == null) throw new BusinessRuleException("A redução de quantidade exige justificativa.");
-            // Em B20 todas as unidades estão disponíveis. B21 verificará empréstimos/manutenções antes da redução.
+            var saldo = disponibilidade.calcular(item.getId(), item.getAtleticaId(), item.getQuantidadeTotal());
+            if (request.quantidadeTotal() < saldo.quantidadeEmprestada() + saldo.quantidadeEmManutencao()) {
+                throw new BusinessRuleException("A redução não pode retirar unidades emprestadas ou em manutenção.");
+            }
+        }
+        if (item.isAtivo() && !request.ativo()) {
+            var saldo = disponibilidade.calcular(item.getId(), item.getAtleticaId(), item.getQuantidadeTotal());
+            if (saldo.quantidadeEmprestada() > 0 || saldo.quantidadeEmManutencao() > 0) {
+                throw new BusinessRuleException("Não é possível inativar item com empréstimo ou manutenção em aberto.");
+            }
         }
         item.atualizar(NomeNormalizado.displayValue(request.nome()), NomeNormalizado.optionalDisplayValue(request.descricao()),
                 categorias.exigirAtiva(request.categoriaId()), request.quantidadeTotal(), request.conservacao(),
@@ -98,17 +112,22 @@ public class ItemPatrimonioService {
                 valorNaoNegativo(request.valorEstimadoUnitario()), request.ativo());
         auditoria.registrar("ITEM_PATRIMONIO_ATUALIZADO", "ITEM_PATRIMONIO", item.getId(),
                 "Item de patrimônio atualizado.");
-        return ItemPatrimonioResponse.from(item);
+        return resposta(item, null);
     }
     @Transactional(readOnly = true) public PatrimonioResumoResponse resumo(Membro membro) {
-        autorizacao.exigirConsulta(membro); long registros = 0, quantidade = 0; BigDecimal valor = BigDecimal.ZERO.setScale(2);
+        autorizacao.exigirConsulta(membro); long registros = 0, quantidade = 0, disponivel = 0, emprestada = 0, manutencao = 0;
+        BigDecimal valor = BigDecimal.ZERO.setScale(2);
         Long atleticaId = resolver.atleticaIdAtual();
         for (ItemPatrimonio item : itens.findAll((root, query, cb) -> cb.and(cb.equal(root.get("atletica").get("id"), atleticaId),
                 cb.isTrue(root.get("ativo"))))) { registros++; quantidade += item.getQuantidadeTotal();
+            var saldo = disponibilidade.calcular(item.getId(), atleticaId, item.getQuantidadeTotal());
+            disponivel += saldo.quantidadeDisponivel(); emprestada += saldo.quantidadeEmprestada(); manutencao += saldo.quantidadeEmManutencao();
             valor = valor.add(item.getValorEstimadoUnitario().multiply(BigDecimal.valueOf(item.getQuantidadeTotal()))); }
-        return new PatrimonioResumoResponse(registros, quantidade, quantidade, 0, 0, MoneyValues.format(valor));
+        return new PatrimonioResumoResponse(registros, quantidade, disponivel, emprestada, manutencao, MoneyValues.format(valor));
     }
     private ItemPatrimonio buscarEntidade(Long id) { return itens.findByIdAndAtletica_Id(id, resolver.atleticaIdAtual())
+            .orElseThrow(ResourceNotFoundException::new); }
+    private ItemPatrimonio buscarEntidadeTravada(Long id) { return itens.findByIdAndAtletica_IdForUpdate(id, resolver.atleticaIdAtual())
             .orElseThrow(ResourceNotFoundException::new); }
     private Departamento departamentoAtivo(Long id) {
         Departamento departamento = resolver.requireByIdAndAtleticaId(id, departamentos::findByIdAndAtletica_Id);
@@ -117,4 +136,10 @@ public class ItemPatrimonioService {
     }
     private BigDecimal valorNaoNegativo(String valor) { BigDecimal convertido = MoneyValues.parse(valor);
         if (convertido.signum() < 0) throw new BusinessRuleException("O valor estimado unitário não pode ser negativo."); return convertido; }
+    private ItemPatrimonioResponse resposta(ItemPatrimonio item, SituacaoOperacionalPatrimonio situacaoFiltro) {
+        var saldo = disponibilidade.calcular(item.getId(), item.getAtleticaId(), item.getQuantidadeTotal());
+        ItemPatrimonioResponse resposta = ItemPatrimonioResponse.from(item, saldo);
+        if (situacaoFiltro != null && resposta.situacaoOperacional() != situacaoFiltro) return null;
+        return resposta;
+    }
 }

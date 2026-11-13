@@ -114,4 +114,6 @@ Nesta etapa não há endpoint público para criar ou administrar atléticas. O p
 
 - `GET/POST /patrimonio/categorias` permite listar categorias da atlética e criar novas categorias administrativas.
 - `GET/POST /patrimonio/itens`, `GET/PUT /patrimonio/itens/{id}` usam lote homogêneo e valor unitário decimal textual. A redução de quantidade exige `justificativaReducao`, `version` e não pode ultrapassar a disponibilidade.
-- `GET /patrimonio/resumo` traz quantitativos e valor estimado total dos lotes ativos. Conservação e situação operacional são campos independentes; B21 acrescentará empréstimos e manutenção ao cálculo de disponibilidade.
+- `GET /patrimonio/resumo` traz quantitativos e valor estimado total dos lotes ativos. Conservação e situação operacional são campos independentes; empréstimos e manutenção compõem o cálculo de disponibilidade.
+- `GET/POST /patrimonio/emprestimos` registra retiradas e consulta saldo aberto calculado. `POST /patrimonio/emprestimos/{id}/devolucoes` aceita devolução parcial e, opcionalmente, inicia manutenção na mesma transação.
+- `GET/POST /patrimonio/manutencoes` e `PATCH /patrimonio/manutencoes/{id}/concluir` controlam indisponibilidade temporária. Disponibilidade é `total − empréstimos abertos − manutenções abertas`; as operações bloqueiam o item para não reservar a mesma unidade duas vezes.
