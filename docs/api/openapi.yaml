@@ -1544,6 +1544,77 @@ paths:
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
+  /eventos/{eventoId}/anexos:
+    get:
+      summary: Lista os anexos protegidos de um evento
+      operationId: listAnexosEvento
+      description: Disponível ao organizador do evento, responsáveis ativos e administração. Não retorna o BLOB.
+      parameters: [{$ref: '#/components/parameters/EventoId'}]
+      responses:
+        '200':
+          description: Metadados dos anexos em ordem de inclusão.
+          content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/AnexoEvento'}}}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    post:
+      summary: Envia e vincula um anexo protegido ao evento
+      operationId: createAnexoEvento
+      description: >-
+        O arquivo é armazenado como BLOB protegido. REGULAMENTO aceita somente PDF; ARTE e OUTRO aceitam PDF, PNG ou JPEG.
+      parameters: [{$ref: '#/components/parameters/EventoId'}]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [arquivo, titulo, tipoMaterial]
+              properties:
+                arquivo: {type: string, format: binary}
+                titulo: {type: string, maxLength: 160}
+                descricao: {type: string, maxLength: 1000}
+                tipoMaterial: {$ref: '#/components/schemas/TipoMaterialEvento'}
+      responses:
+        '201':
+          description: Anexo salvo e vinculado.
+          content: {application/json: {schema: {$ref: '#/components/schemas/AnexoEvento'}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /eventos/{eventoId}/anexos/{anexoId}:
+    delete:
+      summary: Remove o vínculo de um anexo antes do encerramento do evento
+      operationId: deleteAnexoEvento
+      description: Preserva o arquivo BLOB, pois ele pode estar referenciado por histórico ou outro recurso.
+      parameters:
+        - $ref: '#/components/parameters/EventoId'
+        - $ref: '#/components/parameters/AnexoEventoId'
+        - $ref: '#/components/parameters/VersionQuery'
+      responses:
+        '204': {description: Vínculo removido.}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /eventos/{eventoId}/financeiro/resumo:
+    get:
+      summary: Consulta o orçamento e a realização financeira do evento
+      operationId: getResumoFinanceiroEvento
+      description: >-
+        Valores seguem regime de caixa até dataReferencia. Receitas não reduzem despesas realizadas. O percentual é nulo
+        quando o orçamento for zero e não é limitado a 100.
+      parameters:
+        - $ref: '#/components/parameters/EventoId'
+        - {name: dataReferencia, in: query, schema: {type: string, format: date}, description: Data inclusiva; padrão é hoje no fuso da atlética.}
+      responses:
+        '200':
+          description: Resumo financeiro agregado, sem dados de contrapartes ou anexos.
+          content: {application/json: {schema: {$ref: '#/components/schemas/EventoFinanceiroResumo'}}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+        '404': {$ref: '#/components/responses/NotFound'}
 components:
   schemas:
     ApiError:
@@ -2464,6 +2535,47 @@ components:
               type: integer
               format: int64
               minimum: 0
+    TipoMaterialEvento:
+      type: string
+      enum: [ARTE, REGULAMENTO, OUTRO]
+    AnexoEvento:
+      type: object
+      required: [id, atleticaId, eventoId, arquivoId, titulo, tipoMaterial, criadoEm, atualizadoEm, version]
+      properties:
+        id: {type: integer, format: int64}
+        atleticaId: {type: integer, format: int64}
+        eventoId: {type: integer, format: int64}
+        arquivoId: {type: integer, format: int64}
+        titulo: {type: string, maxLength: 160}
+        descricao: {type: string, maxLength: 1000, nullable: true}
+        tipoMaterial: {$ref: '#/components/schemas/TipoMaterialEvento'}
+        criadoEm: {type: string, format: date-time}
+        atualizadoEm: {type: string, format: date-time}
+        version: {type: integer, format: int64}
+    SituacaoOrcamentoEvento:
+      type: string
+      enum: [SEM_ORCAMENTO, DENTRO_DO_ORCAMENTO, ESTOURADO]
+    EventoFinanceiroResumo:
+      type: object
+      required: [eventoId, dataReferencia, orcamentoPrevisto, realizado, saldoOrcamentario, situacao, receitasRealizadas, despesasAbertas]
+      properties:
+        eventoId: {type: integer, format: int64}
+        dataReferencia: {type: string, format: date}
+        orcamentoPrevisto: {$ref: '#/components/schemas/MonetaryValue'}
+        realizado: {$ref: '#/components/schemas/MonetaryValue'}
+        saldoOrcamentario: {$ref: '#/components/schemas/MonetaryValue'}
+        percentualUtilizado:
+          type: number
+          format: double
+          nullable: true
+          description: Realizado / orçamento previsto × 100, com duas casas e sem limite máximo.
+        situacao: {$ref: '#/components/schemas/SituacaoOrcamentoEvento'}
+        receitasRealizadas:
+          allOf: [{$ref: '#/components/schemas/MonetaryValue'}]
+          description: Receitas liquidadas do evento menos estornos de receitas até a data de referência.
+        despesasAbertas:
+          allOf: [{$ref: '#/components/schemas/MonetaryValue'}]
+          description: Despesas abertas não rejeitadas; não compõem o realizado nem o saldo disponível.
     EventoStatusUpdateRequest:
       type: object
       required: [status, version]
@@ -3135,6 +3247,11 @@ components:
           schema:
             $ref: '#/components/schemas/ApiError'
   parameters:
+    AnexoEventoId:
+      name: anexoId
+      in: path
+      required: true
+      schema: {type: integer, format: int64, minimum: 1}
     AtividadeCronogramaId:
       name: atividadeId
       in: path

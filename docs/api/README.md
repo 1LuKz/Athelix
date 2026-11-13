@@ -103,3 +103,9 @@ Nesta etapa não há endpoint público para criar ou administrar atléticas. O p
 - O limite por arquivo é 10 MiB (`athletix.arquivos.max-tamanho-bytes`); `spring.servlet.multipart.max-file-size` e `max-request-size` têm limite compatível. O teto por atlética é configurável em `athletix.arquivos.orcamento-por-atletica-bytes`.
 - Documento aceita PDF; divulgação aceita PDF, PNG e JPEG. A assinatura binária, extensão e MIME declarado devem coincidir. SVG, HTML, scripts e executáveis são rejeitados.
 - `GET /arquivos/{id}/conteudo` exige sessão, escopo de atlética e autorização explícita do recurso pai. Não há listagem com BLOB. A resposta usa `nosniff`, cache privado sem armazenamento e PDF inline após autorização.
+
+## Anexos e financeiro de eventos
+
+- `GET/POST /eventos/{eventoId}/anexos` lista ou envia anexos multipart. `ARTE` e `OUTRO` aceitam PDF/PNG/JPEG; `REGULAMENTO` aceita PDF. As operações são de organização do evento ou administração; a lista traz metadados, nunca BLOB.
+- `DELETE /eventos/{eventoId}/anexos/{anexoId}?version=` remove apenas o vínculo, antes do encerramento do evento, e preserva o arquivo. A leitura continua exclusivamente em `GET /arquivos/{id}/conteudo`, que revalida a autorização do evento.
+- `GET /eventos/{eventoId}/financeiro/resumo?dataReferencia=` entrega agregados financeiros a membros ativos. `realizado` considera despesas aprovadas e liquidadas menos seus estornos; `receitasRealizadas` é independente e não reduz o orçamento gasto. Para orçamento zero, `percentualUtilizado` é `null` e `situacao` é `SEM_ORCAMENTO`; percentuais acima de 100 não são limitados.

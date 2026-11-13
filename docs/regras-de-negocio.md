@@ -201,3 +201,11 @@ Criações retornam `201`, consultas e alterações bem-sucedidas retornam `200`
 - Cada arquivo tem limite de 10 MiB e a atlética possui orçamento total configurável. A reserva é serializada no banco para impedir ultrapassar o teto em envios concorrentes.
 - PDF é aceito para documentos; PDF, PNG e JPEG para divulgação. Assinatura binária, extensão e MIME declarado precisam coincidir; SVG, HTML, scripts e executáveis são recusados.
 - A leitura resolve `id + atleticaId`, mas só entrega o BLOB quando o módulo proprietário confirma o acesso ao recurso pai e sua visibilidade. Sem vínculo reconhecido retorna `404`; recusa de visibilidade retorna `403`. O download usa MIME seguro, `Content-Disposition`, `nosniff` e não grava em diretório público.
+
+## Anexos e orçamento de eventos
+
+- `AnexoEvento` liga um arquivo protegido a um único evento no escopo da atlética e guarda título, descrição e tipo `ARTE`, `REGULAMENTO` ou `OUTRO`. Metadados e conteúdo não se misturam: a lista não retorna BLOB e o conteúdo continua em `GET /arquivos/{id}/conteudo` sob autorização do recurso pai.
+- Apenas administração, criador do evento e responsáveis ativos do evento administram e leem seus anexos. `REGULAMENTO` aceita PDF; `ARTE` e `OUTRO` usam a política de divulgação (PDF, PNG ou JPEG), com validação de assinatura, extensão e MIME.
+- A remoção do vínculo exige versão, é bloqueada depois de `CONCLUIDO` e é auditada. Ela não remove o `Arquivo`, pois o BLOB pode estar referenciado por histórico ou outro recurso.
+- O resumo financeiro do evento usa regime de caixa até a data de referência: realizado é a despesa `APROVADA` e `LIQUIDADO` menos os estornos dessas despesas; receitas realizadas são recebimentos menos seus estornos; despesas abertas não rejeitadas ficam separadas como pendência.
+- Saldo orçamentário é `orçamento previsto − realizado`. Receitas não são descontadas automaticamente do realizado. Percentual utilizado é `realizado / orçamento × 100`, com duas casas e sem teto. Para orçamento `0.00`, o percentual é nulo e a situação é `SEM_ORCAMENTO`; acima do previsto a situação é `ESTOURADO` e o percentual continua exibindo o excesso.

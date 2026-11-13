@@ -37,12 +37,16 @@ public class ArquivoLeituraProtegidaService {
     }
 
     private void exigirAcessoDoRecursoPai(ArquivoMetadata arquivo, Membro membro) {
+        boolean possuiVinculoSemPermissao = false;
         for (ArquivoAcessoAoConteudo autorizador : autorizadores) {
             ArquivoAcessoAoConteudo.DecisaoLeitura decisao = autorizador.decidirLeitura(arquivo, membro);
             if (decisao == ArquivoAcessoAoConteudo.DecisaoLeitura.PERMITIR) return;
             if (decisao == ArquivoAcessoAoConteudo.DecisaoLeitura.NEGAR) {
-                throw new AccessDeniedException("Sem acesso ao recurso vinculado ao arquivo.");
+                possuiVinculoSemPermissao = true;
             }
+        }
+        if (possuiVinculoSemPermissao) {
+            throw new AccessDeniedException("Sem acesso ao recurso vinculado ao arquivo.");
         }
         // Sem vínculo reconhecido, o arquivo é indistinguível de inexistente e nunca é exposto por escopo apenas.
         throw new ResourceNotFoundException();
