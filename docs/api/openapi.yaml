@@ -1615,6 +1615,74 @@ paths:
           content: {application/json: {schema: {$ref: '#/components/schemas/EventoFinanceiroResumo'}}}
         '401': {$ref: '#/components/responses/Unauthenticated'}
         '404': {$ref: '#/components/responses/NotFound'}
+  /patrimonio/categorias:
+    get:
+      summary: Lista categorias de patrimônio da atlética
+      operationId: listCategoriasPatrimonio
+      responses:
+        '200': {description: Categorias, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/CategoriaPatrimonio'}}}}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+    post:
+      summary: Cria categoria de patrimônio
+      operationId: createCategoriaPatrimonio
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CategoriaPatrimonioCreateRequest'}}}}
+      responses:
+        '201': {description: Categoria criada, content: {application/json: {schema: {$ref: '#/components/schemas/CategoriaPatrimonio'}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /patrimonio/itens:
+    get:
+      summary: Lista itens de patrimônio por lote homogêneo
+      operationId: listItensPatrimonio
+      parameters:
+        - {name: nome, in: query, schema: {type: string}}
+        - {name: categoriaId, in: query, schema: {type: integer, format: int64, minimum: 1}}
+        - {name: conservacao, in: query, schema: {$ref: '#/components/schemas/ConservacaoPatrimonio'}}
+        - {name: situacao, in: query, schema: {$ref: '#/components/schemas/SituacaoOperacionalPatrimonio'}}
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - $ref: '#/components/parameters/SortItemPatrimonio'
+      responses:
+        '200': {description: Página de itens, content: {application/json: {schema: {$ref: '#/components/schemas/ItemPatrimonioPage'}}}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
+    post:
+      summary: Cria lote de patrimônio homogêneo
+      operationId: createItemPatrimonio
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ItemPatrimonioCreateRequest'}}}}
+      responses:
+        '201': {description: Item criado, content: {application/json: {schema: {$ref: '#/components/schemas/ItemPatrimonio'}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /patrimonio/itens/{id}:
+    get:
+      summary: Consulta item de patrimônio
+      operationId: getItemPatrimonio
+      parameters: [{$ref: '#/components/parameters/ResourceId'}]
+      responses:
+        '200': {description: Item, content: {application/json: {schema: {$ref: '#/components/schemas/ItemPatrimonio'}}}}
+        '404': {$ref: '#/components/responses/NotFound'}
+    put:
+      summary: Altera lote de patrimônio
+      operationId: updateItemPatrimonio
+      description: Redução da quantidade total exige justificativa e não pode retirar unidades indisponíveis.
+      parameters: [{$ref: '#/components/parameters/ResourceId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ItemPatrimonioUpdateRequest'}}}}
+      responses:
+        '200': {description: Item atualizado, content: {application/json: {schema: {$ref: '#/components/schemas/ItemPatrimonio'}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /patrimonio/resumo:
+    get:
+      summary: Consulta o resumo agregado do patrimônio ativo
+      operationId: getResumoPatrimonio
+      description: Valor estimado inclui itens temporariamente emprestados ou em manutenção.
+      responses:
+        '200': {description: Resumo, content: {application/json: {schema: {$ref: '#/components/schemas/PatrimonioResumo'}}}}
+        '401': {$ref: '#/components/responses/Unauthenticated'}
 components:
   schemas:
     ApiError:
@@ -2538,6 +2606,93 @@ components:
     TipoMaterialEvento:
       type: string
       enum: [ARTE, REGULAMENTO, OUTRO]
+    ConservacaoPatrimonio:
+      type: string
+      enum: [OTIMO, BOM, REGULAR, RUIM]
+    SituacaoOperacionalPatrimonio:
+      type: string
+      enum: [DISPONIVEL, EMPRESTADO, EM_MANUTENCAO]
+      description: Situação calculada pelas movimentações, distinta da conservação física.
+    CategoriaPatrimonio:
+      type: object
+      required: [id, atleticaId, nome, ativa, createdAt, updatedAt, version]
+      properties:
+        id: {type: integer, format: int64}
+        atleticaId: {type: integer, format: int64}
+        nome: {type: string, maxLength: 100}
+        ativa: {type: boolean}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+        version: {type: integer, format: int64}
+    CategoriaPatrimonioCreateRequest:
+      type: object
+      required: [nome, ativa]
+      properties:
+        nome: {type: string, maxLength: 100}
+        ativa: {type: boolean}
+    ItemPatrimonio:
+      type: object
+      required: [id, atleticaId, nome, categoriaId, quantidadeTotal, quantidadeDisponivel, conservacao, situacaoOperacional, localizacao, departamentoResponsavelId, valorEstimadoUnitario, ativo, createdAt, updatedAt, version]
+      properties:
+        id: {type: integer, format: int64}
+        atleticaId: {type: integer, format: int64}
+        gestaoOrigemId: {type: integer, format: int64, nullable: true}
+        nome: {type: string, maxLength: 160}
+        descricao: {type: string, maxLength: 2000, nullable: true}
+        categoriaId: {type: integer, format: int64}
+        categoriaNome: {type: string}
+        quantidadeTotal: {type: integer, minimum: 1}
+        quantidadeDisponivel: {type: integer, minimum: 0, description: Derivada das movimentações; em B20 coincide com quantidadeTotal.}
+        conservacao: {$ref: '#/components/schemas/ConservacaoPatrimonio'}
+        situacaoOperacional: {$ref: '#/components/schemas/SituacaoOperacionalPatrimonio'}
+        localizacao: {type: string, maxLength: 200}
+        departamentoResponsavelId: {type: integer, format: int64}
+        departamentoResponsavelNome: {type: string}
+        valorEstimadoUnitario: {$ref: '#/components/schemas/MonetaryValue'}
+        ativo: {type: boolean}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+        version: {type: integer, format: int64}
+    ItemPatrimonioCreateRequest:
+      type: object
+      required: [nome, categoriaId, quantidadeTotal, conservacao, localizacao, departamentoResponsavelId, valorEstimadoUnitario, ativo]
+      properties:
+        nome: {type: string, maxLength: 160}
+        descricao: {type: string, maxLength: 2000}
+        categoriaId: {type: integer, format: int64, minimum: 1}
+        quantidadeTotal: {type: integer, minimum: 1}
+        conservacao: {$ref: '#/components/schemas/ConservacaoPatrimonio'}
+        localizacao: {type: string, maxLength: 200}
+        departamentoResponsavelId: {type: integer, format: int64, minimum: 1}
+        valorEstimadoUnitario: {$ref: '#/components/schemas/MonetaryValue'}
+        ativo: {type: boolean}
+    ItemPatrimonioUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/ItemPatrimonioCreateRequest'
+        - type: object
+          required: [version]
+          properties:
+            justificativaReducao: {type: string, maxLength: 500}
+            version: {type: integer, format: int64, minimum: 0}
+    ItemPatrimonioPage:
+      type: object
+      required: [items, page, size, totalItems, totalPages]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/ItemPatrimonio'}}
+        page: {type: integer}
+        size: {type: integer}
+        totalItems: {type: integer, format: int64}
+        totalPages: {type: integer}
+    PatrimonioResumo:
+      type: object
+      required: [itensAtivos, quantidadeTotal, quantidadeDisponivel, quantidadeEmprestada, quantidadeEmManutencao, valorEstimadoTotal]
+      properties:
+        itensAtivos: {type: integer, format: int64}
+        quantidadeTotal: {type: integer, format: int64}
+        quantidadeDisponivel: {type: integer, format: int64}
+        quantidadeEmprestada: {type: integer, format: int64}
+        quantidadeEmManutencao: {type: integer, format: int64}
+        valorEstimadoTotal: {$ref: '#/components/schemas/MonetaryValue'}
     AnexoEvento:
       type: object
       required: [id, atleticaId, eventoId, arquivoId, titulo, tipoMaterial, criadoEm, atualizadoEm, version]
@@ -3247,6 +3402,13 @@ components:
           schema:
             $ref: '#/components/schemas/ApiError'
   parameters:
+    SortItemPatrimonio:
+      name: sort
+      in: query
+      description: "Pode ser repetido: `nome`, `conservacao`, `localizacao`, `valorEstimadoUnitario` ou `createdAt`, com `asc` ou `desc`."
+      schema:
+        type: array
+        items: {type: string, pattern: '^(nome|conservacao|localizacao|valorEstimadoUnitario|createdAt)(,(asc|desc|ASC|DESC))?$'}
     AnexoEventoId:
       name: anexoId
       in: path

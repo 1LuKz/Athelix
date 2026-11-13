@@ -209,3 +209,12 @@ Criações retornam `201`, consultas e alterações bem-sucedidas retornam `200`
 - A remoção do vínculo exige versão, é bloqueada depois de `CONCLUIDO` e é auditada. Ela não remove o `Arquivo`, pois o BLOB pode estar referenciado por histórico ou outro recurso.
 - O resumo financeiro do evento usa regime de caixa até a data de referência: realizado é a despesa `APROVADA` e `LIQUIDADO` menos os estornos dessas despesas; receitas realizadas são recebimentos menos seus estornos; despesas abertas não rejeitadas ficam separadas como pendência.
 - Saldo orçamentário é `orçamento previsto − realizado`. Receitas não são descontadas automaticamente do realizado. Percentual utilizado é `realizado / orçamento × 100`, com duas casas e sem teto. Para orçamento `0.00`, o percentual é nulo e a situação é `SEM_ORCAMENTO`; acima do previsto a situação é `ESTOURADO` e o percentual continua exibindo o excesso.
+
+## Patrimônio
+
+- `CategoriaPatrimonio` pertence à atlética, tem nome normalizado único e pode ser inativada sem apagar o histórico. A criação de categorias é administrativa.
+- `ItemPatrimonio` representa um lote de unidades homogêneas: mesmo estado de conservação, local e valor estimado unitário. Unidades com condições distintas são cadastradas como lotes distintos.
+- Conservação (`OTIMO`, `BOM`, `REGULAR`, `RUIM`) é estado físico; situação operacional (`DISPONIVEL`, `EMPRESTADO`, `EM_MANUTENCAO`) é calculada a partir das movimentações e não altera a conservação.
+- Em B20, sem movimentações de B21, toda unidade está disponível. A quantidade disponível e as situações operacionais passarão a ser derivadas de empréstimos/manutenções, nunca gravadas manualmente no item.
+- A redução de quantidade total exige justificativa. B20 só permite reduzir o que está disponível; B21 complementará a validação atômica contra unidades emprestadas ou em manutenção.
+- O valor estimado total inclui todos os lotes ativos (`quantidade total × valor unitário`), inclusive unidades que futuramente estejam temporariamente emprestadas ou em manutenção. Administrador gerencia todos os itens; gestor atua somente no seu departamento principal.

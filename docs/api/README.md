@@ -109,3 +109,9 @@ Nesta etapa não há endpoint público para criar ou administrar atléticas. O p
 - `GET/POST /eventos/{eventoId}/anexos` lista ou envia anexos multipart. `ARTE` e `OUTRO` aceitam PDF/PNG/JPEG; `REGULAMENTO` aceita PDF. As operações são de organização do evento ou administração; a lista traz metadados, nunca BLOB.
 - `DELETE /eventos/{eventoId}/anexos/{anexoId}?version=` remove apenas o vínculo, antes do encerramento do evento, e preserva o arquivo. A leitura continua exclusivamente em `GET /arquivos/{id}/conteudo`, que revalida a autorização do evento.
 - `GET /eventos/{eventoId}/financeiro/resumo?dataReferencia=` entrega agregados financeiros a membros ativos. `realizado` considera despesas aprovadas e liquidadas menos seus estornos; `receitasRealizadas` é independente e não reduz o orçamento gasto. Para orçamento zero, `percentualUtilizado` é `null` e `situacao` é `SEM_ORCAMENTO`; percentuais acima de 100 não são limitados.
+
+## Patrimônio
+
+- `GET/POST /patrimonio/categorias` permite listar categorias da atlética e criar novas categorias administrativas.
+- `GET/POST /patrimonio/itens`, `GET/PUT /patrimonio/itens/{id}` usam lote homogêneo e valor unitário decimal textual. A redução de quantidade exige `justificativaReducao`, `version` e não pode ultrapassar a disponibilidade.
+- `GET /patrimonio/resumo` traz quantitativos e valor estimado total dos lotes ativos. Conservação e situação operacional são campos independentes; B21 acrescentará empréstimos e manutenção ao cálculo de disponibilidade.

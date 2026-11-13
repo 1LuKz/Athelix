@@ -21,6 +21,8 @@ import br.com.athletix.gestao.repository.GestaoRepository;
 import br.com.athletix.gestao.repository.VinculoGestaoRepository;
 import br.com.athletix.membro.entity.Membro;
 import br.com.athletix.membro.repository.MembroRepository;
+import br.com.athletix.patrimonio.entity.CategoriaPatrimonio;
+import br.com.athletix.patrimonio.repository.CategoriaPatrimonioRepository;
 import br.com.athletix.shared.normalization.NomeNormalizado;
 import br.com.athletix.usuario.entity.Usuario;
 import br.com.athletix.usuario.repository.UsuarioRepository;
@@ -48,11 +50,12 @@ public class InitialAtleticasConfiguration {
             GestaoRepository gestaoRepository,
             VinculoGestaoRepository vinculoGestaoRepository,
             CategoriaFinanceiraRepository categoriaFinanceiraRepository,
+            CategoriaPatrimonioRepository categoriaPatrimonioRepository,
             PasswordEncoder passwordEncoder
     ) {
         return args -> criarSeVazio(atleticaRepository, dominioRepository, cadastroService, cargoRepository,
                 departamentoRepository, usuarioRepository, membroRepository, gestaoRepository,
-                vinculoGestaoRepository, categoriaFinanceiraRepository, passwordEncoder);
+                vinculoGestaoRepository, categoriaFinanceiraRepository, categoriaPatrimonioRepository, passwordEncoder);
     }
 
     @Transactional
@@ -67,6 +70,7 @@ public class InitialAtleticasConfiguration {
             GestaoRepository gestaoRepository,
             VinculoGestaoRepository vinculoGestaoRepository,
             CategoriaFinanceiraRepository categoriaFinanceiraRepository,
+            CategoriaPatrimonioRepository categoriaPatrimonioRepository,
             PasswordEncoder passwordEncoder
     ) {
         if (atleticaRepository.count() > 0) {
@@ -128,6 +132,8 @@ public class InitialAtleticasConfiguration {
 
         criarCategoriasIniciais(categoriaFinanceiraRepository, engenharia);
         criarCategoriasIniciais(categoriaFinanceiraRepository, saude);
+        criarCategoriasPatrimonioIniciais(categoriaPatrimonioRepository, engenharia);
+        criarCategoriasPatrimonioIniciais(categoriaPatrimonioRepository, saude);
     }
 
     private void criarCategoriasIniciais(CategoriaFinanceiraRepository categorias, Atletica atletica) {
@@ -137,5 +143,12 @@ public class InitialAtleticasConfiguration {
                 NomeNormalizado.fromRequired("Esportivo", "nome"), TipoAplicavelCategoria.DESPESA, true));
         categorias.save(new CategoriaFinanceira(atletica, "Patrocínio",
                 NomeNormalizado.fromRequired("Patrocínio", "nome"), TipoAplicavelCategoria.RECEITA, true));
+    }
+
+    private void criarCategoriasPatrimonioIniciais(CategoriaPatrimonioRepository categorias, Atletica atletica) {
+        categorias.save(new CategoriaPatrimonio(atletica, "Eletrônicos",
+                NomeNormalizado.fromRequired("Eletrônicos", "nome"), true));
+        categorias.save(new CategoriaPatrimonio(atletica, "Material esportivo",
+                NomeNormalizado.fromRequired("Material esportivo", "nome"), true));
     }
 }
