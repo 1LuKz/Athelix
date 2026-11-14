@@ -10,11 +10,12 @@ import { LoginPage } from '../features/auth/LoginPage'
 import { SelecionarAtleticaPage } from '../features/auth/SelecionarAtleticaPage'
 import { RedirectIfAuthenticated } from '../features/auth/RedirectIfAuthenticated'
 import { DefinirSenhaPage, EsqueciSenhaPage, RedefinirSenhaPage } from '../features/auth/PasswordPages'
+import { MembrosPage } from '../features/membros/pages/MembrosPage'
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } })
 const authenticatedRoutes = [
-  ['dashboard', 'Dashboard'], ['membros', 'Membros'], ['departamentos', 'Departamentos'], ['eventos', 'Eventos'], ['tarefas', 'Tarefas'], ['financeiro', 'Financeiro'], ['patrimonio', 'Patrimônio'], ['documentos', 'Documentos'], ['perfil', 'Meu perfil'], ['gestoes', 'Gestões'], ['suporte', 'Ajuda e suporte'],
-].map(([path, title]) => ({ path, element: <PlaceholderPage title={title} /> }))
+  { path: 'dashboard', element: <PlaceholderPage title="Dashboard" /> }, { path: 'membros', element: <MembrosPage /> }, ...['departamentos', 'eventos', 'tarefas', 'financeiro', 'patrimonio', 'documentos', 'perfil', 'gestoes', 'suporte'].map(path => ({ path, element: <PlaceholderPage title={path[0].toUpperCase() + path.slice(1)} /> })),
+]
 
 const router = createBrowserRouter([
   { element: <RedirectIfAuthenticated />, children: [{ element: <AuthLayout />, children: [
