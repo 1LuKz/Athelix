@@ -31,6 +31,7 @@ class PatrimonioControllerIntegrationTest {
         Sessao admin = autenticar();
         long categoriaId = obterId(admin, "/patrimonio/categorias", "Eletrônicos");
         long departamentoId = obterId(admin, "/departamentos", "Diretoria");
+        JsonNode resumoInicial = enviar(admin, get("/patrimonio/resumo"), 200, "");
         JsonNode item = enviar(admin, post("/patrimonio/itens"), 201, """
                 {"nome":"Notebook laboratório","descricao":"Lote homogêneo","categoriaId":%d,
                  "quantidadeTotal":4,"conservacao":"BOM","localizacao":"Armário A",
@@ -58,9 +59,9 @@ class PatrimonioControllerIntegrationTest {
         JsonNode emprestado = enviar(admin, get("/patrimonio/itens?situacao=EMPRESTADO"), 200, "");
         assertEquals(0, emprestado.get("totalItems").asInt());
         JsonNode resumo = enviar(admin, get("/patrimonio/resumo"), 200, "");
-        assertEquals(3, resumo.get("quantidadeTotal").asInt());
-        assertEquals(3, resumo.get("quantidadeDisponivel").asInt());
-        assertEquals("750.00", resumo.get("valorEstimadoTotal").asText());
+        assertEquals(resumoInicial.get("quantidadeTotal").asInt() + 3, resumo.get("quantidadeTotal").asInt());
+        assertEquals(resumoInicial.get("quantidadeDisponivel").asInt() + 3, resumo.get("quantidadeDisponivel").asInt());
+        assertEquals(new java.math.BigDecimal(resumoInicial.get("valorEstimadoTotal").asText()).add(new java.math.BigDecimal("750.00")), new java.math.BigDecimal(resumo.get("valorEstimadoTotal").asText()));
     }
 
     private long obterId(Sessao sessao, String rota, String nome) throws Exception {

@@ -117,3 +117,9 @@ Nesta etapa não há endpoint público para criar ou administrar atléticas. O p
 - `GET /patrimonio/resumo` traz quantitativos e valor estimado total dos lotes ativos. Conservação e situação operacional são campos independentes; empréstimos e manutenção compõem o cálculo de disponibilidade.
 - `GET/POST /patrimonio/emprestimos` registra retiradas e consulta saldo aberto calculado. `POST /patrimonio/emprestimos/{id}/devolucoes` aceita devolução parcial e, opcionalmente, inicia manutenção na mesma transação.
 - `GET/POST /patrimonio/manutencoes` e `PATCH /patrimonio/manutencoes/{id}/concluir` controlam indisponibilidade temporária. Disponibilidade é `total − empréstimos abertos − manutenções abertas`; as operações bloqueiam o item para não reservar a mesma unidade duas vezes.
+
+## Conferência de inventário
+
+- `GET/POST /patrimonio/conferencias` lista ou abre uma campanha e fotografa os lotes ativos no instante da abertura.
+- `GET /patrimonio/conferencias/{id}` traz a campanha, os itens fotografados e o progresso; `PUT /patrimonio/conferencias/{id}/itens/{itemId}` registra a contagem com versão.
+- Diferenças em relação à quantidade esperada exigem observação. `PATCH /patrimonio/conferencias/{id}/encerrar` recebe a versão da campanha e encerra sem alterar o patrimônio.

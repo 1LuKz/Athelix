@@ -222,3 +222,10 @@ Criações retornam `201`, consultas e alterações bem-sucedidas retornam `200`
 - Empréstimos guardam responsável ativo, retirada, previsão e observação. As devoluções são imutáveis e podem ser parciais, mas a soma não supera o saldo emprestado. A quantidade devolvida do empréstimo é sempre derivada dessas linhas.
 - Uma devolução pode iniciar manutenção da mesma quantidade na própria transação, permitindo devolver uma unidade danificada sem colocá-la momentaneamente como disponível.
 - Manutenção somente recebe unidades disponíveis. A conclusão guarda resultado e devolve as unidades à disponibilidade. Itens com empréstimo ou manutenção abertos não podem ser inativados.
+
+## Conferência de inventário
+
+- Uma campanha de conferência pertence à atlética atual, registra a gestão ativa quando houver e é aberta somente por administração. Ao abrir, todos os lotes ativos são fotografados em itens de conferência com a quantidade total daquele instante.
+- Cada item fotografado aceita quantidade verificada não negativa. Se ela divergir da quantidade esperada, a observação que identifica a divergência é obrigatória. A divergência é `verificada − esperada`; nenhuma contagem altera automaticamente o patrimônio.
+- O progresso é `unidades verificadas válidas / unidades esperadas na abertura × 100`, arredondado ao inteiro mais próximo. Quantidades acima do esperado não ampliam o numerador e, sem itens fotografados, o progresso é `0`.
+- A campanha pode ser encerrada uma única vez, com versão obrigatória, preservando a fotografia e as divergências. Depois de encerrada não aceita novas conferências. Abertura, conferência e encerramento são auditados.

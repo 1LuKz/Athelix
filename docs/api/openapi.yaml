@@ -1738,6 +1738,47 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {$ref: '#/components/responses/Conflict'}
+  /patrimonio/conferencias:
+    get:
+      summary: Lista campanhas de conferência de inventário
+      operationId: listConferenciasInventario
+      responses:
+        '200': {description: Conferências, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/ConferenciaInventario'}}}}}
+    post:
+      summary: Abre campanha e fotografa os itens ativos
+      operationId: createConferenciaInventario
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ConferenciaInventarioCreateRequest'}}}}
+      responses:
+        '201': {description: Conferência aberta, content: {application/json: {schema: {$ref: '#/components/schemas/ConferenciaInventario'}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /patrimonio/conferencias/{id}:
+    get:
+      summary: Consulta conferência com sua fotografia de itens
+      operationId: getConferenciaInventario
+      parameters: [{$ref: '#/components/parameters/ResourceId'}]
+      responses:
+        '200': {description: Campanha e itens conferidos, content: {application/json: {schema: {$ref: '#/components/schemas/ConferenciaInventarioDetalhe'}}}}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /patrimonio/conferencias/{id}/itens/{itemId}:
+    put:
+      summary: Registra contagem de item fotografado
+      operationId: updateItemConferenciaInventario
+      parameters: [{$ref: '#/components/parameters/ResourceId'}, {name: itemId, in: path, required: true, schema: {type: integer, format: int64}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ItemConferenciaUpdateRequest'}}}}
+      responses:
+        '200': {description: Item conferido, content: {application/json: {schema: {$ref: '#/components/schemas/ItemConferencia'}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /patrimonio/conferencias/{id}/encerrar:
+    patch:
+      summary: Encerra campanha sem ajustar patrimônio automaticamente
+      operationId: closeConferenciaInventario
+      parameters: [{$ref: '#/components/parameters/ResourceId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ConferenciaEncerramentoRequest'}}}}
+      responses:
+        '200': {description: Conferência encerrada, content: {application/json: {schema: {$ref: '#/components/schemas/ConferenciaInventarioDetalhe'}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
 components:
   schemas:
     ApiError:
@@ -2826,6 +2867,58 @@ components:
       properties:
         resultado: {type: string, maxLength: 1000}
         version: {type: integer, format: int64, minimum: 0}
+    StatusConferenciaInventario: {type: string, enum: [ABERTA, ENCERRADA]}
+    ConferenciaInventario:
+      type: object
+      required: [id, atleticaId, nome, iniciadaEm, status, criadaPorMembroId, version]
+      properties:
+        id: {type: integer, format: int64}
+        atleticaId: {type: integer, format: int64}
+        gestaoId: {type: integer, format: int64, nullable: true}
+        nome: {type: string, maxLength: 120}
+        iniciadaEm: {type: string, format: date-time}
+        encerradaEm: {type: string, format: date-time, nullable: true}
+        status: {$ref: '#/components/schemas/StatusConferenciaInventario'}
+        criadaPorMembroId: {type: integer, format: int64}
+        version: {type: integer, format: int64}
+    ConferenciaInventarioCreateRequest:
+      type: object
+      required: [nome]
+      properties: {nome: {type: string, maxLength: 120}}
+    ConferenciaEncerramentoRequest:
+      type: object
+      required: [version]
+      properties:
+        version: {type: integer, format: int64, minimum: 0}
+    ItemConferencia:
+      type: object
+      required: [id, itemId, quantidadeEsperada, version]
+      properties:
+        id: {type: integer, format: int64}
+        itemId: {type: integer, format: int64}
+        quantidadeEsperada: {type: integer}
+        quantidadeVerificada: {type: integer, nullable: true}
+        divergencia: {type: integer, nullable: true}
+        observacao: {type: string, maxLength: 1000, nullable: true}
+        conferidaPorMembroId: {type: integer, format: int64, nullable: true}
+        conferidaEm: {type: string, format: date-time, nullable: true}
+        version: {type: integer, format: int64}
+    ItemConferenciaUpdateRequest:
+      type: object
+      required: [quantidadeVerificada, version]
+      properties:
+        quantidadeVerificada: {type: integer, minimum: 0}
+        observacao: {type: string, maxLength: 1000}
+        version: {type: integer, format: int64, minimum: 0}
+    ConferenciaInventarioDetalhe:
+      type: object
+      required: [conferencia, unidadesEsperadas, unidadesVerificadasValidas, progresso, itens]
+      properties:
+        conferencia: {$ref: '#/components/schemas/ConferenciaInventario'}
+        unidadesEsperadas: {type: integer, format: int64}
+        unidadesVerificadasValidas: {type: integer, format: int64}
+        progresso: {type: integer, minimum: 0, maximum: 100}
+        itens: {type: array, items: {$ref: '#/components/schemas/ItemConferencia'}}
     AnexoEvento:
       type: object
       required: [id, atleticaId, eventoId, arquivoId, titulo, tipoMaterial, criadoEm, atualizadoEm, version]
