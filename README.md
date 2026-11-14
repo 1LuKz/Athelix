@@ -25,6 +25,13 @@ npm install
 npm run dev
 ```
 
+Para gerar a versão de produção do frontend:
+
+```bash
+cd frontend
+npm run build
+```
+
 Também é possível iniciar `AthletixApplication` pela IDE, com o perfil ativo `dev`. A API fica em `http://localhost:8080/api/v1`; o frontend local fica em `http://localhost:5173` e encaminha chamadas `/api` para o backend.
 
 Para validar o backend antes de entregar:
