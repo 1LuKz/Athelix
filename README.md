@@ -24,10 +24,15 @@ npm run dev
 
 O backend inicia em `http://localhost:8080` e o frontend em `http://localhost:5173`. Os dados do H2 sao recriados a cada inicializacao.
 
-No perfil `dev`, a carga inicial cria o primeiro acesso:
+No perfil `dev`, a carga recria um cenário sintético completo em cada inicialização. As senhas abaixo existem somente nesse perfil e são persistidas apenas como hash BCrypt:
 
-- E-mail: `admin@athletix.local`
-- Senha: `Athletix@2026`
+- `admin@athletix.local` / `Athletix@2026` — administrador
+- `financeiro@athletix.local` / `Financeiro@2026` — financeiro
+- `gestor@athletix.local` / `Gestor@2026` — gestor de eventos
+- `membro@athletix.local` / `Membro@2026` — membro
+- `admin@saude.athletix.local` / `Saude@2026` — administrador da segunda atlética, para validar isolamento
+
+O cenário inclui duas atléticas, vínculos ativos/pendentes/inativos, gestão atual e histórica, eventos, tarefas, financeiro, patrimônio, inventário, documentos sintéticos e auditoria. As datas são calculadas a partir do dia de execução.
 
 Antes de chamadas mutáveis da API, obtenha o CSRF em `GET /api/v1/auth/csrf` e envie o token no cabeçalho informado. O Vite já encaminha `/api` para o backend local.
 

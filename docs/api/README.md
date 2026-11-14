@@ -16,6 +16,13 @@ Os endpoints de domínio usarão a atlética da sessão, e não um `atleticaId` 
 
 Nesta etapa não há endpoint público para criar ou administrar atléticas. O perfil local `dev` cria os dados de demonstração.
 
+## Carga de demonstração (`dev`)
+
+- A carga é exclusiva do perfil `dev`, é idempotente para o banco em execução e é recriada ao reiniciar o H2 em memória.
+- Ela contém duas atléticas com domínios próprios e dados sem compartilhamento entre escopos, além de membros ativos, pendente e inativo, duas gestões, eventos e tarefas em todos os estados relevantes.
+- As contas e senhas sintéticas estão no `README` raiz. Elas não são criadas em outro perfil e as senhas são armazenadas somente como hash BCrypt.
+- Valores, arquivos PDF e textos de demonstração são sintéticos; os prazos e o histórico financeiro são relativos à data atual da carga.
+
 ## Membros
 
 - `GET /membros` aceita `busca`, `departamentoId`, `status`, `page`, `size` e `sort`; os únicos campos ordenáveis são `nome`, `email`, `curso`, `status`, `cargo`, `departamento` e `membroDesde`.
