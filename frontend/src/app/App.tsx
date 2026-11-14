@@ -18,10 +18,11 @@ import { TarefasPage } from '../features/tarefas/pages/TarefasPage'
 import { FinanceiroPage } from '../features/financeiro/pages/FinanceiroPage'
 import { PatrimonioPage } from '../features/patrimonio/pages/PatrimonioPage'
 import { DocumentosPage } from '../features/documentos/pages/DocumentosPage'
+import { PerfilPage } from '../features/perfil/pages/PerfilPage'
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } })
 const authenticatedRoutes = [
-  { path: 'dashboard', element: <PlaceholderPage title="Dashboard" /> }, { path: 'membros', element: <MembrosPage /> }, { path: 'departamentos', element: <DepartamentosPage /> }, { path: 'eventos', element: <EventosPage /> }, { path: 'eventos/:id', element: <EventoDetalhePage /> }, { path: 'tarefas', element: <TarefasPage /> }, { path: 'financeiro', element: <FinanceiroPage /> }, { path: 'patrimonio', element: <PatrimonioPage /> }, { path: 'documentos', element: <DocumentosPage /> }, ...['perfil', 'gestoes', 'suporte'].map(path => ({ path, element: <PlaceholderPage title={path[0].toUpperCase() + path.slice(1)} /> })),
+  { path: 'dashboard', element: <PlaceholderPage title="Dashboard" /> }, { path: 'membros', element: <MembrosPage /> }, { path: 'departamentos', element: <DepartamentosPage /> }, { path: 'eventos', element: <EventosPage /> }, { path: 'eventos/:id', element: <EventoDetalhePage /> }, { path: 'tarefas', element: <TarefasPage /> }, { path: 'financeiro', element: <FinanceiroPage /> }, { path: 'patrimonio', element: <PatrimonioPage /> }, { path: 'documentos', element: <DocumentosPage /> }, { path: 'perfil', element: <PerfilPage /> }, ...['gestoes', 'suporte'].map(path => ({ path, element: <PlaceholderPage title={path[0].toUpperCase() + path.slice(1)} /> })),
 ]
 
 const router = createBrowserRouter([
