@@ -236,3 +236,9 @@ Criações retornam `201`, consultas e alterações bem-sucedidas retornam `200`
 - A criação e as novas versões recebem somente PDF, por multipart, usando a validação de assinatura, MIME, tamanho e orçamento da infraestrutura de arquivos. Nenhum BLOB compõe listagens ou respostas de metadados.
 - Visibilidade `MEMBROS` permite acesso a qualquer associado ativo; `DIRETORIA` exige administrador, financeiro ou gestor. A versão histórica conserva a mesma regra do documento atual, inclusive em `GET /arquivos/{id}/conteudo`.
 - Arquivamento remove o documento da listagem corrente, mas conserva metadados, arquivos e versões para consulta autorizada pelo histórico. Os contadores por categoria devem considerar documentos lógicos, nunca a quantidade de versões.
+
+## Transferência de gestão
+
+- A transição liga a gestão ativa a uma única gestão planejada e começa em `RASCUNHO`, com a fotografia dos membros ativos e suas atribuições. Somente administração prepara, altera e conclui o plano.
+- A conclusão exige ao menos um administrador ativo na composição de destino. Em uma transação, encerra a gestão e seus vínculos abertos, ativa a sucessora, abre os novos períodos, aplica as atribuições de destino e invalida sessões dos vínculos que perderam privilégios.
+- Saldo institucional, patrimônio, arquivos e documentos não são zerados. O encerramento preserva os dados históricos da gestão de origem; obrigações abertas continuam rastreáveis por sua origem.

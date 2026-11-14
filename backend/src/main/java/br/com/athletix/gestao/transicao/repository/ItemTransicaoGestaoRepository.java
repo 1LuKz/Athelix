@@ -1,0 +1,2 @@
+package br.com.athletix.gestao.transicao.repository; import br.com.athletix.gestao.transicao.entity.ItemTransicaoGestao; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*;
+public interface ItemTransicaoGestaoRepository extends JpaRepository<ItemTransicaoGestao,Long>{List<ItemTransicaoGestao> findAllByTransicao_IdOrderByMembroIdAsc(Long id); Optional<ItemTransicaoGestao> findByTransicao_IdAndMembroId(Long t,Long m);}

@@ -11,4 +11,5 @@ public interface VinculoGestaoRepository extends JpaRepository<VinculoGestao, Lo
     Optional<VinculoGestao> findByMembro_IdAndGestao_IdAndFimVigenciaIsNull(Long membroId, Long gestaoId);
 
     List<VinculoGestao> findAllByMembro_IdAndGestao_IdOrderByInicioVigenciaAsc(Long membroId, Long gestaoId);
+    List<VinculoGestao> findAllByGestao_IdAndFimVigenciaIsNull(Long gestaoId);
 }

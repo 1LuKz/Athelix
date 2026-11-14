@@ -1839,6 +1839,39 @@ paths:
         '200': {description: PDF autorizado, content: {application/pdf: {schema: {type: string, format: binary}}}}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
+  /gestoes/{id}/transicoes:
+    post:
+      summary: Prepara transição da gestão ativa para a gestão planejada indicada
+      operationId: createTransicaoGestao
+      parameters: [{$ref: '#/components/parameters/ResourceId'}]
+      responses:
+        '201': {description: Rascunho criado, content: {application/json: {schema: {$ref: '#/components/schemas/TransicaoGestao'}}}}
+  /gestoes/transicoes/{id}:
+    put:
+      summary: Atualiza a composição da gestão de destino
+      operationId: updateTransicaoGestao
+      parameters: [{$ref: '#/components/parameters/ResourceId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TransicaoGestaoUpdateRequest'}}}}
+      responses:
+        '200': {description: Rascunho atualizado, content: {application/json: {schema: {$ref: '#/components/schemas/TransicaoGestao'}}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /gestoes/transicoes/{id}/previa:
+    get:
+      summary: Exibe acessos, substituições e pendências antes da conclusão
+      operationId: getPreviaTransicaoGestao
+      parameters: [{$ref: '#/components/parameters/ResourceId'}]
+      responses:
+        '200': {description: Prévia, content: {application/json: {schema: {$ref: '#/components/schemas/PreviaTransicaoGestao'}}}}
+  /gestoes/transicoes/{id}/concluir:
+    post:
+      summary: Conclui atomica e definitivamente a transição
+      operationId: completeTransicaoGestao
+      parameters: [{$ref: '#/components/parameters/ResourceId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ConcluirTransicaoGestaoRequest'}}}}
+      responses:
+        '200': {description: Transição concluída, content: {application/json: {schema: {$ref: '#/components/schemas/TransicaoGestao'}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '409': {$ref: '#/components/responses/Conflict'}
 components:
   schemas:
     ApiError:
@@ -3037,6 +3070,50 @@ components:
         gestaoId: {type: integer, format: int64}
         observacao: {type: string, maxLength: 1000}
         arquivo: {type: string, format: binary}
+    StatusTransicaoGestao: {type: string, enum: [RASCUNHO, CONCLUIDA]}
+    ItemTransicaoGestao:
+      type: object
+      required: [membroId, cargoAtualId, departamentoAtualId, cargoDestinoId, departamentoDestinoId, continuaAtivo]
+      properties:
+        membroId: {type: integer, format: int64}
+        cargoAtualId: {type: integer, format: int64}
+        departamentoAtualId: {type: integer, format: int64}
+        cargoDestinoId: {type: integer, format: int64}
+        departamentoDestinoId: {type: integer, format: int64}
+        continuaAtivo: {type: boolean}
+        substituiResponsavelMembroId: {type: integer, format: int64, nullable: true}
+    TransicaoGestao:
+      type: object
+      required: [id, gestaoOrigemId, gestaoDestinoId, status, preparadaPorMembroId, version, itens]
+      properties:
+        id: {type: integer, format: int64}
+        gestaoOrigemId: {type: integer, format: int64}
+        gestaoDestinoId: {type: integer, format: int64}
+        status: {$ref: '#/components/schemas/StatusTransicaoGestao'}
+        preparadaPorMembroId: {type: integer, format: int64}
+        concluidaPorMembroId: {type: integer, format: int64, nullable: true}
+        concluidaEm: {type: string, format: date-time, nullable: true}
+        version: {type: integer, format: int64}
+        itens: {type: array, items: {$ref: '#/components/schemas/ItemTransicaoGestao'}}
+    TransicaoGestaoUpdateRequest:
+      type: object
+      required: [version, itens]
+      properties:
+        version: {type: integer, format: int64, minimum: 0}
+        itens: {type: array, minItems: 1, items: {$ref: '#/components/schemas/ItemTransicaoGestao'}}
+    ConcluirTransicaoGestaoRequest:
+      type: object
+      required: [version]
+      properties: {version: {type: integer, format: int64, minimum: 0}}
+    PreviaTransicaoGestao:
+      type: object
+      required: [transicao, acessosEntram, acessosSaem, responsaveisSubstituidos, pendencias]
+      properties:
+        transicao: {$ref: '#/components/schemas/TransicaoGestao'}
+        acessosEntram: {type: integer, format: int64}
+        acessosSaem: {type: integer, format: int64}
+        responsaveisSubstituidos: {type: integer, format: int64}
+        pendencias: {type: object, additionalProperties: {type: integer, format: int64}}
     AnexoEvento:
       type: object
       required: [id, atleticaId, eventoId, arquivoId, titulo, tipoMaterial, criadoEm, atualizadoEm, version]

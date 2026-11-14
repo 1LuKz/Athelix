@@ -130,3 +130,8 @@ Nesta etapa não há endpoint público para criar ou administrar atléticas. O p
 - `GET/PUT /documentos/{id}` consulta ou altera metadados, inclusive arquivamento, sempre com `version` na alteração.
 - `GET/POST /documentos/{id}/versoes` lista ou publica versão imutável; `GET /documentos/{id}/versoes/{versaoId}/conteudo` devolve o PDF após conferir a visibilidade do documento.
 - A lista pesquisa título e nome da versão atual, filtra categoria/gestão e omite arquivados por padrão. Cada resposta contém somente a versão atual, sem BLOB.
+
+## Transferência de gestão
+
+- `POST /gestoes/{id}/transicoes` abre o rascunho para a gestão planejada; `PUT /gestoes/transicoes/{id}` define a composição do destino com versão.
+- `GET /gestoes/transicoes/{id}/previa` apresenta entradas, saídas, substituições e pendências; `POST /gestoes/transicoes/{id}/concluir` efetiva a troca atomicamente.
