@@ -6,6 +6,9 @@ import { AccessDeniedPage, NotFoundPage, PlaceholderPage } from './pages'
 import { ToastProvider } from '../components/ui'
 import { AuthSessionProvider } from '../features/auth/AuthSessionProvider'
 import { RequireAuth } from '../features/auth/RequireAuth'
+import { LoginPage } from '../features/auth/LoginPage'
+import { SelecionarAtleticaPage } from '../features/auth/SelecionarAtleticaPage'
+import { RedirectIfAuthenticated } from '../features/auth/RedirectIfAuthenticated'
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } })
 const authenticatedRoutes = [
@@ -13,13 +16,13 @@ const authenticatedRoutes = [
 ].map(([path, title]) => ({ path, element: <PlaceholderPage title={title} /> }))
 
 const router = createBrowserRouter([
-  { element: <AuthLayout />, children: [
-    { path: '/login', element: <PlaceholderPage title="Entrar" publicPage /> },
+  { element: <RedirectIfAuthenticated />, children: [{ element: <AuthLayout />, children: [
+    { path: '/login', element: <LoginPage /> },
     { path: '/esqueci-senha', element: <PlaceholderPage title="Recuperar senha" publicPage /> },
     { path: '/redefinir-senha', element: <PlaceholderPage title="Redefinir senha" publicPage /> },
     { path: '/definir-senha', element: <PlaceholderPage title="Definir senha" publicPage /> },
-  ] },
-  { element: <RequireAuth />, children: [{ element: <AuthLayout />, children: [{ path: '/selecionar-atletica', element: <PlaceholderPage title="Selecionar atlética" publicPage /> }] }] },
+  ] }] },
+  { element: <RequireAuth />, children: [{ element: <AuthLayout />, children: [{ path: '/selecionar-atletica', element: <SelecionarAtleticaPage /> }] }] },
   { element: <RequireAuth />, children: [{ element: <AppLayout />, children: authenticatedRoutes }] },
   { path: '/acesso-negado', element: <AccessDeniedPage /> },
   { path: '/', element: <Navigate to="/login" replace /> },
