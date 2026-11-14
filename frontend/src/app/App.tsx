@@ -4,6 +4,8 @@ import { AppLayout } from '../layouts/AppLayout'
 import { AuthLayout } from '../layouts/AuthLayout'
 import { AccessDeniedPage, NotFoundPage, PlaceholderPage } from './pages'
 import { ToastProvider } from '../components/ui'
+import { AuthSessionProvider } from '../features/auth/AuthSessionProvider'
+import { RequireAuth } from '../features/auth/RequireAuth'
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } })
 const authenticatedRoutes = [
@@ -16,12 +18,12 @@ const router = createBrowserRouter([
     { path: '/esqueci-senha', element: <PlaceholderPage title="Recuperar senha" publicPage /> },
     { path: '/redefinir-senha', element: <PlaceholderPage title="Redefinir senha" publicPage /> },
     { path: '/definir-senha', element: <PlaceholderPage title="Definir senha" publicPage /> },
-    { path: '/selecionar-atletica', element: <PlaceholderPage title="Selecionar atlética" publicPage /> },
   ] },
-  { element: <AppLayout />, children: authenticatedRoutes },
+  { element: <RequireAuth />, children: [{ element: <AuthLayout />, children: [{ path: '/selecionar-atletica', element: <PlaceholderPage title="Selecionar atlética" publicPage /> }] }] },
+  { element: <RequireAuth />, children: [{ element: <AppLayout />, children: authenticatedRoutes }] },
   { path: '/acesso-negado', element: <AccessDeniedPage /> },
   { path: '/', element: <Navigate to="/login" replace /> },
   { path: '*', element: <NotFoundPage /> },
 ])
 
-export function App() { return <QueryClientProvider client={queryClient}><ToastProvider><RouterProvider router={router} /></ToastProvider></QueryClientProvider> }
+export function App() { return <QueryClientProvider client={queryClient}><AuthSessionProvider><ToastProvider><RouterProvider router={router} /></ToastProvider></AuthSessionProvider></QueryClientProvider> }
