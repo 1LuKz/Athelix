@@ -28,7 +28,7 @@ export async function refreshCsrf(signal?: AbortSignal) {
   return csrf
 }
 
-export type HttpRequestOptions = Omit<RequestInit, 'body' | 'headers'> & { body?: unknown; headers?: HeadersInit; signal?: AbortSignal }
+export type HttpRequestOptions = Omit<RequestInit, 'body' | 'headers'> & { body?: unknown; headers?: HeadersInit; signal?: AbortSignal; responseType?: 'json' | 'text' | 'blob' }
 export async function http<T>(path: string, options: HttpRequestOptions = {}): Promise<T> {
   const method = (options.method ?? 'GET').toUpperCase()
   const mutating = !['GET', 'HEAD', 'OPTIONS'].includes(method)
@@ -37,7 +37,8 @@ export async function http<T>(path: string, options: HttpRequestOptions = {}): P
   if (mutating && csrf) headers.set(csrf.headerName, csrf.token)
   if (isJsonBody(options.body)) headers.set('Content-Type', 'application/json')
   // FormData não recebe Content-Type: o navegador define o boundary multipart correto.
-  const response = await fetch(url(path), { ...options, method, headers, credentials: 'include', body: options.body === undefined ? undefined : isJsonBody(options.body) ? JSON.stringify(options.body) : options.body as BodyInit })
+  const { responseType, ...requestOptions } = options
+  const response = await fetch(url(path), { ...requestOptions, method, headers, credentials: 'include', body: options.body === undefined ? undefined : isJsonBody(options.body) ? JSON.stringify(options.body) : options.body as BodyInit })
   if (response.status === 204) return undefined as T
   if (!response.ok) {
     const body = await response.json().catch(() => fallbackError(response)) as ApiErrorBody
@@ -46,5 +47,6 @@ export async function http<T>(path: string, options: HttpRequestOptions = {}): P
     throw error
   }
   const contentType = response.headers.get('content-type') ?? ''
-  return (contentType.includes('application/json') ? response.json() : response.text()) as Promise<T>
+  if (responseType === 'blob') return response.blob() as Promise<T>
+  return (responseType === 'text' || !contentType.includes('application/json') ? response.text() : response.json()) as Promise<T>
 }
