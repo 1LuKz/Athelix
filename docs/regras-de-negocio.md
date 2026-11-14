@@ -152,6 +152,14 @@ Os resumos financeiros para associados não devem expor dados pessoais de contra
 - A resposta contém `items`, `page`, `size`, `totalItems` e `totalPages`.
 - Cada endpoint declara explicitamente os campos aceitos por `sort=campo,direcao`. A ordenação sempre recebe `id` como critério final para manter estabilidade.
 
+## Operação, privacidade e retenção
+
+- A finalidade dos dados pessoais é gerir vínculos, acessos, atividades institucionais, patrimônio, obrigações financeiras, documentos e auditoria da atlética. A carga `dev` usa somente identidades e arquivos sintéticos.
+- O acesso é mínimo por perfil: contatos de membros são administrativos; membros ativos só recebem os próprios dados e resumos permitidos; documentos seguem sua visibilidade; financeiro agregado não expõe contrapartes nem anexos restritos.
+- Senhas, hashes, tokens e BLOBs nunca compõem respostas de listagem. Conteúdo de arquivo só é carregado sob solicitação autorizada do recurso pai.
+- A política inicial de retenção é conservar histórico operacional e auditoria enquanto houver obrigação institucional, financeira ou de prestação de contas. Antes de produção, o grupo responsável deve formalizar prazo, base legal, responsável pelo tratamento e procedimento de revisão/eliminação de dados pessoais conforme sua realidade.
+- Consultas de lista são paginadas; resumos e contadores devem usar projeções/agregações no banco. Implementações não devem carregar relações por linha de resultado (N+1) nem BLOBs fora da rota de conteúdo.
+
 ## Erros e status HTTP
 
 Todos os erros usam os campos `status`, `code`, `message`, `fieldErrors`, `path` e `timestamp`, sem stack trace. Recursos inexistentes e recursos de outra atlética retornam a mesma resposta `404`.

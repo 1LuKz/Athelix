@@ -73,6 +73,7 @@ public class SecurityConfiguration {
                         .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/h2-console/**").permitAll()
+                        .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/auth/csrf", "/auth/login", "/auth/esqueci-senha",
                                 "/auth/redefinir-senha", "/auth/definir-senha").permitAll()
                         .requestMatchers("/auth/logout", "/auth/me", "/auth/selecionar-atletica").authenticated()

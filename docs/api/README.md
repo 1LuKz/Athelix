@@ -2,6 +2,8 @@
 
 O contrato-base está em [openapi.yaml](./openapi.yaml). Todas as rotas são relativas a `/api/v1`; a documentação de cada endpoint será adicionada a esse arquivo no momento de sua implementação.
 
+Na execução local, a interface Swagger está em `http://localhost:8080/api/v1/swagger-ui.html` e sua especificação gerada em `/api/v1/v3/api-docs`. O arquivo `openapi.yaml` continua sendo o contrato versionado do repositório.
+
 ## Padrões transversais
 
 - Não há exposição de entidades JPA nos contratos HTTP.
