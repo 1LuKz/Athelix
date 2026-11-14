@@ -11,10 +11,11 @@ import { SelecionarAtleticaPage } from '../features/auth/SelecionarAtleticaPage'
 import { RedirectIfAuthenticated } from '../features/auth/RedirectIfAuthenticated'
 import { DefinirSenhaPage, EsqueciSenhaPage, RedefinirSenhaPage } from '../features/auth/PasswordPages'
 import { MembrosPage } from '../features/membros/pages/MembrosPage'
+import { DepartamentosPage } from '../features/departamentos/pages/DepartamentosPage'
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } })
 const authenticatedRoutes = [
-  { path: 'dashboard', element: <PlaceholderPage title="Dashboard" /> }, { path: 'membros', element: <MembrosPage /> }, ...['departamentos', 'eventos', 'tarefas', 'financeiro', 'patrimonio', 'documentos', 'perfil', 'gestoes', 'suporte'].map(path => ({ path, element: <PlaceholderPage title={path[0].toUpperCase() + path.slice(1)} /> })),
+  { path: 'dashboard', element: <PlaceholderPage title="Dashboard" /> }, { path: 'membros', element: <MembrosPage /> }, { path: 'departamentos', element: <DepartamentosPage /> }, ...['eventos', 'tarefas', 'financeiro', 'patrimonio', 'documentos', 'perfil', 'gestoes', 'suporte'].map(path => ({ path, element: <PlaceholderPage title={path[0].toUpperCase() + path.slice(1)} /> })),
 ]
 
 const router = createBrowserRouter([
