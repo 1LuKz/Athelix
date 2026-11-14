@@ -1779,6 +1779,66 @@ paths:
       responses:
         '200': {description: Conferência encerrada, content: {application/json: {schema: {$ref: '#/components/schemas/ConferenciaInventarioDetalhe'}}}}
         '400': {$ref: '#/components/responses/InvalidRequest'}
+  /documentos:
+    get:
+      summary: Lista documentos lógicos visíveis à pessoa autenticada
+      operationId: listDocumentos
+      parameters:
+        - {name: busca, in: query, schema: {type: string}}
+        - {name: categoria, in: query, schema: {$ref: '#/components/schemas/CategoriaDocumento'}}
+        - {name: gestaoId, in: query, schema: {type: integer, format: int64, minimum: 1}}
+        - {name: incluirArquivados, in: query, schema: {type: boolean, default: false}}
+      responses:
+        '200': {description: Documentos ordenados pela atualização mais recente, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Documento'}}}}}
+    post:
+      summary: Cria documento com versão inicial PDF
+      operationId: createDocumento
+      requestBody: {required: true, content: {multipart/form-data: {schema: {$ref: '#/components/schemas/DocumentoCreateMultipart'}}}}
+      responses:
+        '201': {description: Documento criado, content: {application/json: {schema: {$ref: '#/components/schemas/Documento'}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /documentos/{id}:
+    get:
+      summary: Consulta metadados e versão atual de um documento
+      operationId: getDocumento
+      parameters: [{$ref: '#/components/parameters/ResourceId'}]
+      responses:
+        '200': {description: Documento, content: {application/json: {schema: {$ref: '#/components/schemas/Documento'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    put:
+      summary: Atualiza metadados ou arquiva o documento
+      operationId: updateDocumento
+      parameters: [{$ref: '#/components/parameters/ResourceId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/DocumentoUpdateRequest'}}}}
+      responses:
+        '200': {description: Documento atualizado, content: {application/json: {schema: {$ref: '#/components/schemas/Documento'}}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /documentos/{id}/versoes:
+    get:
+      summary: Lista versões imutáveis do documento
+      operationId: listVersoesDocumento
+      parameters: [{$ref: '#/components/parameters/ResourceId'}]
+      responses:
+        '200': {description: Versões, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/VersaoDocumento'}}}}}
+    post:
+      summary: Publica nova versão PDF
+      operationId: createVersaoDocumento
+      parameters: [{$ref: '#/components/parameters/ResourceId'}]
+      requestBody: {required: true, content: {multipart/form-data: {schema: {$ref: '#/components/schemas/VersaoDocumentoCreateMultipart'}}}}
+      responses:
+        '201': {description: Nova versão, content: {application/json: {schema: {$ref: '#/components/schemas/VersaoDocumento'}}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /documentos/{id}/versoes/{versaoId}/conteudo:
+    get:
+      summary: Visualiza ou baixa uma versão protegida
+      operationId: getConteudoVersaoDocumento
+      parameters: [{$ref: '#/components/parameters/ResourceId'}, {name: versaoId, in: path, required: true, schema: {type: integer, format: int64}}]
+      responses:
+        '200': {description: PDF autorizado, content: {application/pdf: {schema: {type: string, format: binary}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
 components:
   schemas:
     ApiError:
@@ -2919,6 +2979,64 @@ components:
         unidadesVerificadasValidas: {type: integer, format: int64}
         progresso: {type: integer, minimum: 0, maximum: 100}
         itens: {type: array, items: {$ref: '#/components/schemas/ItemConferencia'}}
+    CategoriaDocumento: {type: string, enum: [ESTATUTO, REGIMENTO, ATA, CONTRATO, OUTRO]}
+    VisibilidadeDocumento: {type: string, enum: [MEMBROS, DIRETORIA]}
+    VersaoDocumento:
+      type: object
+      required: [id, numeroVersao, arquivoId, nomeArquivo, enviadoPorMembroId, enviadoEm]
+      properties:
+        id: {type: integer, format: int64}
+        numeroVersao: {type: integer, minimum: 1}
+        arquivoId: {type: integer, format: int64}
+        nomeArquivo: {type: string, maxLength: 255}
+        gestaoId: {type: integer, format: int64, nullable: true}
+        observacao: {type: string, maxLength: 1000, nullable: true}
+        enviadoPorMembroId: {type: integer, format: int64}
+        enviadoEm: {type: string, format: date-time}
+    Documento:
+      type: object
+      required: [id, titulo, categoria, visibilidade, arquivado, criadaEm, atualizadaEm, version]
+      properties:
+        id: {type: integer, format: int64}
+        titulo: {type: string, maxLength: 200}
+        categoria: {$ref: '#/components/schemas/CategoriaDocumento'}
+        descricao: {type: string, maxLength: 2000, nullable: true}
+        visibilidade: {$ref: '#/components/schemas/VisibilidadeDocumento'}
+        gestaoOrigemId: {type: integer, format: int64, nullable: true}
+        arquivado: {type: boolean}
+        criadaEm: {type: string, format: date-time}
+        atualizadaEm: {type: string, format: date-time}
+        version: {type: integer, format: int64}
+        versaoAtual: {$ref: '#/components/schemas/VersaoDocumento'}
+    DocumentoUpdateRequest:
+      type: object
+      required: [titulo, categoria, visibilidade, arquivado, version]
+      properties:
+        titulo: {type: string, maxLength: 200}
+        categoria: {$ref: '#/components/schemas/CategoriaDocumento'}
+        descricao: {type: string, maxLength: 2000}
+        visibilidade: {$ref: '#/components/schemas/VisibilidadeDocumento'}
+        gestaoOrigemId: {type: integer, format: int64, minimum: 1}
+        arquivado: {type: boolean}
+        version: {type: integer, format: int64, minimum: 0}
+    DocumentoCreateMultipart:
+      type: object
+      required: [titulo, categoria, visibilidade, arquivo]
+      properties:
+        titulo: {type: string, maxLength: 200}
+        categoria: {$ref: '#/components/schemas/CategoriaDocumento'}
+        descricao: {type: string, maxLength: 2000}
+        visibilidade: {$ref: '#/components/schemas/VisibilidadeDocumento'}
+        gestaoOrigemId: {type: integer, format: int64}
+        observacao: {type: string, maxLength: 1000}
+        arquivo: {type: string, format: binary}
+    VersaoDocumentoCreateMultipart:
+      type: object
+      required: [arquivo]
+      properties:
+        gestaoId: {type: integer, format: int64}
+        observacao: {type: string, maxLength: 1000}
+        arquivo: {type: string, format: binary}
     AnexoEvento:
       type: object
       required: [id, atleticaId, eventoId, arquivoId, titulo, tipoMaterial, criadoEm, atualizadoEm, version]

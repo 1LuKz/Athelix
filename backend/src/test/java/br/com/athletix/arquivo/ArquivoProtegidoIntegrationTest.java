@@ -46,7 +46,7 @@ class ArquivoProtegidoIntegrationTest {
     @Autowired private ContextoAtletica contextoAtletica;
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
-    @MockBean private ArquivoAcessoAoConteudo acessoAoConteudo;
+    @MockBean(name = "anexoEventoArquivoAcessoAoConteudo") private ArquivoAcessoAoConteudo acessoAoConteudo;
 
     @Test
     void armazenaPorFinalidadeValidaAssinaturaELeSomenteComAcessoDoPai() throws Exception {

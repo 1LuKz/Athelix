@@ -229,3 +229,10 @@ Criações retornam `201`, consultas e alterações bem-sucedidas retornam `200`
 - Cada item fotografado aceita quantidade verificada não negativa. Se ela divergir da quantidade esperada, a observação que identifica a divergência é obrigatória. A divergência é `verificada − esperada`; nenhuma contagem altera automaticamente o patrimônio.
 - O progresso é `unidades verificadas válidas / unidades esperadas na abertura × 100`, arredondado ao inteiro mais próximo. Quantidades acima do esperado não ampliam o numerador e, sem itens fotografados, o progresso é `0`.
 - A campanha pode ser encerrada uma única vez, com versão obrigatória, preservando a fotografia e as divergências. Depois de encerrada não aceita novas conferências. Abertura, conferência e encerramento são auditados.
+
+## Biblioteca documental
+
+- Documento é o registro lógico da biblioteca; suas versões são imutáveis e cada upload gera novo `Arquivo` protegido. A combinação de documento e número da versão é única e a numeração é calculada sob bloqueio do documento, evitando colisões concorrentes.
+- A criação e as novas versões recebem somente PDF, por multipart, usando a validação de assinatura, MIME, tamanho e orçamento da infraestrutura de arquivos. Nenhum BLOB compõe listagens ou respostas de metadados.
+- Visibilidade `MEMBROS` permite acesso a qualquer associado ativo; `DIRETORIA` exige administrador, financeiro ou gestor. A versão histórica conserva a mesma regra do documento atual, inclusive em `GET /arquivos/{id}/conteudo`.
+- Arquivamento remove o documento da listagem corrente, mas conserva metadados, arquivos e versões para consulta autorizada pelo histórico. Os contadores por categoria devem considerar documentos lógicos, nunca a quantidade de versões.

@@ -123,3 +123,10 @@ Nesta etapa não há endpoint público para criar ou administrar atléticas. O p
 - `GET/POST /patrimonio/conferencias` lista ou abre uma campanha e fotografa os lotes ativos no instante da abertura.
 - `GET /patrimonio/conferencias/{id}` traz a campanha, os itens fotografados e o progresso; `PUT /patrimonio/conferencias/{id}/itens/{itemId}` registra a contagem com versão.
 - Diferenças em relação à quantidade esperada exigem observação. `PATCH /patrimonio/conferencias/{id}/encerrar` recebe a versão da campanha e encerra sem alterar o patrimônio.
+
+## Biblioteca documental
+
+- `GET/POST /documentos` consulta ou cria documentos; a criação é `multipart/form-data` e inclui um PDF como versão 1.
+- `GET/PUT /documentos/{id}` consulta ou altera metadados, inclusive arquivamento, sempre com `version` na alteração.
+- `GET/POST /documentos/{id}/versoes` lista ou publica versão imutável; `GET /documentos/{id}/versoes/{versaoId}/conteudo` devolve o PDF após conferir a visibilidade do documento.
+- A lista pesquisa título e nome da versão atual, filtra categoria/gestão e omite arquivados por padrão. Cada resposta contém somente a versão atual, sem BLOB.
