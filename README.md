@@ -48,6 +48,7 @@ cd backend
 - Contrato versionado e revisado do projeto: [docs/api/openapi.yaml](docs/api/openapi.yaml)
 - Regras de negócio: [docs/regras-de-negocio.md](docs/regras-de-negocio.md)
 - Convenções e detalhes dos endpoints: [docs/api/README.md](docs/api/README.md)
+- Organização modular do código: [docs/arquitetura.md](docs/arquitetura.md)
 
 Antes de uma chamada mutável, obtenha o CSRF em `GET /api/v1/auth/csrf` e envie o token no cabeçalho indicado pela resposta. O Swagger é uma ferramenta de consulta; as operações protegidas continuam exigindo sessão e CSRF.
 
