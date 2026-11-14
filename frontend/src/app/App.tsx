@@ -9,6 +9,7 @@ import { RequireAuth } from '../features/auth/RequireAuth'
 import { LoginPage } from '../features/auth/LoginPage'
 import { SelecionarAtleticaPage } from '../features/auth/SelecionarAtleticaPage'
 import { RedirectIfAuthenticated } from '../features/auth/RedirectIfAuthenticated'
+import { DefinirSenhaPage, EsqueciSenhaPage, RedefinirSenhaPage } from '../features/auth/PasswordPages'
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } })
 const authenticatedRoutes = [
@@ -18,9 +19,9 @@ const authenticatedRoutes = [
 const router = createBrowserRouter([
   { element: <RedirectIfAuthenticated />, children: [{ element: <AuthLayout />, children: [
     { path: '/login', element: <LoginPage /> },
-    { path: '/esqueci-senha', element: <PlaceholderPage title="Recuperar senha" publicPage /> },
-    { path: '/redefinir-senha', element: <PlaceholderPage title="Redefinir senha" publicPage /> },
-    { path: '/definir-senha', element: <PlaceholderPage title="Definir senha" publicPage /> },
+    { path: '/esqueci-senha', element: <EsqueciSenhaPage /> },
+    { path: '/redefinir-senha', element: <RedefinirSenhaPage /> },
+    { path: '/definir-senha', element: <DefinirSenhaPage /> },
   ] }] },
   { element: <RequireAuth />, children: [{ element: <AuthLayout />, children: [{ path: '/selecionar-atletica', element: <SelecionarAtleticaPage /> }] }] },
   { element: <RequireAuth />, children: [{ element: <AppLayout />, children: authenticatedRoutes }] },
