@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
 import { AppLayout } from '../layouts/AppLayout'
 import { AuthLayout } from '../layouts/AuthLayout'
 import { AccessDeniedPage, NotFoundPage, PlaceholderPage } from './pages'
+import { ToastProvider } from '../components/ui'
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } })
 const authenticatedRoutes = [
@@ -23,4 +24,4 @@ const router = createBrowserRouter([
   { path: '*', element: <NotFoundPage /> },
 ])
 
-export function App() { return <QueryClientProvider client={queryClient}><RouterProvider router={router} /></QueryClientProvider> }
+export function App() { return <QueryClientProvider client={queryClient}><ToastProvider><RouterProvider router={router} /></ToastProvider></QueryClientProvider> }
