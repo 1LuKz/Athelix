@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Badge, Button, Card, EmptyState, ErrorState, LoadingState, Tabs, useToast } from '../../../components/ui'
+import { MotivoDialog } from '../../../components/MotivoDialog'
 import { errorFeedback } from '../../../lib/errorFeedback'
 import { useAuthSession } from '../../auth/AuthSessionProvider'
 import { CronogramaCard } from '../components/CronogramaCard'
@@ -19,6 +20,7 @@ export function EventoDetalhePage() {
   const [tab, setTab] = useState('visao')
   const [editing, setEditing] = useState(false)
   const [togglingTask, setTogglingTask] = useState<number | null>(null)
+  const [retornoChecklist, setRetornoChecklist] = useState<ChecklistItem | null>(null)
   const client = useQueryClient()
   const { success, error } = useToast()
   const event = useQuery({ queryKey: ['evento', id], queryFn: () => eventosApi.get(id) })
@@ -34,11 +36,17 @@ export function EventoDetalhePage() {
   if (event.isLoading) return <LoadingState />
   if (event.isError || !event.data) return <ErrorState message={errorFeedback(event.error)} />
 
-  const toggleChecklist = async (item: { id: number; concluida: boolean; version: number }) => {
+  const toggleChecklist = async (item: ChecklistItem, motivo?: string) => {
+    const nextStatus = item.concluida ? 'EM_ANDAMENTO' : 'CONCLUIDO'
+    if (exigeMotivoRetorno(item.status, nextStatus) && !motivo) {
+      setRetornoChecklist(item)
+      return
+    }
     setTogglingTask(item.id)
     try {
-      await detalheEventoApi.atualizarTarefa(item.id, item.concluida ? 'EM_ANDAMENTO' : 'CONCLUIDO', item.version)
+      await detalheEventoApi.atualizarTarefa(item.id, nextStatus, item.version, motivo)
       success('Checklist atualizado.')
+      setRetornoChecklist(null)
       invalidateEvent()
     } catch (cause) {
       error(errorFeedback(cause))
@@ -72,10 +80,13 @@ export function EventoDetalhePage() {
     {tab === 'participantes' && (participantes.isError ? <ErrorState message={errorFeedback(participantes.error)} onRetry={() => void participantes.refetch()} /> : <ParticipantesTab eventoId={id} participantes={participantes.data} resumo={resumo.data} podeGerenciar={podeGerenciar} onChanged={invalidateEvent} />)}
     {tab === 'materiais' && (anexos.isError ? <ErrorState message={errorFeedback(anexos.error)} onRetry={() => void anexos.refetch()} /> : <MateriaisTab eventoId={id} anexos={anexos.data} eventoConcluido={current.status === 'CONCLUIDO'} podeGerenciar={podeGerenciar} onChanged={invalidateEvent} />)}
     {editing && <EventoModal event={current} onClose={() => setEditing(false)} onSaved={() => { setEditing(false); invalidateEvent() }} />}
+    <MotivoDialog open={Boolean(retornoChecklist)} loading={togglingTask === retornoChecklist?.id} onClose={() => setRetornoChecklist(null)} onConfirm={motivo => { if (retornoChecklist) void toggleChecklist(retornoChecklist, motivo) }} />
   </>
 }
 
-function ChecklistCard({ items, progresso, loading, podeGerenciar, togglingTask, onToggle }: { items: Array<{ id: number; titulo: string; concluida: boolean; atrasada: boolean; status: string; version: number }>; progresso: number; loading: boolean; podeGerenciar: boolean; togglingTask: number | null; onToggle: (item: { id: number; concluida: boolean; version: number }) => Promise<void> }) {
+type ChecklistItem = { id: number; titulo: string; concluida: boolean; atrasada: boolean; status: string; version: number }
+
+function ChecklistCard({ items, progresso, loading, podeGerenciar, togglingTask, onToggle }: { items: ChecklistItem[]; progresso: number; loading: boolean; podeGerenciar: boolean; togglingTask: number | null; onToggle: (item: ChecklistItem) => Promise<void> }) {
   return <Card title={`Checklist · ${progresso}%`}>
     {loading ? <LoadingState /> : items.length ? items.map(item => <label className="check-item" key={item.id}><input type="checkbox" disabled={!podeGerenciar || togglingTask === item.id} checked={item.concluida} onChange={() => void onToggle(item)} />{item.titulo}<small>{item.atrasada ? 'Atrasada' : item.status}</small>{togglingTask === item.id && <span>Atualizando…</span>}</label>) : <EmptyState title="Sem itens no checklist" />}
   </Card>
@@ -94,3 +105,4 @@ function FinanceiroCard({ resumo, loading }: { resumo?: { orcamentoPrevisto: str
 
 function statusLabel(status: string) { return ({ PLANEJADO: 'Planejado', INSCRICOES_ABERTAS: 'Inscrições abertas', EM_ANDAMENTO: 'Em andamento', CONCLUIDO: 'Concluído' } as Record<string, string>)[status] ?? status }
 function money(value: string) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value)) }
+function exigeMotivoRetorno(statusAtual: string, proximoStatus: string) { return proximoStatus === 'EM_ANDAMENTO' && (statusAtual === 'REVISAO' || statusAtual === 'CONCLUIDO') }

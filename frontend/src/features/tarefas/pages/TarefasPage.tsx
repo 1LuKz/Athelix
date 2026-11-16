@@ -1,13 +1,83 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { MotivoDialog } from '../../../components/MotivoDialog'
 import { Badge, Button, Card, EmptyState, ErrorState, Input, LoadingState, Modal, Select, useToast } from '../../../components/ui'
-import { queryKeys } from '../../../lib/query'
 import { errorFeedback } from '../../../lib/errorFeedback'
+import { queryKeys } from '../../../lib/query'
 import { useAuthSession } from '../../auth/AuthSessionProvider'
+import { eventosApi, type Evento } from '../../eventos/api'
 import { membrosApi } from '../../membros/api'
-import { eventosApi } from '../../eventos/api'
-import { tarefasApi, type Tarefa } from '../api'
-const columns = [{ id: 'A_FAZER', label: 'A Fazer' }, { id: 'EM_ANDAMENTO', label: 'Em andamento' }, { id: 'REVISAO', label: 'Revisão' }, { id: 'CONCLUIDO', label: 'Concluído' }] as const
-export function TarefasPage() { const { activeVinculo } = useAuthSession(); const client = useQueryClient(); const { error, success } = useToast(); const [filters, setFilters] = useState({ eventoId: '', responsavelMembroId: '', prioridade: '', departamentoId: '' }); const [open, setOpen] = useState(false); const tasks = useQuery({ queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'tarefas', filters), queryFn: ({ signal }) => tarefasApi.list({ ...filters, page: 0, size: 100 }, signal), enabled: Boolean(activeVinculo) }); const eventos = useQuery({ queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'eventos-select'), queryFn: () => eventosApi.list({ page: 0, size: 100 }) }); const membros = useQuery({ queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'membros-ativos'), queryFn: ({ signal }) => membrosApi.list({ page: 0, size: 100, status: 'ATIVO' }, signal) }); const move = async (task: Tarefa, status: string) => { if (status === task.status) return; try { await tarefasApi.status(task.id, status, task.version); success('Tarefa atualizada.'); await client.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'tarefas'] }) } catch (cause) { error(errorFeedback(cause)) } }; return <><div className="page-title"><div><p className="eyebrow">Execução do evento</p><h1>Tarefas</h1></div><Button icon="add" onClick={() => setOpen(true)}>Nova tarefa</Button></div><Card><div className="filters"><Select label="Evento" value={filters.eventoId} onChange={e => setFilters({ ...filters, eventoId: e.target.value })}><option value="">Todos</option>{eventos.data?.items.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}</Select><Select label="Responsável" value={filters.responsavelMembroId} onChange={e => setFilters({ ...filters, responsavelMembroId: e.target.value })}><option value="">Todos</option>{membros.data?.items.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}</Select><Select label="Prioridade" value={filters.prioridade} onChange={e => setFilters({ ...filters, prioridade: e.target.value })}><option value="">Todas</option><option>ALTA</option><option>MEDIA</option><option>BAIXA</option></Select></div></Card>{tasks.isLoading ? <LoadingState /> : tasks.isError ? <ErrorState message={errorFeedback(tasks.error)} /> : tasks.data?.items.length ? <div className="board">{columns.map(column => <section key={column.id}><h2>{column.label} <span>{tasks.data?.items.filter(t => t.status === column.id).length}</span></h2>{tasks.data?.items.filter(t => t.status === column.id).map(task => <Card className="task-card" key={task.id}><Badge tone={task.prioridade === 'ALTA' ? 'danger' : task.prioridade === 'MEDIA' ? 'warning' : 'info'}>{task.prioridade}</Badge><h3>{task.titulo}</h3><p>{task.prazo ? `Prazo: ${task.prazo}` : 'Sem prazo'} {task.atrasada && <b className="late">Atrasada</b>}</p><Select label="Mover para" value={task.status} onChange={e => void move(task, e.target.value)}>{columns.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}</Select></Card>)}</section>)}</div> : <EmptyState description="Nenhuma tarefa corresponde aos filtros." />}{open && <TarefaModal eventos={eventos.data?.items ?? []} membros={membros.data?.items ?? []} close={() => setOpen(false)} done={() => { setOpen(false); void client.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'tarefas'] }) }} />}</> }
-function TarefaModal({ eventos, membros, close, done }: { eventos: any[]; membros: any[]; close: () => void; done: () => void }) { const { error, success } = useToast(); const [v,setV]=useState({eventoId:'',titulo:'',descricao:'',responsavelMembroId:'',prioridade:'MEDIA',prazo:''}); const save=async()=>{try{await tarefasApi.create({...v,eventoId:Number(v.eventoId),responsavelMembroId:v.responsavelMembroId?Number(v.responsavelMembroId):undefined,prazo:v.prazo||undefined});success('Tarefa criada em A Fazer.');done()}catch(cause){error(errorFeedback(cause))}}; return <Modal open title="Nova tarefa" onClose={close} footer={<><Button variant="secondary" onClick={close}>Cancelar</Button><Button onClick={()=>void save()}>Criar tarefa</Button></>}><div className="form-grid"><Select label="Evento" value={v.eventoId} onChange={e=>setV({...v,eventoId:e.target.value})}><option value="">Selecione</option>{eventos.map(e=><option key={e.id} value={e.id}>{e.nome}</option>)}</Select><Input label="Título" value={v.titulo} onChange={e=>setV({...v,titulo:e.target.value})}/><Select label="Responsável" value={v.responsavelMembroId} onChange={e=>setV({...v,responsavelMembroId:e.target.value})}><option value="">Sem responsável</option>{membros.map(m=><option key={m.id} value={m.id}>{m.nome}</option>)}</Select><Select label="Prioridade" value={v.prioridade} onChange={e=>setV({...v,prioridade:e.target.value})}><option>ALTA</option><option>MEDIA</option><option>BAIXA</option></Select><Input label="Prazo" type="date" value={v.prazo} onChange={e=>setV({...v,prazo:e.target.value})}/></div></Modal> }
+import type { Membro } from '../../membros/types'
+import { tarefasApi, type StatusTarefa, type Tarefa } from '../api'
+
+const columns: Array<{ id: StatusTarefa; label: string }> = [
+  { id: 'A_FAZER', label: 'A Fazer' },
+  { id: 'EM_ANDAMENTO', label: 'Em andamento' },
+  { id: 'REVISAO', label: 'Revisão' },
+  { id: 'CONCLUIDO', label: 'Concluído' },
+]
+
+export function TarefasPage() {
+  const { activeVinculo } = useAuthSession()
+  const client = useQueryClient()
+  const { error, success } = useToast()
+  const [filters, setFilters] = useState({ eventoId: '', responsavelMembroId: '', prioridade: '', departamentoId: '' })
+  const [open, setOpen] = useState(false)
+  const [movingTaskId, setMovingTaskId] = useState<number | null>(null)
+  const [retorno, setRetorno] = useState<{ task: Tarefa; status: StatusTarefa } | null>(null)
+  const tasks = useQuery({ queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'tarefas', filters), queryFn: ({ signal }) => tarefasApi.list({ ...filters, page: 0, size: 100 }, signal), enabled: Boolean(activeVinculo) })
+  const eventos = useQuery({ queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'eventos-select'), queryFn: () => eventosApi.list({ page: 0, size: 100 }) })
+  const membros = useQuery({ queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'membros-ativos'), queryFn: ({ signal }) => membrosApi.list({ page: 0, size: 100, status: 'ATIVO' }, signal) })
+
+  const move = async (task: Tarefa, status: StatusTarefa, motivo?: string) => {
+    if (status === task.status) return
+    if (exigeMotivoRetorno(task.status, status) && !motivo) {
+      setRetorno({ task, status })
+      return
+    }
+    setMovingTaskId(task.id)
+    try {
+      await tarefasApi.status(task.id, status, task.version, motivo)
+      success('Tarefa atualizada.')
+      setRetorno(null)
+      await client.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'tarefas'] })
+    } catch (cause) {
+      error(errorFeedback(cause))
+    } finally {
+      setMovingTaskId(null)
+    }
+  }
+
+  return <>
+    <div className="page-title"><div><p className="eyebrow">Execução do evento</p><h1>Tarefas</h1></div><Button icon="add" onClick={() => setOpen(true)}>Nova tarefa</Button></div>
+    <Card><div className="filters">
+      <Select label="Evento" value={filters.eventoId} onChange={event => setFilters({ ...filters, eventoId: event.target.value })}><option value="">Todos</option>{eventos.data?.items.map(evento => <option key={evento.id} value={evento.id}>{evento.nome}</option>)}</Select>
+      <Select label="Responsável" value={filters.responsavelMembroId} onChange={event => setFilters({ ...filters, responsavelMembroId: event.target.value })}><option value="">Todos</option>{membros.data?.items.map(membro => <option key={membro.id} value={membro.id}>{membro.nome}</option>)}</Select>
+      <Select label="Prioridade" value={filters.prioridade} onChange={event => setFilters({ ...filters, prioridade: event.target.value })}><option value="">Todas</option><option>ALTA</option><option>MEDIA</option><option>BAIXA</option></Select>
+    </div></Card>
+    {tasks.isLoading ? <LoadingState /> : tasks.isError ? <ErrorState message={errorFeedback(tasks.error)} /> : tasks.data?.items.length ? <div className="board">{columns.map(column => <section key={column.id}><h2>{column.label} <span>{tasks.data.items.filter(task => task.status === column.id).length}</span></h2>{tasks.data.items.filter(task => task.status === column.id).map(task => <Card className="task-card" key={task.id}><Badge tone={task.prioridade === 'ALTA' ? 'danger' : task.prioridade === 'MEDIA' ? 'warning' : 'info'}>{task.prioridade}</Badge><h3>{task.titulo}</h3><p>{task.prazo ? `Prazo: ${task.prazo}` : 'Sem prazo'} {task.atrasada && <b className="late">Atrasada</b>}</p><Select label="Mover para" value={task.status} disabled={movingTaskId === task.id} onChange={event => void move(task, event.target.value as StatusTarefa)}>{columns.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}</Select></Card>)}</section>)}</div> : <EmptyState description="Nenhuma tarefa corresponde aos filtros." />}
+    {open && <TarefaModal eventos={eventos.data?.items ?? []} membros={membros.data?.items ?? []} close={() => setOpen(false)} done={() => { setOpen(false); void client.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'tarefas'] }) }} />}
+    <MotivoDialog open={Boolean(retorno)} loading={movingTaskId === retorno?.task.id} onClose={() => setRetorno(null)} onConfirm={motivo => { if (retorno) void move(retorno.task, retorno.status, motivo) }} />
+  </>
+}
+
+function TarefaModal({ eventos, membros, close, done }: { eventos: Evento[]; membros: Membro[]; close: () => void; done: () => void }) {
+  const { error, success } = useToast()
+  const [saving, setSaving] = useState(false)
+  const [values, setValues] = useState({ eventoId: '', titulo: '', descricao: '', responsavelMembroId: '', prioridade: 'MEDIA', prazo: '' })
+  const save = async () => {
+    setSaving(true)
+    try {
+      await tarefasApi.create({ ...values, eventoId: Number(values.eventoId), responsavelMembroId: values.responsavelMembroId ? Number(values.responsavelMembroId) : undefined, prazo: values.prazo || undefined })
+      success('Tarefa criada em A Fazer.')
+      done()
+    } catch (cause) {
+      error(errorFeedback(cause))
+    } finally {
+      setSaving(false)
+    }
+  }
+  return <Modal open title="Nova tarefa" onClose={close} footer={<><Button variant="secondary" disabled={saving} onClick={close}>Cancelar</Button><Button loading={saving} onClick={() => void save()}>Criar tarefa</Button></>}><div className="form-grid"><Select label="Evento" value={values.eventoId} onChange={event => setValues({ ...values, eventoId: event.target.value })}><option value="">Selecione</option>{eventos.map(evento => <option key={evento.id} value={evento.id}>{evento.nome}</option>)}</Select><Input label="Título" value={values.titulo} onChange={event => setValues({ ...values, titulo: event.target.value })} /><Select label="Responsável" value={values.responsavelMembroId} onChange={event => setValues({ ...values, responsavelMembroId: event.target.value })}><option value="">Sem responsável</option>{membros.map(membro => <option key={membro.id} value={membro.id}>{membro.nome}</option>)}</Select><Select label="Prioridade" value={values.prioridade} onChange={event => setValues({ ...values, prioridade: event.target.value })}><option>ALTA</option><option>MEDIA</option><option>BAIXA</option></Select><Input label="Prazo" type="date" value={values.prazo} onChange={event => setValues({ ...values, prazo: event.target.value })} /></div></Modal>
+}
+
+function exigeMotivoRetorno(statusAtual: StatusTarefa, proximoStatus: StatusTarefa) { return proximoStatus === 'EM_ANDAMENTO' && (statusAtual === 'REVISAO' || statusAtual === 'CONCLUIDO') }

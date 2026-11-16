@@ -27,7 +27,7 @@ export const detalheEventoApi = {
   atualizarParticipacao: (eventoId: string, participacaoId: number, status: StatusParticipacaoEvento, version: number, motivoCorrecao?: string) => http<ParticipacaoEvento>(`/eventos/${eventoId}/participacoes/${participacaoId}/status`, { method: 'PATCH', body: { status, version, motivoCorrecao } }),
   participacaoResumo: (id: string) => http<ParticipacaoEventoResumo>(`/eventos/${id}/participacoes/resumo`),
   anexos: (id: string) => http<AnexoEvento[]>(`/eventos/${id}/anexos`),
-  atualizarTarefa: (id: number, status: string, version: number) => http<void>(`/tarefas/${id}/status`, { method: 'PATCH', body: { status, version } }),
+  atualizarTarefa: (id: number, status: string, version: number, motivo?: string) => http<void>(`/tarefas/${id}/status`, { method: 'PATCH', body: { status, version, motivo } }),
   upload: (id: string, form: FormData) => http<AnexoEvento>(`/eventos/${id}/anexos`, { method: 'POST', body: form }),
   removerAnexo: (eventoId: string, anexoId: number, version: number) => http<void>(`/eventos/${eventoId}/anexos/${anexoId}?version=${version}`, { method: 'DELETE' }),
 }
