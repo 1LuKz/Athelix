@@ -40,3 +40,12 @@ temp/
 *.iml
 .DS_Store
 Thumbs.db
+
+# Build artifacts at any depth
+node_modules/
+dist/
+target/
+*.tsbuildinfo
+__MACOSX/
+/frontend/vite.config.js
+/frontend/vite.config.d.ts
