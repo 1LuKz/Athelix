@@ -65,6 +65,7 @@ public class EstornoFinanceiro implements AtleticaScoped {
 
     public Long getId() { return id; }
     @Override public Long getAtleticaId() { return atletica.getId(); }
+    public String getDescricaoLancamento() { return lancamento.getDescricao(); }
     public Long getLancamentoId() { return lancamento.getId(); }
     public TipoLancamentoFinanceiro getTipoLancamento() { return lancamento.getTipo(); }
     public java.math.BigDecimal getValorLancamento() { return lancamento.getValor(); }

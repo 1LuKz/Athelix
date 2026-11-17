@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface EstornoFinanceiroRepository extends JpaRepository<EstornoFinanceiro, Long> {
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = "lancamento")
+    List<EstornoFinanceiro> findByAtletica_IdOrderByDataEstornoDescIdDesc(Long atleticaId, org.springframework.data.domain.Pageable pageable);
     boolean existsByLancamento_IdAndAtletica_Id(Long lancamentoId, Long atleticaId);
     Optional<EstornoFinanceiro> findByLancamento_IdAndAtletica_Id(Long lancamentoId, Long atleticaId);
     List<EstornoFinanceiro> findAllByAtletica_Id(Long atleticaId);
