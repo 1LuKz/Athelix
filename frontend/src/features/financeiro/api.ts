@@ -27,6 +27,8 @@ const query = (filters: Record<string, QueryValue>) => {
 
 export const financeiroApi = {
   categorias: (signal?: AbortSignal) => http<CategoriaFinanceira[]>('/financeiro/categorias', { signal }),
+  criarCategoria: (body: { nome: string; tipoAplicavel: 'RECEITA' | 'DESPESA' | 'AMBOS'; ativa: boolean }) => http<CategoriaFinanceira>('/financeiro/categorias', { method: 'POST', body }),
+  atualizar: (id: number, body: Omit<LancamentoCreate, 'tipo'> & { version: number }) => http<Lancamento>(`/financeiro/lancamentos/${id}`, { method: 'PUT', body }),
   lancamentos: (filters: Record<string, QueryValue>, signal?: AbortSignal) => http<Page<Lancamento>>(`/financeiro/lancamentos${query(filters)}`, { signal }),
   resumo: (dataReferencia?: string, signal?: AbortSignal) => http<ResumoFinanceiro>(`/financeiro/resumo${query({ dataReferencia })}`, { signal }),
   evolucao: (mesDe: string, mesAte: string, signal?: AbortSignal) => http<EvolucaoMensal[]>(`/financeiro/evolucao-mensal${query({ mesDe, mesAte })}`, { signal }),

@@ -15,6 +15,7 @@ type Value = string | number | boolean | undefined
 const qs = (values: Record<string, Value>) => { const q = new URLSearchParams(); Object.entries(values).forEach(([key, value]) => { if (value !== undefined && value !== '') q.set(key, String(value)) }); return q.toString() ? `?${q}` : '' }
 export const patrimonioApi = {
   resumo: (signal?: AbortSignal) => http<Resumo>('/patrimonio/resumo', { signal }), categorias: (signal?: AbortSignal) => http<Categoria[]>('/patrimonio/categorias', { signal }),
+  criarCategoria: (body: { nome: string; ativa: boolean }) => http<Categoria>('/patrimonio/categorias', { method: 'POST', body }),
   itens: (filters: Record<string, Value>, signal?: AbortSignal) => http<Page<Item>>(`/patrimonio/itens${qs(filters)}`, { signal }),
   criarItem: (body: Record<string, unknown>) => http<Item>('/patrimonio/itens', { method: 'POST', body }), atualizarItem: (id: number, body: Record<string, unknown>) => http<Item>(`/patrimonio/itens/${id}`, { method: 'PUT', body }),
   emprestimos: (signal?: AbortSignal) => http<Emprestimo[]>('/patrimonio/emprestimos', { signal }), emprestar: (body: Record<string, unknown>) => http<Emprestimo>('/patrimonio/emprestimos', { method: 'POST', body }), devolver: (id: number, body: Record<string, unknown>) => http(`/patrimonio/emprestimos/${id}/devolucoes`, { method: 'POST', body }),
