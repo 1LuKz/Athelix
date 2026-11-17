@@ -7,7 +7,6 @@ import br.com.athletix.auth.dto.LoginRequest;
 import br.com.athletix.auth.dto.MensagemResponse;
 import br.com.athletix.auth.dto.RedefinirSenhaRequest;
 import br.com.athletix.auth.dto.SelecionarAtleticaRequest;
-import br.com.athletix.auth.service.CredentialDeliveryException;
 import br.com.athletix.auth.service.LoginAttemptService;
 import br.com.athletix.auth.service.SessaoAtleticaService;
 import br.com.athletix.auth.service.TokenCredencialService;
@@ -106,11 +105,7 @@ public class AuthController {
 
     @PostMapping("/esqueci-senha")
     public MensagemResponse esqueciSenha(@RequestBody(required = false) EsqueciSenhaRequest request) {
-        try {
-            tokenCredencialService.solicitarRecuperacao(request == null ? null : request.email());
-        } catch (CredentialDeliveryException exception) {
-            // A resposta continua anti-enumeração e não afirma que uma entrega ocorreu.
-        }
+        tokenCredencialService.solicitarRecuperacao(request == null ? null : request.email());
         return mensagemRecuperacao();
     }
 

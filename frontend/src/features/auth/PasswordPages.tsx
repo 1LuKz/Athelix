@@ -12,9 +12,61 @@ const passwordSchema = z.object({ novaSenha: z.string().min(10, 'A senha deve te
 type EmailValues = z.infer<typeof emailSchema>; type PasswordValues = z.infer<typeof passwordSchema>
 
 export function EsqueciSenhaPage() {
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<EmailValues>({ resolver: zodResolver(emailSchema) }); const [message, setMessage] = useState<string | null>(null)
-  const submit = async ({ email }: EmailValues) => { const response = await authApi.esqueciSenha(email); setMessage(response.message) }
-  return <section className="auth-card password-card"><h1>Recuperar senha</h1><p>Informe seu e-mail institucional. Por segurança, a resposta será a mesma para qualquer endereço.</p>{message ? <SuccessMessage message={message} /> : <form onSubmit={handleSubmit(submit)} noValidate><Input label="E-mail institucional" type="email" autoComplete="email" error={errors.email?.message} {...register('email')} /><Button type="submit" loading={isSubmitting} className="login-submit">Enviar instruções</Button></form>}<Link className="forgot-link" to="/login">Voltar para entrar</Link></section>
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<EmailValues>({ resolver: zodResolver(emailSchema) })
+  const [message, setMessage] = useState<string | null>(null)
+  const [deliveryError, setDeliveryError] = useState<string | null>(null)
+
+  const submit = async ({ email }: EmailValues) => {
+    try {
+      const response = await authApi.esqueciSenha(email)
+      setMessage(response.message)
+      setDeliveryError(null)
+    } catch (cause) {
+      setDeliveryError(
+        cause instanceof HttpError && cause.status === 503
+          ? 'Não foi possível confirmar o envio do e-mail. Verifique a configuração SMTP ou tente novamente mais tarde.'
+          : 'Não foi possível solicitar a recuperação de senha. Tente novamente mais tarde.',
+      )
+    }
+  }
+
+  return (
+    <section className="auth-card password-card">
+      <h1>Recuperar senha</h1>
+      <p>
+        Informe seu e-mail institucional. Por segurança, a resposta será a mesma
+        para qualquer endereço.
+      </p>
+      {message ? (
+        <SuccessMessage message={message} />
+      ) : (
+        <form onSubmit={handleSubmit(submit)} noValidate>
+          <Input
+            label="E-mail institucional"
+            type="email"
+            autoComplete="email"
+            error={errors.email?.message}
+            {...register('email')}
+          />
+          {deliveryError && (
+            <p className="form-error" role="alert">
+              {deliveryError}
+            </p>
+          )}
+          <Button type="submit" loading={isSubmitting} className="login-submit">
+            Enviar instruções
+          </Button>
+        </form>
+      )}
+      <Link className="forgot-link" to="/login">
+        Voltar para entrar
+      </Link>
+    </section>
+  )
 }
 
 export function RedefinirSenhaPage() { return <TokenPasswordPage kind="redefinir" /> }

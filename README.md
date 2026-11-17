@@ -89,7 +89,7 @@ export ATHLETIX_FRONTEND_BASE_URL=http://localhost:5173
 
 O exemplo usa uma caixa de testes do Mailtrap; substitua host e credenciais pelos valores exibidos no inbox criado para o projeto. As configurações opcionais `ATHLETIX_SMTP_AUTH` e `ATHLETIX_SMTP_STARTTLS` têm valor padrão `true`.
 
-Sem SMTP configurado, a aplicação não confirma entrega de mensagens e não expõe links ou tokens secretos pela API.
+Sem `ATHLETIX_SMTP_HOST` ou quando o provedor SMTP não confirma o envio, convites e recuperação de senha não são concluídos: a API responde que não conseguiu confirmar a entrega e nenhum token utilizável é persistido. A aplicação não simula envios, não expõe links nem tokens secretos pela API.
 
 ## Privacidade e retenção
 

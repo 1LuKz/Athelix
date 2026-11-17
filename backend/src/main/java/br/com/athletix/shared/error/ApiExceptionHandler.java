@@ -1,5 +1,6 @@
 package br.com.athletix.shared.error;
 
+import br.com.athletix.auth.service.CredentialDeliveryException;
 import br.com.athletix.shared.exception.BusinessRuleException;
 import br.com.athletix.shared.exception.ConflictException;
 import br.com.athletix.shared.exception.ConcurrentModificationException;
@@ -148,6 +149,16 @@ public class ApiExceptionHandler {
                                                                   HttpServletRequest request) {
         return response(HttpStatus.UNAUTHORIZED, ApiErrorCode.UNAUTHENTICATED,
                 "Credenciais inválidas.", List.of(), request);
+    }
+
+    @ExceptionHandler(CredentialDeliveryException.class)
+    public ResponseEntity<ApiErrorResponse> handleCredentialDelivery(
+            CredentialDeliveryException exception,
+            HttpServletRequest request
+    ) {
+        return response(HttpStatus.SERVICE_UNAVAILABLE, ApiErrorCode.CREDENTIAL_DELIVERY_UNAVAILABLE,
+                "Não foi possível confirmar o envio do e-mail. Verifique a configuração SMTP e tente novamente.",
+                List.of(), request);
     }
 
     @ExceptionHandler(Exception.class)

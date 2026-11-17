@@ -102,7 +102,18 @@ Os resumos financeiros para associados não devem expor dados pessoais de contra
 - `POST /auth/redefinir-senha` reaplica integralmente a política BCrypt e invalida sessões registradas anteriormente para a conta. `POST /auth/definir-senha` aceita apenas tokens de convite.
 - O convite é emitido apenas para uma conta sem credencial definida. Se a conta já possui senha, o vínculo aprovado usa essa conta e nenhuma senha é substituída. O token não aprova nem ativa um vínculo por si só.
 - Links usam somente `athletix.frontend-base-url`, definido no servidor; nenhum host enviado pelo navegador participa da composição do link.
-- SMTP é real, via Spring Mail. Configure `ATHLETIX_SMTP_HOST`, `ATHLETIX_SMTP_PORT`, `ATHLETIX_SMTP_USERNAME`, `ATHLETIX_SMTP_PASSWORD`, `ATHLETIX_SMTP_AUTH`, `ATHLETIX_SMTP_STARTTLS` e `ATHLETIX_MAIL_FROM` no ambiente. Para desenvolvimento, pode-se usar uma caixa SMTP de teste visualizável no navegador, como Mailtrap, sem contêineres.
+- SMTP é real, via Spring Mail. Configure `ATHLETIX_SMTP_HOST`, `ATHLETIX_SMTP_PORT`, `ATHLETIX_SMTP_USERNAME`, `ATHLETIX_SMTP_PASSWORD`, `ATHLETIX_SMTP_AUTH`, `ATHLETIX_SMTP_STARTTLS`, `ATHLETIX_MAIL_FROM` e `ATHLETIX_FRONTEND_BASE_URL` no ambiente. Para desenvolvimento, pode-se usar uma caixa SMTP de teste visualizável no navegador, como Mailtrap, sem contêineres. Exemplo, sem gravar credenciais no repositório:
+
+  ```bash
+  export ATHLETIX_SMTP_HOST=sandbox.smtp.mailtrap.io
+  export ATHLETIX_SMTP_PORT=587
+  export ATHLETIX_SMTP_USERNAME=seu_usuario_mailtrap
+  export ATHLETIX_SMTP_PASSWORD=sua_senha_mailtrap
+  export ATHLETIX_MAIL_FROM=no-reply@athletix.local
+  export ATHLETIX_FRONTEND_BASE_URL=http://localhost:5173
+  ```
+
+  Sem SMTP disponível, a recuperação e os convites não simulam entrega: a operação informa que a confirmação falhou e a transação desfaz o token.
 
 ## Perfil, histórico de atividades e solicitações de vínculo
 

@@ -92,7 +92,7 @@ paths:
       operationId: forgotPassword
       description: >-
         Sempre retorna a mesma mensagem, independentemente da existência ou elegibilidade
-        da conta. Nunca retorna token ou link de recuperação.
+        da conta quando a solicitação é processada. Nunca retorna token ou link de recuperação.
       requestBody:
         required: false
         content:
@@ -106,6 +106,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MensagemResponse'
+        '503':
+          $ref: '#/components/responses/CredentialDeliveryUnavailable'
   /auth/redefinir-senha:
     post:
       summary: Redefine uma senha usando token de recuperação
@@ -3961,6 +3963,12 @@ components:
             $ref: '#/components/schemas/ApiError'
     Forbidden:
       description: A sessão não tem permissão para a operação.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    CredentialDeliveryUnavailable:
+      description: O servidor não confirmou a entrega do e-mail de credencial; nenhum token utilizável foi persistido.
       content:
         application/json:
           schema:

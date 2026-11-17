@@ -1,6 +1,7 @@
 package br.com.athletix.auth.service;
 
 import br.com.athletix.shared.exception.BusinessRuleException;
+import br.com.athletix.auth.repository.TokenCredencialRepository;
 import br.com.athletix.usuario.dto.SenhaDefinicaoRequest;
 import br.com.athletix.usuario.dto.UsuarioConviteCreateRequest;
 import br.com.athletix.usuario.entity.Usuario;
@@ -12,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -21,6 +23,9 @@ import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -37,6 +42,9 @@ class TokenCredencialServiceIntegrationTest {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private TokenCredencialRepository tokenRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -65,6 +73,23 @@ class TokenCredencialServiceIntegrationTest {
                 () -> tokenCredencialService.redefinirSenha(primeiroToken, "OutraSenhaValida1"));
         assertThrows(BusinessRuleException.class,
                 () -> tokenCredencialService.redefinirSenha(segundoToken, "OutraSenhaValida1"));
+    }
+
+    @Test
+    void doesNotPersistRecoveryTokenWhenSmtpIsUnavailable() {
+        Usuario usuario = usuarioService.criarPorConvite(new UsuarioConviteCreateRequest(
+                "SMTP Indisponível", "smtp.indisponivel@athletix.local", null
+        ));
+        usuarioService.definirSenha(usuario.getId(), new SenhaDefinicaoRequest("SenhaInicial1"));
+        doThrow(new MailSendException("SMTP indisponível"))
+                .when(mailSender)
+                .send(any(SimpleMailMessage.class));
+
+        assertThrows(CredentialDeliveryException.class,
+                () -> tokenCredencialService.solicitarRecuperacao(usuario.getEmail()));
+
+        assertThat(tokenRepository.findAll())
+                .noneMatch(token -> token.getUsuarioId().equals(usuario.getId()));
     }
 
     private String tokenDa(SimpleMailMessage mensagem) {
