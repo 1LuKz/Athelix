@@ -144,6 +144,106 @@ paths:
                 $ref: '#/components/schemas/MensagemResponse'
         '400':
           $ref: '#/components/responses/InvalidRequest'
+  /dashboard/resumo:
+    get:
+      summary: Consulta os indicadores gerais da atlética selecionada
+      operationId: getDashboardResumo
+      responses:
+        '200':
+          description: Contagens operacionais, patrimônio e saldo atual do dashboard.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResumo'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /dashboard/financeiro:
+    get:
+      summary: Consulta o resumo e a evolução financeira do dashboard
+      operationId: getDashboardFinanceiro
+      responses:
+        '200':
+          description: Resumo financeiro atual e evolução dos seis meses incluindo o mês corrente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardFinanceiro'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /dashboard/departamentos:
+    get:
+      summary: Lista a participação dos membros ativos por departamento
+      operationId: listDashboardDepartamentos
+      responses:
+        '200':
+          description: Departamentos da atlética selecionada, ordenados por nome.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DashboardDepartamento'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /dashboard/proximos-eventos:
+    get:
+      summary: Lista os próximos eventos ativos
+      operationId: listDashboardProximosEventos
+      responses:
+        '200':
+          description: Até dez eventos não concluídos, ordenados pelo início.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DashboardEvento'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /dashboard/tarefas-pendentes:
+    get:
+      summary: Lista tarefas pendentes relevantes para o membro atual
+      operationId: listDashboardTarefasPendentes
+      description: Membros comuns recebem apenas as próprias tarefas; os demais recebem as tarefas pendentes da atlética.
+      responses:
+        '200':
+          description: Até vinte tarefas não concluídas, ordenadas pelo prazo.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DashboardTarefa'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /dashboard/ultimas-movimentacoes:
+    get:
+      summary: Lista as últimas movimentações financeiras do dashboard
+      operationId: listDashboardUltimasMovimentacoes
+      description: Retorna lista vazia quando o perfil não pode consultar resumos financeiros.
+      responses:
+        '200':
+          description: Até dez liquidações e estornos recentes da atlética selecionada.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DashboardMovimento'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /membros:
     get:
       summary: Lista os membros da atlética selecionada
@@ -3615,6 +3715,61 @@ components:
         estornosReceitas: {$ref: '#/components/schemas/ValorMonetarioPositivo'}
         estornosDespesas: {$ref: '#/components/schemas/ValorMonetarioPositivo'}
         saldo: {type: string, pattern: '^-?\\d+(\\.\\d+)?$'}
+    DashboardResumo:
+      type: object
+      required: [totalMembros, pendentes, ativos, inativos, eventosAtivos, saldoAtual, cadastrosPatrimonio, unidadesPatrimonio]
+      properties:
+        totalMembros: {type: integer, format: int64, minimum: 0}
+        pendentes: {type: integer, format: int64, minimum: 0}
+        ativos: {type: integer, format: int64, minimum: 0}
+        inativos: {type: integer, format: int64, minimum: 0}
+        eventosAtivos: {type: integer, format: int64, minimum: 0}
+        saldoAtual: {type: string, pattern: '^-?\\d+(\\.\\d+)?$', example: '0.00'}
+        cadastrosPatrimonio: {type: integer, format: int64, minimum: 0}
+        unidadesPatrimonio: {type: integer, format: int64, minimum: 0}
+    DashboardFinanceiro:
+      type: object
+      required: [resumo, seisMeses]
+      properties:
+        resumo: {$ref: '#/components/schemas/FinanceiroResumo'}
+        seisMeses:
+          type: array
+          minItems: 6
+          maxItems: 6
+          items: {$ref: '#/components/schemas/EvolucaoMensalFinanceira'}
+    DashboardDepartamento:
+      type: object
+      required: [id, nome, membrosAtivos, participacaoPercentual]
+      properties:
+        id: {type: integer, format: int64}
+        nome: {type: string}
+        membrosAtivos: {type: integer, format: int64, minimum: 0}
+        participacaoPercentual: {type: integer, minimum: 0, maximum: 100}
+    DashboardEvento:
+      type: object
+      required: [id, nome, inicio, status]
+      properties:
+        id: {type: integer, format: int64}
+        nome: {type: string, maxLength: 160}
+        inicio: {type: string, format: date-time}
+        status: {$ref: '#/components/schemas/StatusEvento'}
+    DashboardTarefa:
+      type: object
+      required: [id, titulo, status, atrasada]
+      properties:
+        id: {type: integer, format: int64}
+        titulo: {type: string, maxLength: 160}
+        prazo: {type: string, format: date, nullable: true}
+        status: {$ref: '#/components/schemas/StatusTarefa'}
+        atrasada: {type: boolean}
+    DashboardMovimento:
+      type: object
+      required: [tipo, data, valor, descricao]
+      properties:
+        tipo: {type: string, enum: [RECEITA, DESPESA, ESTORNO]}
+        data: {type: string, format: date}
+        valor: {type: string, pattern: '^-?\\d+(\\.\\d+)?$', example: '0.00'}
+        descricao: {type: string}
     ContaAberta:
       type: object
       required: [id, tipo, descricao, categoriaId, valor, atrasada, statusAprovacao, version]
