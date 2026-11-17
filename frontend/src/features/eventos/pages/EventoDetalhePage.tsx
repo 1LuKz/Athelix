@@ -10,6 +10,7 @@ import { MateriaisTab } from '../components/MateriaisTab'
 import { ParticipantesTab } from '../components/ParticipantesTab'
 import { ResponsaveisCard } from '../components/ResponsaveisCard'
 import { detalheEventoApi } from '../detalheApi'
+import type { ChecklistEvento } from '../types'
 import { eventosApi } from '../api'
 import { EventoModal } from './EventosPage'
 
@@ -74,7 +75,7 @@ export function EventoDetalhePage() {
     {tab === 'visao' && <div className="detail-grid">
       {cronograma.isError ? <ErrorState message={errorFeedback(cronograma.error)} onRetry={() => void cronograma.refetch()} /> : <CronogramaCard eventoId={id} atividades={cronograma.data ?? []} podeGerenciar={podeGerenciar} onChanged={invalidateEvent} />}
       {responsaveis.isError ? <ErrorState message={errorFeedback(responsaveis.error)} onRetry={() => void responsaveis.refetch()} /> : <ResponsaveisCard eventoId={id} responsaveis={responsaveis.data ?? []} podeGerenciar={podeGerenciar} onChanged={invalidateEvent} />}
-      <ChecklistCard items={checklist.data?.itens ?? []} progresso={checklist.data?.progresso ?? 0} loading={checklist.isLoading} podeGerenciar={podeGerenciar} togglingTask={togglingTask} onToggle={toggleChecklist} />
+      {checklist.isError ? <ErrorState message={errorFeedback(checklist.error)} onRetry={() => void checklist.refetch()} /> : <ChecklistCard checklist={checklist.data} loading={checklist.isLoading} podeGerenciar={podeGerenciar} togglingTask={togglingTask} onToggle={toggleChecklist} />}
       <FinanceiroCard resumo={financeiro.data} loading={financeiro.isLoading} />
     </div>}
     {tab === 'participantes' && (participantes.isError ? <ErrorState message={errorFeedback(participantes.error)} onRetry={() => void participantes.refetch()} /> : <ParticipantesTab eventoId={id} participantes={participantes.data} resumo={resumo.data} podeGerenciar={podeGerenciar} onChanged={invalidateEvent} />)}
@@ -86,9 +87,15 @@ export function EventoDetalhePage() {
 
 type ChecklistItem = { id: number; titulo: string; concluida: boolean; atrasada: boolean; status: string; version: number }
 
-function ChecklistCard({ items, progresso, loading, podeGerenciar, togglingTask, onToggle }: { items: ChecklistItem[]; progresso: number; loading: boolean; podeGerenciar: boolean; togglingTask: number | null; onToggle: (item: ChecklistItem) => Promise<void> }) {
-  return <Card title={`Checklist · ${progresso}%`}>
-    {loading ? <LoadingState /> : items.length ? items.map(item => <label className="check-item" key={item.id}><input type="checkbox" disabled={!podeGerenciar || togglingTask === item.id} checked={item.concluida} onChange={() => void onToggle(item)} />{item.titulo}<small>{item.atrasada ? 'Atrasada' : item.status}</small>{togglingTask === item.id && <span>Atualizando…</span>}</label>) : <EmptyState title="Sem itens no checklist" />}
+function ChecklistCard({ checklist, loading, podeGerenciar, togglingTask, onToggle }: { checklist?: ChecklistEvento; loading: boolean; podeGerenciar: boolean; togglingTask: number | null; onToggle: (item: ChecklistItem) => Promise<void> }) {
+  return <Card title="Checklist">
+    {loading || !checklist ? <LoadingState /> : <>
+      <p>{checklist.total === 0 ? 'Nenhuma tarefa cadastrada para este evento' : `${checklist.concluidas} de ${checklist.total} concluídas`}</p>
+      <div className="checklist-progress" role="progressbar" aria-label="Progresso do checklist" aria-valuemin={0} aria-valuemax={100} aria-valuenow={checklist.total === 0 ? 0 : checklist.progresso} aria-valuetext={checklist.total === 0 ? 'Nenhuma tarefa cadastrada para este evento' : `${checklist.concluidas} de ${checklist.total} concluídas`}>
+        <div className="checklist-progress-fill" style={{ width: `${checklist.total === 0 ? 0 : checklist.progresso}%` }} />
+      </div>
+      {checklist.itens.map(item => <label className="check-item" key={item.id}><input type="checkbox" disabled={!podeGerenciar || togglingTask === item.id} checked={item.concluida} onChange={() => void onToggle(item)} />{item.titulo}<small>{item.atrasada ? 'Atrasada' : item.status}</small>{togglingTask === item.id && <span>Atualizando…</span>}</label>)}
+    </>}
   </Card>
 }
 

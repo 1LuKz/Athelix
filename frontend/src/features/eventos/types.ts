@@ -79,6 +79,10 @@ export type AnexoEvento = {
 }
 
 export type ChecklistEvento = {
+  eventoId: number
+  total: number
+  concluidas: number
+  mensagem: string
   progresso: number
   itens: Array<{
     id: number
