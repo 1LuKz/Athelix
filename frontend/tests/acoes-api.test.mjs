@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { URL, URLSearchParams } from 'node:url'
 import vm from 'node:vm'
 import ts from 'typescript'
 

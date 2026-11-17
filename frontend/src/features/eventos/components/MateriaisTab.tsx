@@ -1,14 +1,10 @@
+import { tipoMaterialLabels as typeLabels } from '../../../lib/labels'
 import { useState } from 'react'
 import { Button, Card, ConfirmDialog, EmptyState, Input, Modal, Select, useToast } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
 import { detalheEventoApi } from '../detalheApi'
 import type { AnexoEvento, TipoMaterialEvento } from '../types'
 
-const typeLabels: Record<TipoMaterialEvento, string> = {
-  ARTE: 'Arte',
-  REGULAMENTO: 'Regulamento',
-  OUTRO: 'Outro',
-}
 
 export function MateriaisTab({ eventoId, anexos, eventoConcluido, podeGerenciar, onChanged }: { eventoId: string; anexos?: AnexoEvento[]; eventoConcluido: boolean; podeGerenciar: boolean; onChanged: () => void }) {
   const [uploading, setUploading] = useState(false)

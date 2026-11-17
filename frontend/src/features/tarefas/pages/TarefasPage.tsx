@@ -1,3 +1,5 @@
+import { formatDate } from '../../../lib/format'
+import { prioridadeTarefaLabels, statusTarefaLabels } from '../../../lib/labels'
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { MotivoDialog } from '../../../components/MotivoDialog'
@@ -11,10 +13,10 @@ import type { Membro } from '../../membros/types'
 import { tarefasApi, type StatusTarefa, type Tarefa } from '../api'
 
 const columns: Array<{ id: StatusTarefa; label: string }> = [
-  { id: 'A_FAZER', label: 'A Fazer' },
-  { id: 'EM_ANDAMENTO', label: 'Em andamento' },
-  { id: 'REVISAO', label: 'Revisão' },
-  { id: 'CONCLUIDO', label: 'Concluído' },
+  { id: 'A_FAZER', label: statusTarefaLabels.A_FAZER },
+  { id: 'EM_ANDAMENTO', label: statusTarefaLabels.EM_ANDAMENTO },
+  { id: 'REVISAO', label: statusTarefaLabels.REVISAO },
+  { id: 'CONCLUIDO', label: statusTarefaLabels.CONCLUIDO },
 ]
 
 export function TarefasPage() {
@@ -56,9 +58,9 @@ export function TarefasPage() {
     <Card><div className="filters">
       <Select label="Evento" value={filters.eventoId} onChange={event => setFilters({ ...filters, eventoId: event.target.value })}><option value="">Todos</option>{eventos.data?.items.map(evento => <option key={evento.id} value={evento.id}>{evento.nome}</option>)}</Select>
       <Select label="Responsável" value={filters.responsavelMembroId} onChange={event => setFilters({ ...filters, responsavelMembroId: event.target.value })}><option value="">Todos</option>{membros.data?.items.map(membro => <option key={membro.id} value={membro.id}>{membro.nome}</option>)}</Select>
-      <Select label="Prioridade" value={filters.prioridade} onChange={event => setFilters({ ...filters, prioridade: event.target.value })}><option value="">Todas</option><option>ALTA</option><option>MEDIA</option><option>BAIXA</option></Select>
+      <Select label="Prioridade" value={filters.prioridade} onChange={event => setFilters({ ...filters, prioridade: event.target.value })}><option value="">Todas</option><option value="ALTA">Alta</option><option value="MEDIA">Média</option><option value="BAIXA">Baixa</option></Select>
     </div></Card>
-    {tasks.isLoading ? <LoadingState /> : tasks.isError ? <ErrorState message={errorFeedback(tasks.error)} /> : tasks.data?.items.length ? <div className="board">{columns.map(column => <section key={column.id}><h2>{column.label} <span>{tasks.data.items.filter(task => task.status === column.id).length}</span></h2>{tasks.data.items.filter(task => task.status === column.id).map(task => <Card className="task-card" key={task.id}><Badge tone={task.prioridade === 'ALTA' ? 'danger' : task.prioridade === 'MEDIA' ? 'warning' : 'info'}>{task.prioridade}</Badge><h3>{task.titulo}</h3>{activeVinculo?.perfilAcesso !== 'MEMBRO' && <Button variant="ghost" onClick={() => setEdit(task)}>Editar</Button>}<p>{task.prazo ? `Prazo: ${task.prazo}` : 'Sem prazo'} {task.atrasada && <b className="late">Atrasada</b>}</p><Select label="Mover para" value={task.status} disabled={movingTaskId === task.id} onChange={event => void move(task, event.target.value as StatusTarefa)}>{columns.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}</Select></Card>)}</section>)}</div> : <EmptyState description="Nenhuma tarefa corresponde aos filtros." />}
+    {tasks.isLoading ? <LoadingState /> : tasks.isError ? <ErrorState message={errorFeedback(tasks.error)} /> : tasks.data?.items.length ? <div className="board">{columns.map(column => <section key={column.id}><h2>{column.label} <span>{tasks.data.items.filter(task => task.status === column.id).length}</span></h2>{tasks.data.items.filter(task => task.status === column.id).map(task => <Card className="task-card" key={task.id}><Badge tone={task.prioridade === 'ALTA' ? 'danger' : task.prioridade === 'MEDIA' ? 'warning' : 'info'}>{prioridadeTarefaLabels[task.prioridade]}</Badge><h3>{task.titulo}</h3>{activeVinculo?.perfilAcesso !== 'MEMBRO' && <Button variant="ghost" onClick={() => setEdit(task)}>Editar</Button>}<p>{task.prazo ? `Prazo: ${formatDate(task.prazo)}` : 'Sem prazo'} {task.atrasada && <b className="late">Atrasada</b>}</p><Select label="Mover para" value={task.status} disabled={movingTaskId === task.id} onChange={event => void move(task, event.target.value as StatusTarefa)}>{columns.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}</Select></Card>)}</section>)}</div> : <EmptyState description="Nenhuma tarefa corresponde aos filtros." />}
     {open && <TarefaModal eventos={eventos.data?.items ?? []} membros={membros.data?.items ?? []} close={() => setOpen(false)} done={() => { setOpen(false); void client.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'tarefas'] }) }} />}
     {edit && <EditarTarefaModal tarefa={edit} membros={membros.data?.items ?? []} departamentos={departamentos.data ?? []} close={() => setEdit(null)} done={async () => { setEdit(null); await client.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'tarefas'] }); await client.invalidateQueries({ queryKey: ['evento', String(edit.eventoId), 'checklist'] }) }} />}
     <MotivoDialog open={Boolean(retorno)} loading={movingTaskId === retorno?.task.id} onClose={() => setRetorno(null)} onConfirm={motivo => { if (retorno) void move(retorno.task, retorno.status, motivo) }} />
@@ -81,7 +83,7 @@ function TarefaModal({ eventos, membros, close, done }: { eventos: Evento[]; mem
       setSaving(false)
     }
   }
-  return <Modal open title="Nova tarefa" onClose={close} footer={<><Button variant="secondary" disabled={saving} onClick={close}>Cancelar</Button><Button loading={saving} onClick={() => void save()}>Criar tarefa</Button></>}><div className="form-grid"><Select label="Evento" value={values.eventoId} onChange={event => setValues({ ...values, eventoId: event.target.value })}><option value="">Selecione</option>{eventos.map(evento => <option key={evento.id} value={evento.id}>{evento.nome}</option>)}</Select><Input label="Título" value={values.titulo} onChange={event => setValues({ ...values, titulo: event.target.value })} /><Select label="Responsável" value={values.responsavelMembroId} onChange={event => setValues({ ...values, responsavelMembroId: event.target.value })}><option value="">Sem responsável</option>{membros.map(membro => <option key={membro.id} value={membro.id}>{membro.nome}</option>)}</Select><Select label="Prioridade" value={values.prioridade} onChange={event => setValues({ ...values, prioridade: event.target.value })}><option>ALTA</option><option>MEDIA</option><option>BAIXA</option></Select><Input label="Prazo" type="date" value={values.prazo} onChange={event => setValues({ ...values, prazo: event.target.value })} /></div></Modal>
+  return <Modal open title="Nova tarefa" onClose={close} footer={<><Button variant="secondary" disabled={saving} onClick={close}>Cancelar</Button><Button loading={saving} onClick={() => void save()}>Criar tarefa</Button></>}><div className="form-grid"><Select label="Evento" value={values.eventoId} onChange={event => setValues({ ...values, eventoId: event.target.value })}><option value="">Selecione</option>{eventos.map(evento => <option key={evento.id} value={evento.id}>{evento.nome}</option>)}</Select><Input label="Título" value={values.titulo} onChange={event => setValues({ ...values, titulo: event.target.value })} /><Select label="Responsável" value={values.responsavelMembroId} onChange={event => setValues({ ...values, responsavelMembroId: event.target.value })}><option value="">Sem responsável</option>{membros.map(membro => <option key={membro.id} value={membro.id}>{membro.nome}</option>)}</Select><Select label="Prioridade" value={values.prioridade} onChange={event => setValues({ ...values, prioridade: event.target.value })}><option value="ALTA">Alta</option><option value="MEDIA">Média</option><option value="BAIXA">Baixa</option></Select><Input label="Prazo" type="date" value={values.prazo} onChange={event => setValues({ ...values, prazo: event.target.value })} /></div></Modal>
 }
 
 function exigeMotivoRetorno(statusAtual: StatusTarefa, proximoStatus: StatusTarefa) { return proximoStatus === 'EM_ANDAMENTO' && (statusAtual === 'REVISAO' || statusAtual === 'CONCLUIDO') }

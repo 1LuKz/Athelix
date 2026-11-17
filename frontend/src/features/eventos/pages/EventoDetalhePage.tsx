@@ -1,7 +1,10 @@
+import { formatDateTime, formatMoney } from '../../../lib/format'
+import { enumLabel, statusEventoLabels, statusTarefaLabels } from '../../../lib/labels'
+import { useAtleticaTimeZone } from '../../auth/AuthSessionProvider'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Badge, Button, Card, EmptyState, ErrorState, LoadingState, Tabs, useToast } from '../../../components/ui'
+import { Badge, Button, Card, ErrorState, LoadingState, Tabs, useToast } from '../../../components/ui'
 import { MotivoDialog } from '../../../components/MotivoDialog'
 import { errorFeedback } from '../../../lib/errorFeedback'
 import { useAuthSession } from '../../auth/AuthSessionProvider'
@@ -15,6 +18,7 @@ import { eventosApi } from '../api'
 import { EventoModal } from './EventosPage'
 
 export function EventoDetalhePage() {
+  const timeZone = useAtleticaTimeZone()
   const { id = '' } = useParams()
   const { state } = useAuthSession()
   const podeGerenciar = state?.capacidades.includes('GERENCIAR_EVENTOS_E_TAREFAS') ?? false
@@ -61,9 +65,9 @@ export function EventoDetalhePage() {
     <Link className="back-link" to="/eventos">← Eventos</Link>
     <div className="event-detail-head">
       <div>
-        <Badge>{statusLabel(current.status)}</Badge>
+        <Badge>{statusEventoLabels[current.status]}</Badge>
         <h1>{current.nome}</h1>
-        <p>{current.local} · {new Date(current.inicio).toLocaleString('pt-BR')}</p>
+        <p>{current.local} · {formatDateTime(current.inicio, timeZone)}</p>
       </div>
       {podeGerenciar && <Button icon="edit" onClick={() => setEditing(true)}>Editar evento</Button>}
     </div>
@@ -94,7 +98,7 @@ function ChecklistCard({ checklist, loading, podeGerenciar, togglingTask, onTogg
       <div className="checklist-progress" role="progressbar" aria-label="Progresso do checklist" aria-valuemin={0} aria-valuemax={100} aria-valuenow={checklist.total === 0 ? 0 : checklist.progresso} aria-valuetext={checklist.total === 0 ? 'Nenhuma tarefa cadastrada para este evento' : `${checklist.concluidas} de ${checklist.total} concluídas`}>
         <div className="checklist-progress-fill" style={{ width: `${checklist.total === 0 ? 0 : checklist.progresso}%` }} />
       </div>
-      {checklist.itens.map(item => <label className="check-item" key={item.id}><input type="checkbox" disabled={!podeGerenciar || togglingTask === item.id} checked={item.concluida} onChange={() => void onToggle(item)} />{item.titulo}<small>{item.atrasada ? 'Atrasada' : item.status}</small>{togglingTask === item.id && <span>Atualizando…</span>}</label>)}
+      {checklist.itens.map(item => <label className="check-item" key={item.id}><input type="checkbox" disabled={!podeGerenciar || togglingTask === item.id} checked={item.concluida} onChange={() => void onToggle(item)} />{item.titulo}<small>{item.atrasada ? `Atrasada · ${enumLabel(statusTarefaLabels, item.status)}` : enumLabel(statusTarefaLabels, item.status)}</small>{togglingTask === item.id && <span>Atualizando…</span>}</label>)}
     </>}
   </Card>
 }
@@ -102,14 +106,12 @@ function ChecklistCard({ checklist, loading, podeGerenciar, togglingTask, onTogg
 function FinanceiroCard({ resumo, loading }: { resumo?: { orcamentoPrevisto: string; realizado: string; saldoOrcamentario: string; percentualUtilizado: string | null; situacao: string }; loading: boolean }) {
   return <Card title="Resumo financeiro">
     {loading || !resumo ? <LoadingState /> : <>
-      <p>Previsto: <b>{money(resumo.orcamentoPrevisto)}</b></p>
-      <p>Realizado: <b>{money(resumo.realizado)}</b></p>
-      <p>Saldo: <b>{money(resumo.saldoOrcamentario)}</b></p>
+      <p>Previsto: <b>{formatMoney(resumo.orcamentoPrevisto)}</b></p>
+      <p>Realizado: <b>{formatMoney(resumo.realizado)}</b></p>
+      <p>Saldo: <b>{formatMoney(resumo.saldoOrcamentario)}</b></p>
       <p>{resumo.situacao === 'SEM_ORCAMENTO' ? 'Este evento não possui orçamento previsto.' : `Utilizado: ${resumo.percentualUtilizado ?? '0'}%`}</p>
     </>}
   </Card>
 }
 
-function statusLabel(status: string) { return ({ PLANEJADO: 'Planejado', INSCRICOES_ABERTAS: 'Inscrições abertas', EM_ANDAMENTO: 'Em andamento', CONCLUIDO: 'Concluído' } as Record<string, string>)[status] ?? status }
-function money(value: string) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value)) }
 function exigeMotivoRetorno(statusAtual: string, proximoStatus: string) { return proximoStatus === 'EM_ANDAMENTO' && (statusAtual === 'REVISAO' || statusAtual === 'CONCLUIDO') }

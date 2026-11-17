@@ -18,3 +18,6 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
 }
 export function useAuthSession() { const session = useContext(SessionContext); if (!session) throw new Error('useAuthSession deve ser usado dentro de AuthSessionProvider'); return session }
+
+/** Fuso informado pela sessão, quando disponível; o formatador aplica o padrão brasileiro. */
+export function useAtleticaTimeZone() { const { activeVinculo, state } = useAuthSession(); return activeVinculo?.fusoHorario ?? state?.fusoHorario ?? undefined }

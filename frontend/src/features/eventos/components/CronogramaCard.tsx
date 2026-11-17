@@ -1,16 +1,15 @@
+import { formatDateTime } from '../../../lib/format'
+import { statusCronogramaLabels as statusLabels } from '../../../lib/labels'
+import { useAtleticaTimeZone } from '../../auth/AuthSessionProvider'
 import { useState } from 'react'
 import { Badge, Button, Card, ConfirmDialog, EmptyState, Input, Modal, Select, useToast } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
 import { detalheEventoApi } from '../detalheApi'
 import type { AtividadeCronograma, StatusAtividadeCronograma } from '../types'
 
-const statusLabels: Record<StatusAtividadeCronograma, string> = {
-  AGENDADO: 'Agendado',
-  EM_ANDAMENTO: 'Em andamento',
-  CONCLUIDO: 'Concluído',
-}
 
 export function CronogramaCard({ eventoId, atividades, podeGerenciar, onChanged }: { eventoId: string; atividades: AtividadeCronograma[]; podeGerenciar: boolean; onChanged: () => void }) {
+  const timeZone = useAtleticaTimeZone()
   const [editing, setEditing] = useState<AtividadeCronograma | null>(null)
   const [removing, setRemoving] = useState<AtividadeCronograma | null>(null)
   const [saving, setSaving] = useState(false)
@@ -34,7 +33,7 @@ export function CronogramaCard({ eventoId, atividades, podeGerenciar, onChanged 
 
   return <Card title="Cronograma" action={podeGerenciar ? <Button variant="secondary" icon="add" onClick={() => setEditing({ id: 0, atleticaId: 0, eventoId: Number(eventoId), titulo: '', descricao: null, inicio: '', fim: null, status: 'AGENDADO', ordem: atividades.length, version: 0, createdAt: '', updatedAt: '' })}>Nova atividade</Button> : undefined}>
     {atividades.length ? <div className="event-list">{atividades.map(atividade => <article className="event-list-item" key={atividade.id}>
-      <div><strong>{atividade.titulo}</strong><small>{formatDate(atividade.inicio)}{atividade.fim && ` até ${formatDate(atividade.fim)}`} · Ordem {atividade.ordem}</small>{atividade.descricao && <p>{atividade.descricao}</p>}</div>
+      <div><strong>{atividade.titulo}</strong><small>{formatDateTime(atividade.inicio, timeZone)}{atividade.fim && ` até ${formatDateTime(atividade.fim, timeZone)}`} · Ordem {atividade.ordem}</small>{atividade.descricao && <p>{atividade.descricao}</p>}</div>
       <div className="event-list-actions"><Badge tone={atividade.status === 'CONCLUIDO' ? 'success' : atividade.status === 'EM_ANDAMENTO' ? 'warning' : 'info'}>{statusLabels[atividade.status]}</Badge>{podeGerenciar && <><Button variant="ghost" icon="edit" onClick={() => setEditing(atividade)}>Editar</Button><Button variant="ghost" icon="delete" onClick={() => setRemoving(atividade)}>Remover</Button></>}</div>
     </article>)}</div> : <EmptyState title="Sem atividades" description="Adicione os momentos importantes do evento." />}
     {editing && <AtividadeModal atividade={editing.id ? editing : null} eventoId={eventoId} saving={saving} onClose={() => setEditing(null)} onSaveStart={() => setSaving(true)} onSaveEnd={() => setSaving(false)} onSaved={() => { setEditing(null); onChanged() }} />}
@@ -62,5 +61,4 @@ function AtividadeModal({ atividade, eventoId, saving, onClose, onSaveStart, onS
   return <Modal open title={atividade ? 'Editar atividade' : 'Nova atividade'} onClose={onClose} footer={<><Button variant="secondary" disabled={saving} onClick={onClose}>Cancelar</Button><Button loading={saving} onClick={() => void save()}>Salvar</Button></>}><div className="form-grid"><Input label="Título" value={values.titulo} onChange={event => setValues({ ...values, titulo: event.target.value })} /><Input label="Início" type="datetime-local" value={values.inicio} onChange={event => setValues({ ...values, inicio: event.target.value })} /><Input label="Fim" type="datetime-local" value={values.fim} onChange={event => setValues({ ...values, fim: event.target.value })} /><Input label="Ordem" type="number" min="0" value={values.ordem} onChange={event => setValues({ ...values, ordem: event.target.value })} /><Select label="Status" value={values.status} onChange={event => setValues({ ...values, status: event.target.value as StatusAtividadeCronograma })}>{Object.entries(statusLabels).map(([status, label]) => <option key={status} value={status}>{label}</option>)}</Select></div><label className="field"><span>Descrição</span><textarea maxLength={1000} value={values.descricao} onChange={event => setValues({ ...values, descricao: event.target.value })} /></label></Modal>
 }
 
-function formatDate(value: string) { return new Date(value).toLocaleString('pt-BR') }
 function localDate(value: string) { return new Date(value).toISOString().slice(0, 16) }

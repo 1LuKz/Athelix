@@ -1,3 +1,6 @@
+import { formatDateTime, formatMoney } from '../../../lib/format'
+import { statusEventoLabels as labels } from '../../../lib/labels'
+import { useAtleticaTimeZone } from '../../auth/AuthSessionProvider'
 import { useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Badge, Button, Card, EmptyState, ErrorState, Input, LoadingState, Modal, Pagination, Tabs, useToast } from '../../../components/ui'
@@ -7,9 +10,9 @@ import { useAuthSession } from '../../auth/AuthSessionProvider'
 import { eventosApi, type Evento, type StatusEvento } from '../api'
 
 const tones = { PLANEJADO: 'info', INSCRICOES_ABERTAS: 'warning', EM_ANDAMENTO: 'success', CONCLUIDO: 'neutral' } as const
-const labels = { PLANEJADO: 'Planejado', INSCRICOES_ABERTAS: 'Inscrições abertas', EM_ANDAMENTO: 'Em andamento', CONCLUIDO: 'Concluído' }
 
 export function EventosPage() {
+  const timeZone = useAtleticaTimeZone()
   const { activeVinculo, state } = useAuthSession()
   const admin = state?.capacidades.includes('GERENCIAR_EVENTOS_E_TAREFAS') ?? false
   const [tab, setTab] = useState('todos')
@@ -28,7 +31,7 @@ export function EventosPage() {
   return <>
     <div className="page-title"><div><p className="eyebrow">Agenda e organização</p><h1>Eventos</h1></div>{admin && <Button icon="add" onClick={() => setEdit({} as Evento)}>Novo evento</Button>}</div>
     <Tabs tabs={tabs} active={tab} onChange={next => { setTab(next); setPage(0) }} />
-    {events.isLoading ? <LoadingState /> : events.isError ? <ErrorState message={errorFeedback(events.error)} onRetry={() => void events.refetch()} /> : events.data?.items.length ? <><div className="event-grid">{events.data.items.map(event => <Card key={event.id} className="event-card"><div className="event-top"><Badge tone={tones[event.status]}>{labels[event.status]}</Badge><span>{formatPeriod(event)}</span></div><h2>{event.nome}</h2><p className="event-location">{event.local}{event.cidade && ` · ${event.cidade}/${event.uf ?? ''}`}</p><div className="event-stats"><span><b>Previsão</b>{event.participantesEsperados ?? '—'}</span><span><b>Inscritos</b>Ver detalhes</span><span><b>Confirmados</b>Ver detalhes</span><span><b>Presentes</b>Ver detalhes</span></div><footer><strong>Orçamento: {formatMoney(event.orcamentoPrevisto)}</strong><Button variant="ghost" onClick={() => setEdit(event)}>{admin ? 'Editar' : 'Ver detalhes'}</Button></footer></Card>)}</div><Pagination page={events.data.page} totalPages={events.data.totalPages} onPageChange={setPage} /></> : <EmptyState description="Não há eventos para estes filtros." />}
+    {events.isLoading ? <LoadingState /> : events.isError ? <ErrorState message={errorFeedback(events.error)} onRetry={() => void events.refetch()} /> : events.data?.items.length ? <><div className="event-grid">{events.data.items.map(event => <Card key={event.id} className="event-card"><div className="event-top"><Badge tone={tones[event.status]}>{labels[event.status]}</Badge><span>{formatDateTime(event.inicio, timeZone)}</span></div><h2>{event.nome}</h2><p className="event-location">{event.local}{event.cidade && ` · ${event.cidade}/${event.uf ?? ''}`}</p><div className="event-stats"><span><b>Previsão</b>{event.participantesEsperados ?? '—'}</span><span><b>Inscritos</b>Ver detalhes</span><span><b>Confirmados</b>Ver detalhes</span><span><b>Presentes</b>Ver detalhes</span></div><footer><strong>Orçamento: {formatMoney(event.orcamentoPrevisto)}</strong><Button variant="ghost" onClick={() => setEdit(event)}>{admin ? 'Editar' : 'Ver detalhes'}</Button></footer></Card>)}</div><Pagination page={events.data.page} totalPages={events.data.totalPages} onPageChange={setPage} /></> : <EmptyState description="Não há eventos para estes filtros." />}
     {edit && <EventoModal event={edit.id ? edit : null} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); refresh() }} />}
   </>
 }
@@ -70,6 +73,4 @@ export function EventoModal({ event, onClose, onSaved }: { event: Evento | null;
 
 function decimal(value: string) { return Number(value.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.') || 0).toFixed(2) }
 function localDate(value: string) { return new Date(value).toISOString().slice(0, 16) }
-function formatPeriod(event: Evento) { return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(event.inicio)) }
-function formatMoney(value: string) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value)) }
 function nextStatus(status: StatusEvento): StatusEvento | null { return status === 'PLANEJADO' ? 'INSCRICOES_ABERTAS' : status === 'INSCRICOES_ABERTAS' ? 'EM_ANDAMENTO' : status === 'EM_ANDAMENTO' ? 'CONCLUIDO' : null }

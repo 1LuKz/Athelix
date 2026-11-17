@@ -1,3 +1,4 @@
+import { areaResponsabilidadeLabels } from '../../../lib/labels'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Button, Card, ConfirmDialog, EmptyState, Select, useToast } from '../../../components/ui'
@@ -6,11 +7,7 @@ import { membrosApi } from '../../membros/api'
 import { detalheEventoApi } from '../detalheApi'
 import type { AreaResponsabilidadeEvento, ResponsabilidadeEvento } from '../types'
 
-const areas: Array<{ id: AreaResponsabilidadeEvento; label: string }> = [
-  { id: 'COORDENACAO_GERAL', label: 'Coordenação geral' },
-  { id: 'FINANCEIRO', label: 'Financeiro' },
-  { id: 'COMUNICACAO', label: 'Comunicação' },
-]
+const areas = (Object.entries(areaResponsabilidadeLabels) as [AreaResponsabilidadeEvento, string][]).map(([id, label]) => ({ id, label }))
 
 export function ResponsaveisCard({ eventoId, responsaveis, podeGerenciar, onChanged }: { eventoId: string; responsaveis: ResponsabilidadeEvento[]; podeGerenciar: boolean; onChanged: () => void }) {
   const members = useQuery({ queryKey: ['membros-ativos-para-evento'], queryFn: () => membrosApi.list({ status: 'ATIVO', page: 0, size: 100 }), enabled: podeGerenciar })

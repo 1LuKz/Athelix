@@ -1,3 +1,4 @@
+import { statusParticipacaoLabels as statusLabels } from '../../../lib/labels'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Badge, Button, Card, EmptyState, Input, Modal, Select, Table, useToast } from '../../../components/ui'
@@ -6,12 +7,6 @@ import { membrosApi } from '../../membros/api'
 import { detalheEventoApi } from '../detalheApi'
 import type { PageParticipacaoEvento, ParticipacaoEventoResumo, StatusParticipacaoEvento } from '../types'
 
-const statusLabels: Record<StatusParticipacaoEvento, string> = {
-  INSCRITO: 'Inscrito',
-  CONFIRMADO: 'Confirmado',
-  PRESENTE: 'Presente',
-  CANCELADO: 'Cancelado',
-}
 
 export function ParticipantesTab({ eventoId, participantes, resumo, podeGerenciar, onChanged }: { eventoId: string; participantes?: PageParticipacaoEvento; resumo?: ParticipacaoEventoResumo; podeGerenciar: boolean; onChanged: () => void }) {
   const [registering, setRegistering] = useState(false)
