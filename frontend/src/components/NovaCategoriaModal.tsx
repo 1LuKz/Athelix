@@ -1,21 +1,11 @@
-import { useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
 import { Button, Input, Modal, Select, useToast } from './ui'
 import { errorFeedback } from '../lib/errorFeedback'
+import { categoriaSchema, type CategoriaValues } from '../features/financeiro/schemas/categoria'
 
 export function NovaCategoriaModal({ financeira, onClose, onSave }: { financeira?: boolean; onClose: () => void; onSave: (nome: string, tipo: 'RECEITA' | 'DESPESA' | 'AMBOS') => Promise<void> }) {
-  const [nome, setNome] = useState('')
-  const [tipo, setTipo] = useState<'RECEITA' | 'DESPESA' | 'AMBOS'>('AMBOS')
-  const [saving, setSaving] = useState(false)
-  const toast = useToast()
-  const save = async () => {
-    if (!nome.trim()) return toast.error('Informe o nome da categoria.')
-    setSaving(true)
-    try { await onSave(nome.trim(), tipo); toast.success('Categoria criada.'); onClose() }
-    catch (cause) { toast.error(errorFeedback(cause)) }
-    finally { setSaving(false) }
-  }
-  return <Modal open title="Nova categoria" onClose={onClose} footer={<><Button variant="secondary" disabled={saving} onClick={onClose}>Cancelar</Button><Button loading={saving} onClick={() => void save()}>Salvar</Button></>}>
-    <Input label="Nome" maxLength={100} value={nome} onChange={e => setNome(e.target.value)} />
-    {financeira && <Select label="Tipo aplicável" value={tipo} onChange={e => setTipo(e.target.value as typeof tipo)}><option value="AMBOS">Receitas e despesas</option><option value="RECEITA">Receita</option><option value="DESPESA">Despesa</option></Select>}
-  </Modal>
+  const toast = useToast(); const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<CategoriaValues>({ resolver: zodResolver(categoriaSchema), defaultValues: { nome: '', tipo: 'AMBOS' } })
+  const save = async (v: CategoriaValues) => { try { await onSave(v.nome, v.tipo); toast.success('Categoria criada.'); onClose() } catch (cause) { toast.error(errorFeedback(cause)) } }
+  return <Modal open title="Nova categoria" onClose={onClose} footer={<><Button variant="secondary" disabled={isSubmitting} onClick={onClose}>Cancelar</Button><Button type="submit" form="form-categoria" loading={isSubmitting}>Salvar</Button></>}><form id="form-categoria" onSubmit={handleSubmit(save)} noValidate><Input label="Nome" maxLength={100} error={errors.nome?.message} {...register('nome')} />{financeira && <Select label="Tipo aplicável" error={errors.tipo?.message} {...register('tipo')}><option value="AMBOS">Receitas e despesas</option><option value="RECEITA">Receita</option><option value="DESPESA">Despesa</option></Select>}</form></Modal>
 }

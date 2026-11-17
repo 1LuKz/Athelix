@@ -1,9 +1,13 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
+import { normalizeMoney } from '../../../lib/formSchemas'
+import { eventoSchema, type EventoValues } from '../schemas/evento'
 import { formatDateTime, formatMoney } from '../../../lib/format'
 import { statusEventoLabels as labels } from '../../../lib/labels'
 import { useAtleticaTimeZone } from '../../auth/AuthSessionProvider'
 import { useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Badge, Button, Card, EmptyState, ErrorState, Input, LoadingState, Modal, Pagination, Tabs, useToast } from '../../../components/ui'
+import { Badge, Button, Card, EmptyState, ErrorState, Input, LoadingState, Modal, Pagination, Tabs, Textarea, useToast } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
 import { queryKeys } from '../../../lib/query'
 import { useAuthSession } from '../../auth/AuthSessionProvider'
@@ -37,40 +41,14 @@ export function EventosPage() {
 }
 
 export function EventoModal({ event, onClose, onSaved }: { event: Evento | null; onClose: () => void; onSaved: () => void }) {
-  const { success, error } = useToast()
-  const [saving, setSaving] = useState(false)
-  const [value, setValue] = useState({ nome: event?.nome ?? '', descricao: event?.descricao ?? '', inicio: event ? localDate(event.inicio) : '', fim: event ? localDate(event.fim) : '', local: event?.local ?? '', cidade: event?.cidade ?? '', uf: event?.uf ?? '', orcamento: event?.orcamentoPrevisto ?? '0,00', participantes: String(event?.participantesEsperados ?? '') })
-  const save = async () => {
-    setSaving(true)
-    try {
-      const body = { nome: value.nome, descricao: value.descricao || undefined, inicio: new Date(value.inicio).toISOString(), fim: new Date(value.fim).toISOString(), local: value.local, cidade: value.cidade || undefined, uf: value.uf.toUpperCase() || undefined, orcamentoPrevisto: decimal(value.orcamento), participantesEsperados: value.participantes ? Number(value.participantes) : undefined }
-      if (event) await eventosApi.update(event.id, { ...body, version: event.version })
-      else await eventosApi.create(body)
-      success(event ? 'Evento atualizado.' : 'Evento criado como planejado.')
-      onSaved()
-    } catch (cause) {
-      error(errorFeedback(cause))
-    } finally {
-      setSaving(false)
-    }
-  }
+  const { success, error } = useToast(); const [statusSaving, setStatusSaving] = useState(false)
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<EventoValues>({ resolver: zodResolver(eventoSchema), defaultValues: { nome: event?.nome ?? '', descricao: event?.descricao ?? '', inicio: event ? localDate(event.inicio) : '', fim: event ? localDate(event.fim) : '', local: event?.local ?? '', cidade: event?.cidade ?? '', uf: event?.uf ?? '', orcamento: event?.orcamentoPrevisto ?? '', participantes: String(event?.participantesEsperados ?? '') } })
+  const save = async (v: EventoValues) => { try { const body = { nome: v.nome, descricao: v.descricao || undefined, inicio: new Date(v.inicio).toISOString(), fim: new Date(v.fim).toISOString(), local: v.local, cidade: v.cidade || undefined, uf: v.uf.toUpperCase() || undefined, orcamentoPrevisto: normalizeMoney(v.orcamento)!, participantesEsperados: v.participantes ? Number(v.participantes) : undefined }; if (event) await eventosApi.update(event.id, { ...body, version: event.version }); else await eventosApi.create(body); success(event ? 'Evento atualizado.' : 'Evento criado como planejado.'); onSaved() } catch (cause) { error(errorFeedback(cause)) } }
   const next = event && nextStatus(event.status)
-  const advance = async () => {
-    if (!event || !next) return
-    setSaving(true)
-    try {
-      await eventosApi.status(event.id, { status: next, version: event.version })
-      success(`Status alterado para ${labels[next]}.`)
-      onSaved()
-    } catch (cause) {
-      error(errorFeedback(cause))
-    } finally {
-      setSaving(false)
-    }
-  }
-  return <Modal open title={event ? 'Editar evento' : 'Novo evento'} onClose={onClose} footer={<>{next && <Button variant="secondary" loading={saving} onClick={() => void advance()}>Avançar para {labels[next]}</Button>}<Button variant="secondary" disabled={saving} onClick={onClose}>Cancelar</Button><Button loading={saving} onClick={() => void save()}>Salvar</Button></>}><div className="form-grid"><Input label="Nome" value={value.nome} onChange={item => setValue({ ...value, nome: item.target.value })} /><Input label="Local" value={value.local} onChange={item => setValue({ ...value, local: item.target.value })} /><Input label="Início" type="datetime-local" value={value.inicio} onChange={item => setValue({ ...value, inicio: item.target.value })} /><Input label="Fim" type="datetime-local" value={value.fim} onChange={item => setValue({ ...value, fim: item.target.value })} /><Input label="Cidade" value={value.cidade} onChange={item => setValue({ ...value, cidade: item.target.value })} /><Input label="UF" maxLength={2} value={value.uf} onChange={item => setValue({ ...value, uf: item.target.value.toUpperCase() })} /><Input label="Orçamento previsto" inputMode="decimal" value={value.orcamento} onChange={item => setValue({ ...value, orcamento: item.target.value })} hint="Enviado como decimal textual, por exemplo 1250.00." /><Input label="Participantes esperados" type="number" min="0" value={value.participantes} onChange={item => setValue({ ...value, participantes: item.target.value })} /></div><label className="field"><span>Descrição</span><textarea value={value.descricao} maxLength={5000} onChange={item => setValue({ ...value, descricao: item.target.value })} /></label></Modal>
+  const advance = async () => { if (!event || !next || isSubmitting || statusSaving) return; setStatusSaving(true); try { await eventosApi.status(event.id, { status: next, version: event.version }); success(`Status alterado para ${labels[next]}.`); onSaved() } catch (cause) { error(errorFeedback(cause)) } finally { setStatusSaving(false) } }
+  const busy = isSubmitting || statusSaving
+  return <Modal open title={event ? 'Editar evento' : 'Novo evento'} onClose={onClose} footer={<>{next && <Button variant="secondary" loading={statusSaving} disabled={busy} onClick={() => void advance()}>Avançar para {labels[next]}</Button>}<Button variant="secondary" disabled={busy} onClick={onClose}>Cancelar</Button><Button type="submit" form="form-evento" loading={isSubmitting} disabled={busy}>Salvar</Button></>}><form id="form-evento" onSubmit={handleSubmit(save)} noValidate><div className="form-grid"><Input label="Nome" maxLength={160} error={errors.nome?.message} {...register('nome')} /><Input label="Local" maxLength={200} error={errors.local?.message} {...register('local')} /><Input label="Início" type="datetime-local" error={errors.inicio?.message} {...register('inicio')} /><Input label="Fim" type="datetime-local" error={errors.fim?.message} {...register('fim')} /><Input label="Cidade" maxLength={120} error={errors.cidade?.message} {...register('cidade')} /><Input label="UF" maxLength={2} error={errors.uf?.message} {...register('uf')} /><Input label="Orçamento previsto" inputMode="decimal" error={errors.orcamento?.message} {...register('orcamento')} /><Input label="Participantes esperados" type="number" min="0" error={errors.participantes?.message} {...register('participantes')} /></div><Textarea label="Descrição" maxLength={5000} error={errors.descricao?.message} {...register('descricao')} /></form></Modal>
 }
 
-function decimal(value: string) { return Number(value.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.') || 0).toFixed(2) }
 function localDate(value: string) { return new Date(value).toISOString().slice(0, 16) }
 function nextStatus(status: StatusEvento): StatusEvento | null { return status === 'PLANEJADO' ? 'INSCRICOES_ABERTAS' : status === 'INSCRICOES_ABERTAS' ? 'EM_ANDAMENTO' : status === 'EM_ANDAMENTO' ? 'CONCLUIDO' : null }

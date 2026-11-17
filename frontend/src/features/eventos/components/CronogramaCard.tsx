@@ -1,11 +1,14 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
+import { atividadeSchema, type AtividadeValues } from '../schemas/atividade'
 import { formatDateTime } from '../../../lib/format'
 import { statusCronogramaLabels as statusLabels } from '../../../lib/labels'
 import { useAtleticaTimeZone } from '../../auth/AuthSessionProvider'
 import { useState } from 'react'
-import { Badge, Button, Card, ConfirmDialog, EmptyState, Input, Modal, Select, useToast } from '../../../components/ui'
+import { Badge, Button, Card, ConfirmDialog, EmptyState, Input, Modal, Select, Textarea, useToast } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
 import { detalheEventoApi } from '../detalheApi'
-import type { AtividadeCronograma, StatusAtividadeCronograma } from '../types'
+import type { AtividadeCronograma } from '../types'
 
 
 export function CronogramaCard({ eventoId, atividades, podeGerenciar, onChanged }: { eventoId: string; atividades: AtividadeCronograma[]; podeGerenciar: boolean; onChanged: () => void }) {
@@ -42,23 +45,9 @@ export function CronogramaCard({ eventoId, atividades, podeGerenciar, onChanged 
 }
 
 function AtividadeModal({ atividade, eventoId, saving, onClose, onSaveStart, onSaveEnd, onSaved }: { atividade: AtividadeCronograma | null; eventoId: string; saving: boolean; onClose: () => void; onSaveStart: () => void; onSaveEnd: () => void; onSaved: () => void }) {
-  const { success, error } = useToast()
-  const [values, setValues] = useState({ titulo: atividade?.titulo ?? '', descricao: atividade?.descricao ?? '', inicio: atividade ? localDate(atividade.inicio) : '', fim: atividade?.fim ? localDate(atividade.fim) : '', status: atividade?.status ?? 'AGENDADO' as StatusAtividadeCronograma, ordem: String(atividade?.ordem ?? 0) })
-  const save = async () => {
-    onSaveStart()
-    try {
-      const body = { titulo: values.titulo, descricao: values.descricao || undefined, inicio: new Date(values.inicio).toISOString(), fim: values.fim ? new Date(values.fim).toISOString() : undefined, status: values.status, ordem: Number(values.ordem), ...(atividade ? { version: atividade.version } : {}) }
-      if (atividade) await detalheEventoApi.atualizarAtividade(eventoId, atividade.id, body)
-      else await detalheEventoApi.criarAtividade(eventoId, body)
-      success(atividade ? 'Atividade atualizada.' : 'Atividade adicionada ao cronograma.')
-      onSaved()
-    } catch (cause) {
-      error(errorFeedback(cause))
-    } finally {
-      onSaveEnd()
-    }
-  }
-  return <Modal open title={atividade ? 'Editar atividade' : 'Nova atividade'} onClose={onClose} footer={<><Button variant="secondary" disabled={saving} onClick={onClose}>Cancelar</Button><Button loading={saving} onClick={() => void save()}>Salvar</Button></>}><div className="form-grid"><Input label="Título" value={values.titulo} onChange={event => setValues({ ...values, titulo: event.target.value })} /><Input label="Início" type="datetime-local" value={values.inicio} onChange={event => setValues({ ...values, inicio: event.target.value })} /><Input label="Fim" type="datetime-local" value={values.fim} onChange={event => setValues({ ...values, fim: event.target.value })} /><Input label="Ordem" type="number" min="0" value={values.ordem} onChange={event => setValues({ ...values, ordem: event.target.value })} /><Select label="Status" value={values.status} onChange={event => setValues({ ...values, status: event.target.value as StatusAtividadeCronograma })}>{Object.entries(statusLabels).map(([status, label]) => <option key={status} value={status}>{label}</option>)}</Select></div><label className="field"><span>Descrição</span><textarea maxLength={1000} value={values.descricao} onChange={event => setValues({ ...values, descricao: event.target.value })} /></label></Modal>
+  const { success, error } = useToast(); const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<AtividadeValues>({ resolver: zodResolver(atividadeSchema), defaultValues: { titulo: atividade?.titulo ?? '', descricao: atividade?.descricao ?? '', inicio: atividade ? localDate(atividade.inicio) : '', fim: atividade?.fim ? localDate(atividade.fim) : '', status: atividade?.status ?? 'AGENDADO', ordem: String(atividade?.ordem ?? 0) } })
+  const save = async (v: AtividadeValues) => { onSaveStart(); try { const body = { titulo: v.titulo, descricao: v.descricao || undefined, inicio: new Date(v.inicio).toISOString(), fim: v.fim ? new Date(v.fim).toISOString() : undefined, status: v.status, ordem: Number(v.ordem), ...(atividade ? { version: atividade.version } : {}) }; if (atividade) await detalheEventoApi.atualizarAtividade(eventoId, atividade.id, body); else await detalheEventoApi.criarAtividade(eventoId, body); success(atividade ? 'Atividade atualizada.' : 'Atividade adicionada ao cronograma.'); onSaved() } catch (cause) { error(errorFeedback(cause)) } finally { onSaveEnd() } }
+  return <Modal open title={atividade ? 'Editar atividade' : 'Nova atividade'} onClose={onClose} footer={<><Button variant="secondary" disabled={saving || isSubmitting} onClick={onClose}>Cancelar</Button><Button type="submit" form="form-atividade" loading={saving || isSubmitting}>Salvar</Button></>}><form id="form-atividade" onSubmit={handleSubmit(save)} noValidate><div className="form-grid"><Input label="Título" maxLength={160} error={errors.titulo?.message} {...register('titulo')} /><Input label="Início" type="datetime-local" error={errors.inicio?.message} {...register('inicio')} /><Input label="Fim" type="datetime-local" error={errors.fim?.message} {...register('fim')} /><Input label="Ordem" type="number" min="0" error={errors.ordem?.message} {...register('ordem')} /><Select label="Status" error={errors.status?.message} {...register('status')}>{Object.entries(statusLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</Select></div><Textarea label="Descrição" maxLength={1000} error={errors.descricao?.message} {...register('descricao')} /></form></Modal>
 }
 
 function localDate(value: string) { return new Date(value).toISOString().slice(0, 16) }

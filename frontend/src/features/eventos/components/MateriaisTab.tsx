@@ -1,9 +1,12 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm, useWatch } from 'react-hook-form'
+import { materialSchema, type MaterialValues } from '../schemas/material'
 import { tipoMaterialLabels as typeLabels } from '../../../lib/labels'
 import { useState } from 'react'
-import { Button, Card, ConfirmDialog, EmptyState, Input, Modal, Select, useToast } from '../../../components/ui'
+import { Button, Card, ConfirmDialog, EmptyState, Input, Modal, Select, Textarea, useToast } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
 import { detalheEventoApi } from '../detalheApi'
-import type { AnexoEvento, TipoMaterialEvento } from '../types'
+import type { AnexoEvento } from '../types'
 
 
 export function MateriaisTab({ eventoId, anexos, eventoConcluido, podeGerenciar, onChanged }: { eventoId: string; anexos?: AnexoEvento[]; eventoConcluido: boolean; podeGerenciar: boolean; onChanged: () => void }) {
@@ -34,29 +37,7 @@ export function MateriaisTab({ eventoId, anexos, eventoConcluido, podeGerenciar,
 }
 
 function UploadModal({ eventoId, onClose, onSaved }: { eventoId: string; onClose: () => void; onSaved: () => void }) {
-  const [file, setFile] = useState<File | null>(null)
-  const [titulo, setTitulo] = useState('')
-  const [descricao, setDescricao] = useState('')
-  const [tipo, setTipo] = useState<TipoMaterialEvento>('OUTRO')
-  const [saving, setSaving] = useState(false)
-  const { success, error } = useToast()
-  const save = async () => {
-    if (!file) return
-    setSaving(true)
-    try {
-      const form = new FormData()
-      form.append('arquivo', file)
-      form.append('titulo', titulo || file.name)
-      if (descricao.trim()) form.append('descricao', descricao)
-      form.append('tipoMaterial', tipo)
-      await detalheEventoApi.upload(eventoId, form)
-      success('Material enviado.')
-      onSaved()
-    } catch (cause) {
-      error(errorFeedback(cause))
-    } finally {
-      setSaving(false)
-    }
-  }
-  return <Modal open title="Enviar material" onClose={onClose} footer={<><Button variant="secondary" disabled={saving} onClick={onClose}>Cancelar</Button><Button loading={saving} disabled={!file} onClick={() => void save()}>Enviar</Button></>}><div className="form-grid"><Input label="Arquivo" type="file" accept={tipo === 'REGULAMENTO' ? 'application/pdf' : 'application/pdf,image/png,image/jpeg'} onChange={event => { const nextFile = event.target.files?.[0] ?? null; setFile(nextFile); if (!titulo && nextFile) setTitulo(nextFile.name) }} /><Input label="Título" maxLength={160} value={titulo} onChange={event => setTitulo(event.target.value)} /><Select label="Tipo" value={tipo} onChange={event => setTipo(event.target.value as TipoMaterialEvento)}>{Object.entries(typeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</Select></div><label className="field"><span>Descrição</span><textarea maxLength={1000} value={descricao} onChange={event => setDescricao(event.target.value)} /></label></Modal>
+ const { success, error } = useToast(); const { register, control, handleSubmit, formState: { errors, isSubmitting } } = useForm<MaterialValues>({ resolver: zodResolver(materialSchema), defaultValues: { titulo: '', descricao: '', tipo: 'OUTRO' } }); const tipo = useWatch({ control, name: 'tipo' })
+ const save = async (v: MaterialValues) => { try { const form = new FormData(); const file = v.arquivo[0]; form.append('arquivo', file); form.append('titulo', v.titulo || file.name); if (v.descricao.trim()) form.append('descricao', v.descricao); form.append('tipoMaterial', v.tipo); await detalheEventoApi.upload(eventoId, form); success('Material enviado.'); onSaved() } catch (cause) { error(errorFeedback(cause)) } }
+ return <Modal open title="Enviar material" onClose={onClose} footer={<><Button variant="secondary" disabled={isSubmitting} onClick={onClose}>Cancelar</Button><Button type="submit" form="form-material" loading={isSubmitting}>Enviar</Button></>}><form id="form-material" onSubmit={handleSubmit(save)} noValidate><div className="form-grid"><Input label="Arquivo" type="file" accept={tipo === 'REGULAMENTO' ? 'application/pdf' : 'application/pdf,image/png,image/jpeg'} error={errors.arquivo?.message} {...register('arquivo')} /><Input label="Título" maxLength={160} error={errors.titulo?.message} {...register('titulo')} /><Select label="Tipo" error={errors.tipo?.message} {...register('tipo')}>{Object.entries(typeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</Select></div><Textarea label="Descrição" maxLength={1000} error={errors.descricao?.message} {...register('descricao')} /></form></Modal>
 }

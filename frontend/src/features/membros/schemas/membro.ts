@@ -1,0 +1,4 @@
+import { z } from 'zod'
+import { optionalText, requiredId, requiredText } from '../../../lib/formSchemas'
+export const membroSchema = z.object({ nome: z.string().max(120), email: z.string().max(254), telefone: optionalText(20), curso: requiredText('o curso', 160), periodoCurso: z.string().refine(v => !v || (/^\d+$/.test(v) && Number(v) >= 1 && Number(v) <= 30), 'Informe um período entre 1 e 30.'), cargoId: requiredId('um cargo'), departamentoId: requiredId('um departamento'), criando: z.boolean() }).superRefine((v, ctx) => { if (v.criando && v.nome.trim().length < 3) ctx.addIssue({ code: 'custom', path: ['nome'], message: 'O nome deve ter entre 3 e 120 caracteres.' }); if (v.criando && !z.email().safeParse(v.email).success) ctx.addIssue({ code: 'custom', path: ['email'], message: 'Informe um e-mail válido.' }) })
+export type MembroValues = z.infer<typeof membroSchema>
