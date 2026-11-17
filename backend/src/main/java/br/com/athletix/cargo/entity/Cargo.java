@@ -16,83 +16,88 @@ import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(
-        name = "cargos",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_cargo_atletica_nome_normalizado",
-                columnNames = {"atletica_id", "nome_normalizado"}
-        )
-)
+    name = "cargos",
+    uniqueConstraints =
+        @UniqueConstraint(
+            name = "uk_cargo_atletica_nome_normalizado",
+            columnNames = {"atletica_id", "nome_normalizado"}))
 public class Cargo extends AuditableEntity implements AtleticaScoped {
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "atletica_id", nullable = false, foreignKey = @ForeignKey(name = "fk_cargo_atletica"))
-    private Atletica atletica;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(
+      name = "atletica_id",
+      nullable = false,
+      foreignKey = @ForeignKey(name = "fk_cargo_atletica"))
+  private Atletica atletica;
 
-    @Column(nullable = false, length = 100)
-    private String nome;
+  @Column(nullable = false, length = 100)
+  private String nome;
 
-    @Column(name = "nome_normalizado", nullable = false, length = 100)
-    private String nomeNormalizado;
+  @Column(name = "nome_normalizado", nullable = false, length = 100)
+  private String nomeNormalizado;
 
-    @Column(length = 500)
-    private String descricao;
+  @Column(length = 500)
+  private String descricao;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "perfil_acesso", nullable = false, length = 20)
-    private PerfilAcesso perfilAcesso;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "perfil_acesso", nullable = false, length = 20)
+  private PerfilAcesso perfilAcesso;
 
-    @Column(nullable = false)
-    private boolean ativo;
+  @Column(nullable = false)
+  private boolean ativo;
 
-    protected Cargo() {
-    }
+  protected Cargo() {}
 
-    public Cargo(
-            Atletica atletica,
-            String nome,
-            String nomeNormalizado,
-            String descricao,
-            PerfilAcesso perfilAcesso,
-            boolean ativo
-    ) {
-        this.atletica = atletica;
-        this.nome = nome;
-        this.nomeNormalizado = nomeNormalizado;
-        this.descricao = descricao;
-        this.perfilAcesso = perfilAcesso;
-        this.ativo = ativo;
-    }
+  public Cargo(
+      Atletica atletica,
+      String nome,
+      String nomeNormalizado,
+      String descricao,
+      PerfilAcesso perfilAcesso,
+      boolean ativo) {
+    this.atletica = atletica;
+    this.nome = nome;
+    this.nomeNormalizado = nomeNormalizado;
+    this.descricao = descricao;
+    this.perfilAcesso = perfilAcesso;
+    this.ativo = ativo;
+  }
 
-    @Override
-    public Long getAtleticaId() {
-        return atletica.getId();
-    }
+  @Override
+  public Long getAtleticaId() {
+    return atletica.getId();
+  }
 
-    public String getNome() {
-        return nome;
-    }
+  public String getNome() {
+    return nome;
+  }
 
-    public String getDescricao() {
-        return descricao;
-    }
+  public String getDescricao() {
+    return descricao;
+  }
 
-    public PerfilAcesso getPerfilAcesso() {
-        return perfilAcesso;
-    }
+  public PerfilAcesso getPerfilAcesso() {
+    return perfilAcesso;
+  }
 
-    public boolean isAtivo() {
-        return ativo;
-    }
+  public boolean isAtivo() {
+    return ativo;
+  }
 
-    public void atualizar(String nome, String nomeNormalizado, String descricao, PerfilAcesso perfilAcesso, boolean ativo) {
-        this.nome = nome;
-        this.nomeNormalizado = nomeNormalizado;
-        this.descricao = descricao;
-        this.perfilAcesso = perfilAcesso;
-        this.ativo = ativo;
-    }
+  public void atualizar(
+      String nome,
+      String nomeNormalizado,
+      String descricao,
+      PerfilAcesso perfilAcesso,
+      boolean ativo) {
+    this.nome = nome;
+    this.nomeNormalizado = nomeNormalizado;
+    this.descricao = descricao;
+    this.perfilAcesso = perfilAcesso;
+    this.ativo = ativo;
+  }
 
-    public void inativar() {
-        this.ativo = false;
-    }
+  public void inativar() {
+    this.ativo = false;
+  }
 }

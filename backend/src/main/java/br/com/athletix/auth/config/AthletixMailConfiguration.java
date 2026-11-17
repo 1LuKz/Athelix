@@ -5,5 +5,4 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @EnableConfigurationProperties(AthletixMailProperties.class)
-public class AthletixMailConfiguration {
-}
+public class AthletixMailConfiguration {}

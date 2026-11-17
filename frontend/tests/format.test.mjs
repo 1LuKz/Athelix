@@ -6,12 +6,15 @@ import vm from 'node:vm'
 import ts from 'typescript'
 
 function load(file) {
-  const code = ts.transpileModule(fs.readFileSync(new URL(`../src/lib/${file}.ts`, import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText
+  const code = ts.transpileModule(fs.readFileSync(new URL(`../src/lib/${file}.ts`, import.meta.url), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS },
+  }).outputText
   const exports = {}
   vm.runInNewContext(code, { exports, Intl, Date, Number })
   return exports
 }
-const format = load('format'), labels = load('labels')
+const format = load('format'),
+  labels = load('labels')
 test('datas civis não mudam conforme o fuso do navegador', () => {
   assert.equal(format.formatDate('2026-09-30'), '30/09/2026')
   assert.equal(format.formatDate(null), '—')

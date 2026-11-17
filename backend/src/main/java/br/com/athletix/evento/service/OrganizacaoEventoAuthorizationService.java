@@ -13,25 +13,29 @@ import org.springframework.stereotype.Service;
 /** Enquanto não há equipe de organização, o membro criador é o organizador do evento. */
 @Service
 public class OrganizacaoEventoAuthorizationService {
-    private final EventoService eventoService;
-    private final AutorizacaoAtualService autorizacao;
-    private final ResponsabilidadeEventoRepository responsabilidadeRepository;
+  private final EventoService eventoService;
+  private final AutorizacaoAtualService autorizacao;
+  private final ResponsabilidadeEventoRepository responsabilidadeRepository;
 
-    public OrganizacaoEventoAuthorizationService(EventoService eventoService, AutorizacaoAtualService autorizacao,
-                                                 ResponsabilidadeEventoRepository responsabilidadeRepository) {
-        this.eventoService = eventoService;
-        this.autorizacao = autorizacao;
-        this.responsabilidadeRepository = responsabilidadeRepository;
-    }
+  public OrganizacaoEventoAuthorizationService(
+      EventoService eventoService,
+      AutorizacaoAtualService autorizacao,
+      ResponsabilidadeEventoRepository responsabilidadeRepository) {
+    this.eventoService = eventoService;
+    this.autorizacao = autorizacao;
+    this.responsabilidadeRepository = responsabilidadeRepository;
+  }
 
-    public void exigirOrganizadorOuAdministrador(Long eventoId, Authentication authentication, HttpServletRequest request) {
-        Membro membro = autorizacao.membroAtual(authentication, request);
-        Evento evento = eventoService.buscarDaAtleticaAtual(eventoId);
-        if (membro.getPerfilAcesso() != PerfilAcesso.ADMINISTRADOR
-                && !membro.getId().equals(evento.getCriadoPorMembroId())
-                && !responsabilidadeRepository.existsByEvento_IdAndAtletica_IdAndMembro_IdAndAtiva(
-                        eventoId, membro.getAtleticaId(), membro.getId(), true)) {
-            throw new AccessDeniedException("Apenas organizadores ou administradores podem acessar participantes.");
-        }
+  public void exigirOrganizadorOuAdministrador(
+      Long eventoId, Authentication authentication, HttpServletRequest request) {
+    Membro membro = autorizacao.membroAtual(authentication, request);
+    Evento evento = eventoService.buscarDaAtleticaAtual(eventoId);
+    if (membro.getPerfilAcesso() != PerfilAcesso.ADMINISTRADOR
+        && !membro.getId().equals(evento.getCriadoPorMembroId())
+        && !responsabilidadeRepository.existsByEvento_IdAndAtletica_IdAndMembro_IdAndAtiva(
+            eventoId, membro.getAtleticaId(), membro.getId(), true)) {
+      throw new AccessDeniedException(
+          "Apenas organizadores ou administradores podem acessar participantes.");
     }
+  }
 }

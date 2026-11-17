@@ -6,7 +6,5 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 
 public record PerfilSenhaUpdateRequest(
-        @NotBlank String senhaAtual,
-        @NotBlank String novaSenha,
-        @NotNull @PositiveOrZero Long version
-) implements UpdateRequest { }
+    @NotBlank String senhaAtual, @NotBlank String novaSenha, @NotNull @PositiveOrZero Long version)
+    implements UpdateRequest {}

@@ -8,17 +8,19 @@ import org.springframework.stereotype.Service;
 /** Operações financeiras detalhadas são exclusivas de administrador e financeiro. */
 @Service
 public class FinanceiroAutorizacaoService {
-    public void exigirGerenciamentoFinanceiro(Membro membro) {
-        PerfilAcesso perfil = membro.getPerfilAcesso();
-        if (perfil != PerfilAcesso.ADMINISTRADOR && perfil != PerfilAcesso.FINANCEIRO) {
-            throw new AccessDeniedException("Você não tem permissão para gerenciar lançamentos financeiros.");
-        }
+  public void exigirGerenciamentoFinanceiro(Membro membro) {
+    PerfilAcesso perfil = membro.getPerfilAcesso();
+    if (perfil != PerfilAcesso.ADMINISTRADOR && perfil != PerfilAcesso.FINANCEIRO) {
+      throw new AccessDeniedException(
+          "Você não tem permissão para gerenciar lançamentos financeiros.");
     }
+  }
 
-    /** Associados ativos podem consultar agregados sem dados pessoais de contrapartes ou anexos. */
-    public void exigirConsultaFinanceira(Membro membro) {
-        if (membro == null) {
-            throw new AccessDeniedException("Você não tem permissão para consultar informações financeiras.");
-        }
+  /** Associados ativos podem consultar agregados sem dados pessoais de contrapartes ou anexos. */
+  public void exigirConsultaFinanceira(Membro membro) {
+    if (membro == null) {
+      throw new AccessDeniedException(
+          "Você não tem permissão para consultar informações financeiras.");
     }
+  }
 }

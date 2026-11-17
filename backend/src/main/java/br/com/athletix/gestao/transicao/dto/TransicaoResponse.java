@@ -1,2 +1,49 @@
-package br.com.athletix.gestao.transicao.dto; import br.com.athletix.gestao.transicao.entity.*; import java.time.*; import java.util.*;
-public record TransicaoResponse(Long id,Long gestaoOrigemId,Long gestaoDestinoId,StatusTransicaoGestao status,Long preparadaPorMembroId,Long concluidaPorMembroId,Instant concluidaEm,Long version,List<Item> itens){public record Item(Long membroId,Long cargoAtualId,Long departamentoAtualId,Long cargoDestinoId,Long departamentoDestinoId,boolean continuaAtivo,Long substituiResponsavelMembroId){} public static TransicaoResponse from(TransicaoGestao t,List<ItemTransicaoGestao> xs){return new TransicaoResponse(t.getId(),t.getGestaoOrigemId(),t.getGestaoDestinoId(),t.getStatus(),t.getPreparadaPorMembroId(),t.getConcluidaPorMembroId(),t.getConcluidaEm(),t.getVersion(),xs.stream().map(x->new Item(x.getMembroId(),x.getCargoAtualId(),x.getDepartamentoAtualId(),x.getCargoDestinoId(),x.getDepartamentoDestinoId(),x.isContinuaAtivo(),x.getSubstituiResponsavelMembroId())).toList());}}
+package br.com.athletix.gestao.transicao.dto;
+
+import br.com.athletix.gestao.transicao.entity.*;
+import java.time.*;
+import java.util.*;
+
+public record TransicaoResponse(
+    Long id,
+    Long gestaoOrigemId,
+    Long gestaoDestinoId,
+    StatusTransicaoGestao status,
+    Long preparadaPorMembroId,
+    Long concluidaPorMembroId,
+    Instant concluidaEm,
+    Long version,
+    List<Item> itens) {
+  public record Item(
+      Long membroId,
+      Long cargoAtualId,
+      Long departamentoAtualId,
+      Long cargoDestinoId,
+      Long departamentoDestinoId,
+      boolean continuaAtivo,
+      Long substituiResponsavelMembroId) {}
+
+  public static TransicaoResponse from(TransicaoGestao t, List<ItemTransicaoGestao> xs) {
+    return new TransicaoResponse(
+        t.getId(),
+        t.getGestaoOrigemId(),
+        t.getGestaoDestinoId(),
+        t.getStatus(),
+        t.getPreparadaPorMembroId(),
+        t.getConcluidaPorMembroId(),
+        t.getConcluidaEm(),
+        t.getVersion(),
+        xs.stream()
+            .map(
+                x ->
+                    new Item(
+                        x.getMembroId(),
+                        x.getCargoAtualId(),
+                        x.getDepartamentoAtualId(),
+                        x.getCargoDestinoId(),
+                        x.getDepartamentoDestinoId(),
+                        x.isContinuaAtivo(),
+                        x.getSubstituiResponsavelMembroId()))
+            .toList());
+  }
+}

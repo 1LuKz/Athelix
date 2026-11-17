@@ -2,6 +2,7 @@ export type StatusAtividadeCronograma = 'AGENDADO' | 'EM_ANDAMENTO' | 'CONCLUIDO
 export type AreaResponsabilidadeEvento = 'COORDENACAO_GERAL' | 'FINANCEIRO' | 'COMUNICACAO'
 export type StatusParticipacaoEvento = 'INSCRITO' | 'CONFIRMADO' | 'PRESENTE' | 'CANCELADO'
 export type TipoMaterialEvento = 'ARTE' | 'REGULAMENTO' | 'OUTRO'
+export type StatusTarefaChecklist = 'A_FAZER' | 'EM_ANDAMENTO' | 'REVISAO' | 'CONCLUIDO'
 
 export type AtividadeCronograma = {
   id: number
@@ -84,14 +85,22 @@ export type ChecklistEvento = {
   concluidas: number
   mensagem: string
   progresso: number
-  itens: Array<{
-    id: number
-    titulo: string
-    concluida: boolean
-    atrasada: boolean
-    status: string
-    version: number
-  }>
+  itens: ChecklistItem[]
+}
+
+export type ChecklistItem = {
+  id: number
+  titulo: string
+  concluida: boolean
+  atrasada: boolean
+  status: StatusTarefaChecklist
+  version: number
+}
+
+export type AtualizacaoStatusTarefa = {
+  status: StatusTarefaChecklist
+  version: number
+  motivo?: string
 }
 
 export type ResumoFinanceiroEvento = {

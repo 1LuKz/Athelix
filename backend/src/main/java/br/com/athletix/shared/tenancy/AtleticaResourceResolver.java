@@ -1,10 +1,9 @@
 package br.com.athletix.shared.tenancy;
 
 import br.com.athletix.shared.exception.ResourceNotFoundException;
-import org.springframework.stereotype.Component;
-
 import java.util.Optional;
 import java.util.function.BiFunction;
+import org.springframework.stereotype.Component;
 
 /**
  * Resolve recursos sempre pelo par (id do recurso, id da atlética atual). IDs recebidos do cliente
@@ -13,27 +12,26 @@ import java.util.function.BiFunction;
 @Component
 public class AtleticaResourceResolver {
 
-    private final ContextoAtletica contextoAtletica;
+  private final ContextoAtletica contextoAtletica;
 
-    public AtleticaResourceResolver(ContextoAtletica contextoAtletica) {
-        this.contextoAtletica = contextoAtletica;
-    }
+  public AtleticaResourceResolver(ContextoAtletica contextoAtletica) {
+    this.contextoAtletica = contextoAtletica;
+  }
 
-    public Long atleticaIdAtual() {
-        return contextoAtletica.requireAtleticaId();
-    }
+  public Long atleticaIdAtual() {
+    return contextoAtletica.requireAtleticaId();
+  }
 
-    public <T> T requireByIdAndAtleticaId(
-            Long resourceId,
-            BiFunction<Long, Long, Optional<T>> scopedFinder
-    ) {
-        return scopedFinder.apply(resourceId, atleticaIdAtual())
-                .orElseThrow(ResourceNotFoundException::new);
-    }
+  public <T> T requireByIdAndAtleticaId(
+      Long resourceId, BiFunction<Long, Long, Optional<T>> scopedFinder) {
+    return scopedFinder
+        .apply(resourceId, atleticaIdAtual())
+        .orElseThrow(ResourceNotFoundException::new);
+  }
 
-    public void requireBelongsToCurrentAtletica(AtleticaScoped resource) {
-        if (!atleticaIdAtual().equals(resource.getAtleticaId())) {
-            throw new ResourceNotFoundException();
-        }
+  public void requireBelongsToCurrentAtletica(AtleticaScoped resource) {
+    if (!atleticaIdAtual().equals(resource.getAtleticaId())) {
+      throw new ResourceNotFoundException();
     }
+  }
 }

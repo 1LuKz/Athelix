@@ -16,9 +16,16 @@ export function formatDateTime(value: string | null | undefined, timeZone?: stri
   if (!value) return '—'
   const instant = new Date(value)
   if (Number.isNaN(instant.getTime())) return '—'
-  const options: Intl.DateTimeFormatOptions = { dateStyle: 'short', timeStyle: 'short', timeZone: timeZone || DEFAULT_TIME_ZONE }
-  try { return new Intl.DateTimeFormat('pt-BR', options).format(instant) }
-  catch { return new Intl.DateTimeFormat('pt-BR', { ...options, timeZone: DEFAULT_TIME_ZONE }).format(instant) }
+  const options: Intl.DateTimeFormatOptions = {
+    dateStyle: 'short',
+    timeStyle: 'short',
+    timeZone: timeZone || DEFAULT_TIME_ZONE,
+  }
+  try {
+    return new Intl.DateTimeFormat('pt-BR', options).format(instant)
+  } catch {
+    return new Intl.DateTimeFormat('pt-BR', { ...options, timeZone: DEFAULT_TIME_ZONE }).format(instant)
+  }
 }
 
 export function formatMoney(value: string | number): string {

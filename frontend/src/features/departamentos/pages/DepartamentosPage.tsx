@@ -4,7 +4,19 @@ import { departamentoSchema, type DepartamentoValues } from '../schemas/departam
 import { enumLabel, situacaoDepartamentoLabels } from '../../../lib/labels'
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Badge, Button, Card, ConfirmDialog, EmptyState, ErrorState, Input, LoadingState, Modal, Select, useToast } from '../../../components/ui'
+import {
+  Badge,
+  Button,
+  Card,
+  ConfirmDialog,
+  EmptyState,
+  ErrorState,
+  Input,
+  LoadingState,
+  Modal,
+  Select,
+  useToast,
+} from '../../../components/ui'
 import { queryKeys } from '../../../lib/query'
 import { errorFeedback } from '../../../lib/errorFeedback'
 import { useAuthSession } from '../../auth/AuthSessionProvider'
@@ -12,10 +24,242 @@ import { membrosApi } from '../../membros/api'
 import type { Departamento, Membro } from '../../membros/types'
 import { departamentosApi } from '../api'
 
-export function DepartamentosPage() { const { activeVinculo, state } = useAuthSession(); const admin = state?.capacidades.includes('CONFIGURAR_ESTRUTURA') ?? false; const client = useQueryClient(); const { success, error } = useToast(); const [edit, setEdit] = useState<Departamento | null>(null); const [remove, setRemove] = useState<Departamento | null>(null); const departments = useQuery({ queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'departamentos'), queryFn: departamentosApi.list, enabled: Boolean(activeVinculo) }); const members = useQuery({ queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'membros-ativos', {}), queryFn: ({ signal }) => membrosApi.list({ page: 0, size: 100, status: 'ATIVO' }, signal), enabled: admin }); const refresh = () => void client.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'departamentos'] }); const inactivate = async () => { if (!remove) return; try { await departamentosApi.inativar(remove.id, remove.version as number); success('Departamento inativado.'); setRemove(null); refresh() } catch (cause) { error(`${errorFeedback(cause)} Transfira membros ativos e substitua responsabilidades abertas antes de tentar novamente.`) } }; return <><div className="page-title"><div><p className="eyebrow">Estrutura organizacional</p><h1>Departamentos</h1></div>{admin && <Button icon="add" onClick={() => setEdit({} as Departamento)}>Novo departamento</Button>}</div>{departments.isLoading ? <LoadingState /> : departments.isError ? <ErrorState message={errorFeedback(departments.error)} onRetry={() => void departments.refetch()} /> : departments.data?.length ? <div className="department-grid">{departments.data.map(department => <Card key={department.id} className="department-card"><div className="department-heading"><div className="department-avatar">{department.responsavelNome ? initials(department.responsavelNome) : '?'}</div><div><h2>{department.nome}</h2><Badge tone={department.situacao === 'ATIVO' ? 'success' : department.situacao === 'EM_CONFIGURACAO' ? 'warning' : 'neutral'}>{enumLabel(situacaoDepartamentoLabels, department.situacao)}</Badge></div></div><p>{department.descricao || 'Sem descrição cadastrada.'}</p><dl><div><dt>Responsável</dt><dd>{department.responsavelNome ?? 'A definir'}</dd></div><div><dt>Membros ativos</dt><dd>{department.quantidadeMembros}</dd></div></dl>{department.situacao === 'EM_CONFIGURACAO' && admin && <p className="configuration-tip">Fluxo: cadastre/aprove o primeiro membro, designe-o como responsável e então ative o departamento.</p>}{admin && <div className="department-actions"><Button variant="ghost" icon="edit" onClick={() => setEdit(department)}>Editar</Button>{department.situacao === 'EM_CONFIGURACAO' && <Button variant="ghost" icon="rocket_launch" onClick={() => setEdit(department)}>Concluir configuração</Button>}{department.situacao === 'ATIVO' && <Button variant="ghost" icon="toggle_off" onClick={() => setRemove(department)}>Inativar</Button>}</div>}</Card>)}</div> : <EmptyState title="Nenhum departamento ativo" description={admin ? 'Crie um departamento para iniciar sua estrutura.' : 'A estrutura ativa ainda não possui departamentos.'} />}{edit && <DepartamentoModal department={edit.id ? edit : null} members={members.data?.items ?? []} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); refresh() }} />}<ConfirmDialog open={Boolean(remove)} title="Inativar departamento" message="O departamento não será apagado. Antes, transfira membros ativos e substitua responsáveis de itens, eventos ou tarefas abertas." confirmLabel="Inativar departamento" onClose={() => setRemove(null)} onConfirm={() => void inactivate()} /></> }
-function DepartamentoModal({ department, members, onClose, onSaved }: { department: Departamento | null; members: Membro[]; onClose: () => void; onSaved: () => void }) {
-  const { success, error } = useToast(); const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<DepartamentoValues>({ resolver: zodResolver(departamentoSchema), defaultValues: { nome: department?.nome ?? '', descricao: department?.descricao ?? '', responsavel: String(department?.responsavelMembroId ?? '') } })
-  const submit = async (v: DepartamentoValues) => { try { let current = department; if (!current) current = await departamentosApi.create({ nome: v.nome, descricao: v.descricao || undefined }); else current = await departamentosApi.update(current.id, { nome: v.nome, descricao: v.descricao || undefined, version: current.version }); if (v.responsavel && current.situacao !== 'INATIVO') { current = await departamentosApi.responsavel(current.id, { responsavelMembroId: Number(v.responsavel), version: current.version }); if (current.situacao === 'EM_CONFIGURACAO') await departamentosApi.ativar(current.id, current.version) } success('Departamento salvo.'); onSaved() } catch (cause) { error(errorFeedback(cause)) } }
-  return <Modal open title={department ? 'Configurar departamento' : 'Novo departamento'} onClose={onClose} footer={<><Button variant="secondary" disabled={isSubmitting} onClick={onClose}>Cancelar</Button><Button type="submit" form="form-departamento" loading={isSubmitting}>Salvar</Button></>}><form id="form-departamento" onSubmit={handleSubmit(submit)} noValidate><div className="form-grid"><Input label="Nome" maxLength={100} error={errors.nome?.message} {...register('nome')} /><Input label="Descrição" maxLength={1000} error={errors.descricao?.message} {...register('descricao')} />{department ? <Select label="Responsável ativo" error={errors.responsavel?.message} {...register('responsavel')}><option value="">Definir depois</option>{members.filter(member => member.departamentoId === department.id).map(member => <option value={member.id} key={member.id}>{member.nome}</option>)}</Select> : <p className="form-note">Após criar, cadastre e aprove o primeiro membro neste departamento para então escolhê-lo como responsável.</p>}</div><p className="form-note">Sem responsável, o departamento permanece em configuração e só aparece para administração.</p></form></Modal>
+export function DepartamentosPage() {
+  const { activeVinculo, state } = useAuthSession()
+  const admin = state?.capacidades.includes('CONFIGURAR_ESTRUTURA') ?? false
+  const client = useQueryClient()
+  const { success, error } = useToast()
+  const [edit, setEdit] = useState<Departamento | null>(null)
+  const [remove, setRemove] = useState<Departamento | null>(null)
+  const departments = useQuery({
+    queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'departamentos'),
+    queryFn: departamentosApi.list,
+    enabled: Boolean(activeVinculo),
+  })
+  const members = useQuery({
+    queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'membros-ativos', {}),
+    queryFn: ({ signal }) => membrosApi.list({ page: 0, size: 100, status: 'ATIVO' }, signal),
+    enabled: admin,
+  })
+  const refresh = () =>
+    void client.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'departamentos'] })
+  const inactivate = async () => {
+    if (!remove) return
+    try {
+      await departamentosApi.inativar(remove.id, remove.version as number)
+      success('Departamento inativado.')
+      setRemove(null)
+      refresh()
+    } catch (cause) {
+      error(
+        `${errorFeedback(cause)} Transfira membros ativos e substitua responsabilidades abertas antes de tentar novamente.`,
+      )
+    }
+  }
+  return (
+    <>
+      <div className="page-title">
+        <div>
+          <p className="eyebrow">Estrutura organizacional</p>
+          <h1>Departamentos</h1>
+        </div>
+        {admin && (
+          <Button icon="add" onClick={() => setEdit({} as Departamento)}>
+            Novo departamento
+          </Button>
+        )}
+      </div>
+      {departments.isLoading ? (
+        <LoadingState />
+      ) : departments.isError ? (
+        <ErrorState message={errorFeedback(departments.error)} onRetry={() => void departments.refetch()} />
+      ) : departments.data?.length ? (
+        <div className="department-grid">
+          {departments.data.map((department) => (
+            <Card key={department.id} className="department-card">
+              <div className="department-heading">
+                <div className="department-avatar">
+                  {department.responsavelNome ? initials(department.responsavelNome) : '?'}
+                </div>
+                <div>
+                  <h2>{department.nome}</h2>
+                  <Badge
+                    tone={
+                      department.situacao === 'ATIVO'
+                        ? 'success'
+                        : department.situacao === 'EM_CONFIGURACAO'
+                          ? 'warning'
+                          : 'neutral'
+                    }
+                  >
+                    {enumLabel(situacaoDepartamentoLabels, department.situacao)}
+                  </Badge>
+                </div>
+              </div>
+              <p>{department.descricao || 'Sem descrição cadastrada.'}</p>
+              <dl>
+                <div>
+                  <dt>Responsável</dt>
+                  <dd>{department.responsavelNome ?? 'A definir'}</dd>
+                </div>
+                <div>
+                  <dt>Membros ativos</dt>
+                  <dd>{department.quantidadeMembros}</dd>
+                </div>
+              </dl>
+              {department.situacao === 'EM_CONFIGURACAO' && admin && (
+                <p className="configuration-tip">
+                  Fluxo: cadastre/aprove o primeiro membro, designe-o como responsável e então ative o departamento.
+                </p>
+              )}
+              {admin && (
+                <div className="department-actions">
+                  <Button variant="ghost" icon="edit" onClick={() => setEdit(department)}>
+                    Editar
+                  </Button>
+                  {department.situacao === 'EM_CONFIGURACAO' && (
+                    <Button variant="ghost" icon="rocket_launch" onClick={() => setEdit(department)}>
+                      Concluir configuração
+                    </Button>
+                  )}
+                  {department.situacao === 'ATIVO' && (
+                    <Button variant="ghost" icon="toggle_off" onClick={() => setRemove(department)}>
+                      Inativar
+                    </Button>
+                  )}
+                </div>
+              )}
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          title="Nenhum departamento ativo"
+          description={
+            admin
+              ? 'Crie um departamento para iniciar sua estrutura.'
+              : 'A estrutura ativa ainda não possui departamentos.'
+          }
+        />
+      )}
+      {edit && (
+        <DepartamentoModal
+          department={edit.id ? edit : null}
+          members={members.data?.items ?? []}
+          onClose={() => setEdit(null)}
+          onSaved={() => {
+            setEdit(null)
+            refresh()
+          }}
+        />
+      )}
+      <ConfirmDialog
+        open={Boolean(remove)}
+        title="Inativar departamento"
+        message="O departamento não será apagado. Antes, transfira membros ativos e substitua responsáveis de itens, eventos ou tarefas abertas."
+        confirmLabel="Inativar departamento"
+        onClose={() => setRemove(null)}
+        onConfirm={() => void inactivate()}
+      />
+    </>
+  )
 }
-function initials(value: string) { return value.split(' ').map(part => part[0]).slice(0, 2).join('').toUpperCase() }
+function DepartamentoModal({
+  department,
+  members,
+  onClose,
+  onSaved,
+}: {
+  department: Departamento | null
+  members: Membro[]
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const { success, error } = useToast()
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<DepartamentoValues>({
+    resolver: zodResolver(departamentoSchema),
+    defaultValues: {
+      nome: department?.nome ?? '',
+      descricao: department?.descricao ?? '',
+      responsavel: String(department?.responsavelMembroId ?? ''),
+    },
+  })
+  const submit = async (v: DepartamentoValues) => {
+    try {
+      let current = department
+      if (!current) current = await departamentosApi.create({ nome: v.nome, descricao: v.descricao || undefined })
+      else
+        current = await departamentosApi.update(current.id, {
+          nome: v.nome,
+          descricao: v.descricao || undefined,
+          version: current.version,
+        })
+      if (v.responsavel && current.situacao !== 'INATIVO') {
+        current = await departamentosApi.responsavel(current.id, {
+          responsavelMembroId: Number(v.responsavel),
+          version: current.version,
+        })
+        if (current.situacao === 'EM_CONFIGURACAO') await departamentosApi.ativar(current.id, current.version)
+      }
+      success('Departamento salvo.')
+      onSaved()
+    } catch (cause) {
+      error(errorFeedback(cause))
+    }
+  }
+  return (
+    <Modal
+      open
+      title={department ? 'Configurar departamento' : 'Novo departamento'}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="secondary" disabled={isSubmitting} onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" form="form-departamento" loading={isSubmitting}>
+            Salvar
+          </Button>
+        </>
+      }
+    >
+      <form id="form-departamento" onSubmit={handleSubmit(submit)} noValidate>
+        <div className="form-grid">
+          <Input label="Nome" maxLength={100} error={errors.nome?.message} {...register('nome')} />
+          <Input label="Descrição" maxLength={1000} error={errors.descricao?.message} {...register('descricao')} />
+          {department ? (
+            <Select label="Responsável ativo" error={errors.responsavel?.message} {...register('responsavel')}>
+              <option value="">Definir depois</option>
+              {members
+                .filter((member) => member.departamentoId === department.id)
+                .map((member) => (
+                  <option value={member.id} key={member.id}>
+                    {member.nome}
+                  </option>
+                ))}
+            </Select>
+          ) : (
+            <p className="form-note">
+              Após criar, cadastre e aprove o primeiro membro neste departamento para então escolhê-lo como responsável.
+            </p>
+          )}
+        </div>
+        <p className="form-note">
+          Sem responsável, o departamento permanece em configuração e só aparece para administração.
+        </p>
+      </form>
+    </Modal>
+  )
+}
+function initials(value: string) {
+  return value
+    .split(' ')
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+}

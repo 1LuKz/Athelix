@@ -9,15 +9,15 @@ import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 public record PerfilUpdateRequest(
-        @NotBlank @Size(min = 3, max = 120) String nome,
-        @Size(max = 20) String telefone,
-        @NotBlank @Size(max = 160) String curso,
-        @Positive @Max(30) Integer periodoCurso,
-        @NotNull @PositiveOrZero Long usuarioVersion,
-        @NotNull @PositiveOrZero Long membroVersion
-) implements UpdateRequest {
-    @Override
-    public Long version() {
-        return membroVersion;
-    }
+    @NotBlank @Size(min = 3, max = 120) String nome,
+    @Size(max = 20) String telefone,
+    @NotBlank @Size(max = 160) String curso,
+    @Positive @Max(30) Integer periodoCurso,
+    @NotNull @PositiveOrZero Long usuarioVersion,
+    @NotNull @PositiveOrZero Long membroVersion)
+    implements UpdateRequest {
+  @Override
+  public Long version() {
+    return membroVersion;
+  }
 }

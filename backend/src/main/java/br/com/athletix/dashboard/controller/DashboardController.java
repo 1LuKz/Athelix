@@ -1,3 +1,55 @@
 package br.com.athletix.dashboard.controller;
-import br.com.athletix.dashboard.dto.DashboardResponses.*; import br.com.athletix.dashboard.service.DashboardService; import br.com.athletix.security.AutorizacaoAtualService; import jakarta.servlet.http.HttpServletRequest; import org.springframework.security.core.Authentication; import org.springframework.web.bind.annotation.*; import java.util.*;
-@RestController @RequestMapping("/dashboard") public class DashboardController {private final DashboardService service;private final AutorizacaoAtualService auth;public DashboardController(DashboardService s,AutorizacaoAtualService a){service=s;auth=a;}private br.com.athletix.membro.entity.Membro m(Authentication a,HttpServletRequest r){return auth.membroAtual(a,r);}@GetMapping("/resumo") public Resumo resumo(Authentication a,HttpServletRequest r){return service.resumo(m(a,r));}@GetMapping("/financeiro") public Financeiro financeiro(Authentication a,HttpServletRequest r){return service.financeiro(m(a,r));}@GetMapping("/departamentos") public List<Departamento> departamentos(){return service.departamentos();}@GetMapping("/proximos-eventos") public List<Evento> eventos(){return service.proximos();}@GetMapping("/tarefas-pendentes") public List<Tarefa> tarefas(Authentication a,HttpServletRequest r){return service.pendentes(m(a,r));}@GetMapping("/ultimas-movimentacoes") public List<Movimento> movimentacoes(Authentication a,HttpServletRequest r){return service.movimentacoes(m(a,r));}}
+
+import br.com.athletix.dashboard.dto.DashboardResponses.*;
+import br.com.athletix.dashboard.service.DashboardService;
+import br.com.athletix.security.AutorizacaoAtualService;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/dashboard")
+public class DashboardController {
+  private final DashboardService service;
+  private final AutorizacaoAtualService auth;
+
+  public DashboardController(DashboardService s, AutorizacaoAtualService a) {
+    service = s;
+    auth = a;
+  }
+
+  private br.com.athletix.membro.entity.Membro m(Authentication a, HttpServletRequest r) {
+    return auth.membroAtual(a, r);
+  }
+
+  @GetMapping("/resumo")
+  public Resumo resumo(Authentication a, HttpServletRequest r) {
+    return service.resumo(m(a, r));
+  }
+
+  @GetMapping("/financeiro")
+  public Financeiro financeiro(Authentication a, HttpServletRequest r) {
+    return service.financeiro(m(a, r));
+  }
+
+  @GetMapping("/departamentos")
+  public List<Departamento> departamentos() {
+    return service.departamentos();
+  }
+
+  @GetMapping("/proximos-eventos")
+  public List<Evento> eventos() {
+    return service.proximos();
+  }
+
+  @GetMapping("/tarefas-pendentes")
+  public List<Tarefa> tarefas(Authentication a, HttpServletRequest r) {
+    return service.pendentes(m(a, r));
+  }
+
+  @GetMapping("/ultimas-movimentacoes")
+  public List<Movimento> movimentacoes(Authentication a, HttpServletRequest r) {
+    return service.movimentacoes(m(a, r));
+  }
+}

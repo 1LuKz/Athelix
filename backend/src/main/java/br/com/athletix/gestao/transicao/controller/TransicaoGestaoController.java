@@ -1,3 +1,56 @@
 package br.com.athletix.gestao.transicao.controller;
-import br.com.athletix.gestao.transicao.dto.*; import br.com.athletix.gestao.transicao.service.TransicaoGestaoService; import br.com.athletix.security.AutorizacaoAtualService; import jakarta.servlet.http.HttpServletRequest; import jakarta.validation.Valid; import org.springframework.http.ResponseEntity; import org.springframework.security.core.Authentication; import org.springframework.web.bind.annotation.*;
-@RestController @RequestMapping("/gestoes") public class TransicaoGestaoController {private final TransicaoGestaoService service;private final AutorizacaoAtualService auth;public TransicaoGestaoController(TransicaoGestaoService s,AutorizacaoAtualService a){service=s;auth=a;}@PostMapping("/{id}/transicoes") public ResponseEntity<TransicaoResponse> criar(@PathVariable Long id,Authentication a,HttpServletRequest r){auth.exigirAdministrador(a,r);return ResponseEntity.status(201).body(service.criar(id,auth.membroAtual(a,r)));}@PutMapping("/transicoes/{id}") public TransicaoResponse atualizar(@PathVariable Long id,@Valid @RequestBody TransicaoUpdateRequest b,Authentication a,HttpServletRequest r){auth.exigirAdministrador(a,r);return service.atualizar(id,b,auth.membroAtual(a,r));}@GetMapping("/transicoes/{id}/previa") public PreviaTransicaoResponse previa(@PathVariable Long id,Authentication a,HttpServletRequest r){auth.exigirAdministrador(a,r);return service.previa(id);}@PostMapping("/transicoes/{id}/concluir") public TransicaoResponse concluir(@PathVariable Long id,@Valid @RequestBody ConcluirTransicaoRequest b,Authentication a,HttpServletRequest r){auth.exigirAdministrador(a,r);return service.concluir(id,b.version(),auth.membroAtual(a,r));}}
+
+import br.com.athletix.gestao.transicao.dto.*;
+import br.com.athletix.gestao.transicao.service.TransicaoGestaoService;
+import br.com.athletix.security.AutorizacaoAtualService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/gestoes")
+public class TransicaoGestaoController {
+  private final TransicaoGestaoService service;
+  private final AutorizacaoAtualService auth;
+
+  public TransicaoGestaoController(TransicaoGestaoService s, AutorizacaoAtualService a) {
+    service = s;
+    auth = a;
+  }
+
+  @PostMapping("/{id}/transicoes")
+  public ResponseEntity<TransicaoResponse> criar(
+      @PathVariable Long id, Authentication a, HttpServletRequest r) {
+    auth.exigirAdministrador(a, r);
+    return ResponseEntity.status(201).body(service.criar(id, auth.membroAtual(a, r)));
+  }
+
+  @PutMapping("/transicoes/{id}")
+  public TransicaoResponse atualizar(
+      @PathVariable Long id,
+      @Valid @RequestBody TransicaoUpdateRequest b,
+      Authentication a,
+      HttpServletRequest r) {
+    auth.exigirAdministrador(a, r);
+    return service.atualizar(id, b, auth.membroAtual(a, r));
+  }
+
+  @GetMapping("/transicoes/{id}/previa")
+  public PreviaTransicaoResponse previa(
+      @PathVariable Long id, Authentication a, HttpServletRequest r) {
+    auth.exigirAdministrador(a, r);
+    return service.previa(id);
+  }
+
+  @PostMapping("/transicoes/{id}/concluir")
+  public TransicaoResponse concluir(
+      @PathVariable Long id,
+      @Valid @RequestBody ConcluirTransicaoRequest b,
+      Authentication a,
+      HttpServletRequest r) {
+    auth.exigirAdministrador(a, r);
+    return service.concluir(id, b.version(), auth.membroAtual(a, r));
+  }
+}

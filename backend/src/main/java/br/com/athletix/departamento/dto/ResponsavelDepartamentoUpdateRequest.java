@@ -7,9 +7,10 @@ import jakarta.validation.constraints.PositiveOrZero;
 
 /** O ID será convertido em relação com Membro na B05. */
 public record ResponsavelDepartamentoUpdateRequest(
-        @NotNull(message = "O responsável é obrigatório.")
-        @Positive(message = "O responsável deve ser válido.") Long responsavelMembroId,
-        @NotNull(message = "A versão é obrigatória.")
-        @PositiveOrZero(message = "A versão deve ser maior ou igual a zero.") Long version
-) implements UpdateRequest {
-}
+    @NotNull(message = "O responsável é obrigatório.")
+        @Positive(message = "O responsável deve ser válido.")
+        Long responsavelMembroId,
+    @NotNull(message = "A versão é obrigatória.")
+        @PositiveOrZero(message = "A versão deve ser maior ou igual a zero.")
+        Long version)
+    implements UpdateRequest {}

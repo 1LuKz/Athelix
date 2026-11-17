@@ -16,82 +16,83 @@ import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(
-        name = "departamentos",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_departamento_atletica_nome_normalizado",
-                columnNames = {"atletica_id", "nome_normalizado"}
-        )
-)
+    name = "departamentos",
+    uniqueConstraints =
+        @UniqueConstraint(
+            name = "uk_departamento_atletica_nome_normalizado",
+            columnNames = {"atletica_id", "nome_normalizado"}))
 public class Departamento extends AuditableEntity implements AtleticaScoped {
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "atletica_id", nullable = false, foreignKey = @ForeignKey(name = "fk_departamento_atletica"))
-    private Atletica atletica;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(
+      name = "atletica_id",
+      nullable = false,
+      foreignKey = @ForeignKey(name = "fk_departamento_atletica"))
+  private Atletica atletica;
 
-    @Column(nullable = false, length = 100)
-    private String nome;
+  @Column(nullable = false, length = 100)
+  private String nome;
 
-    @Column(name = "nome_normalizado", nullable = false, length = 100)
-    private String nomeNormalizado;
+  @Column(name = "nome_normalizado", nullable = false, length = 100)
+  private String nomeNormalizado;
 
-    @Column(length = 1000)
-    private String descricao;
+  @Column(length = 1000)
+  private String descricao;
 
-    /** Será associada à entidade Membro na B05. */
-    @Column(name = "responsavel_membro_id")
-    private Long responsavelMembroId;
+  /** Será associada à entidade Membro na B05. */
+  @Column(name = "responsavel_membro_id")
+  private Long responsavelMembroId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private SituacaoDepartamento situacao;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
+  private SituacaoDepartamento situacao;
 
-    protected Departamento() {
-    }
+  protected Departamento() {}
 
-    public Departamento(Atletica atletica, String nome, String nomeNormalizado, String descricao) {
-        this.atletica = atletica;
-        this.nome = nome;
-        this.nomeNormalizado = nomeNormalizado;
-        this.descricao = descricao;
-        this.situacao = SituacaoDepartamento.EM_CONFIGURACAO;
-    }
+  public Departamento(Atletica atletica, String nome, String nomeNormalizado, String descricao) {
+    this.atletica = atletica;
+    this.nome = nome;
+    this.nomeNormalizado = nomeNormalizado;
+    this.descricao = descricao;
+    this.situacao = SituacaoDepartamento.EM_CONFIGURACAO;
+  }
 
-    @Override
-    public Long getAtleticaId() {
-        return atletica.getId();
-    }
+  @Override
+  public Long getAtleticaId() {
+    return atletica.getId();
+  }
 
-    public String getNome() {
-        return nome;
-    }
+  public String getNome() {
+    return nome;
+  }
 
-    public String getDescricao() {
-        return descricao;
-    }
+  public String getDescricao() {
+    return descricao;
+  }
 
-    public Long getResponsavelMembroId() {
-        return responsavelMembroId;
-    }
+  public Long getResponsavelMembroId() {
+    return responsavelMembroId;
+  }
 
-    public SituacaoDepartamento getSituacao() {
-        return situacao;
-    }
+  public SituacaoDepartamento getSituacao() {
+    return situacao;
+  }
 
-    public void atualizarDadosBasicos(String nome, String nomeNormalizado, String descricao) {
-        this.nome = nome;
-        this.nomeNormalizado = nomeNormalizado;
-        this.descricao = descricao;
-    }
+  public void atualizarDadosBasicos(String nome, String nomeNormalizado, String descricao) {
+    this.nome = nome;
+    this.nomeNormalizado = nomeNormalizado;
+    this.descricao = descricao;
+  }
 
-    public void definirResponsavel(Long responsavelMembroId) {
-        this.responsavelMembroId = responsavelMembroId;
-    }
+  public void definirResponsavel(Long responsavelMembroId) {
+    this.responsavelMembroId = responsavelMembroId;
+  }
 
-    public void ativar() {
-        this.situacao = SituacaoDepartamento.ATIVO;
-    }
+  public void ativar() {
+    this.situacao = SituacaoDepartamento.ATIVO;
+  }
 
-    public void inativar() {
-        this.situacao = SituacaoDepartamento.INATIVO;
-    }
+  public void inativar() {
+    this.situacao = SituacaoDepartamento.INATIVO;
+  }
 }

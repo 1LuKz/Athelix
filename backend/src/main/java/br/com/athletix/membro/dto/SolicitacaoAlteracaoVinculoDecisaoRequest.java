@@ -7,8 +7,8 @@ import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 public record SolicitacaoAlteracaoVinculoDecisaoRequest(
-        @NotNull DecisaoSolicitacaoAlteracaoVinculo decisao,
-        @Size(max = 500) String observacao,
-        @NotNull @PositiveOrZero Long version,
-        @NotNull @PositiveOrZero Long membroVersion
-) implements UpdateRequest { }
+    @NotNull DecisaoSolicitacaoAlteracaoVinculo decisao,
+    @Size(max = 500) String observacao,
+    @NotNull @PositiveOrZero Long version,
+    @NotNull @PositiveOrZero Long membroVersion)
+    implements UpdateRequest {}

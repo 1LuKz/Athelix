@@ -5,7 +5,4 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 public record ResponsabilidadeEventoCreateRequest(
-        @NotNull @Positive Long membroId,
-        @NotNull AreaResponsabilidadeEvento area
-) {
-}
+    @NotNull @Positive Long membroId, @NotNull AreaResponsabilidadeEvento area) {}

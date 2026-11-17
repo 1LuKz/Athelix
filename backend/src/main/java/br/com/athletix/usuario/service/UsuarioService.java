@@ -15,44 +15,42 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class UsuarioService {
 
-    private final UsuarioRepository usuarioRepository;
-    private final PasswordEncoder passwordEncoder;
+  private final UsuarioRepository usuarioRepository;
+  private final PasswordEncoder passwordEncoder;
 
-    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
-        this.usuarioRepository = usuarioRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
+  public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
+    this.usuarioRepository = usuarioRepository;
+    this.passwordEncoder = passwordEncoder;
+  }
 
-    @Transactional
-    public Usuario criarPorConvite(UsuarioConviteCreateRequest request) {
-        String email = EmailNormalizado.normalize(request.email());
-        NomeNormalizado.fromRequired(request.nome(), "nome");
-        String nome = NomeNormalizado.displayValue(request.nome());
-        if (nome.length() < 3 || nome.length() > 120) {
-            throw new br.com.athletix.shared.exception.BusinessRuleException(
-                    "O nome deve ter entre 3 e 120 caracteres."
-            );
-        }
-        if (usuarioRepository.existsByEmail(email)) {
-            throw new ConflictException("Já existe uma conta com este e-mail.");
-        }
-        return usuarioRepository.save(new Usuario(
-                nome,
-                email,
-                TelefoneNormalizado.normalize(request.telefone())
-        ));
+  @Transactional
+  public Usuario criarPorConvite(UsuarioConviteCreateRequest request) {
+    String email = EmailNormalizado.normalize(request.email());
+    NomeNormalizado.fromRequired(request.nome(), "nome");
+    String nome = NomeNormalizado.displayValue(request.nome());
+    if (nome.length() < 3 || nome.length() > 120) {
+      throw new br.com.athletix.shared.exception.BusinessRuleException(
+          "O nome deve ter entre 3 e 120 caracteres.");
     }
+    if (usuarioRepository.existsByEmail(email)) {
+      throw new ConflictException("Já existe uma conta com este e-mail.");
+    }
+    return usuarioRepository.save(
+        new Usuario(nome, email, TelefoneNormalizado.normalize(request.telefone())));
+  }
 
-    @Transactional
-    public void definirSenha(Long usuarioId, SenhaDefinicaoRequest request) {
-        PasswordPolicy.validate(request.senha());
-        Usuario usuario = usuarioRepository.findById(usuarioId).orElseThrow(ResourceNotFoundException::new);
-        usuario.definirSenhaHash(passwordEncoder.encode(request.senha()));
-    }
+  @Transactional
+  public void definirSenha(Long usuarioId, SenhaDefinicaoRequest request) {
+    PasswordPolicy.validate(request.senha());
+    Usuario usuario =
+        usuarioRepository.findById(usuarioId).orElseThrow(ResourceNotFoundException::new);
+    usuario.definirSenhaHash(passwordEncoder.encode(request.senha()));
+  }
 
-    @Transactional
-    public void registrarAcesso(Long usuarioId) {
-        Usuario usuario = usuarioRepository.findById(usuarioId).orElseThrow(ResourceNotFoundException::new);
-        usuario.registrarAcesso();
-    }
+  @Transactional
+  public void registrarAcesso(Long usuarioId) {
+    Usuario usuario =
+        usuarioRepository.findById(usuarioId).orElseThrow(ResourceNotFoundException::new);
+    usuario.registrarAcesso();
+  }
 }

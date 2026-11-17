@@ -1,32 +1,558 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
-import { documentoSchema, uploadDocumentoSchema, novaVersaoSchema, type DocumentoValues, type UploadDocumentoValues, type NovaVersaoValues } from '../schemas/documento'
+import {
+  documentoSchema,
+  uploadDocumentoSchema,
+  novaVersaoSchema,
+  type DocumentoValues,
+  type UploadDocumentoValues,
+  type NovaVersaoValues,
+} from '../schemas/documento'
 import { formatDateTime } from '../../../lib/format'
 import { categoriaDocumentoLabels, visibilidadeDocumentoLabels } from '../../../lib/labels'
 import { useAtleticaTimeZone } from '../../auth/AuthSessionProvider'
 import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Badge, Button, Card, ConfirmDialog, EmptyState, ErrorState, Input, LoadingState, Modal, Select, Table, useToast } from '../../../components/ui'
+import {
+  Badge,
+  Button,
+  Card,
+  ConfirmDialog,
+  EmptyState,
+  ErrorState,
+  Input,
+  LoadingState,
+  Modal,
+  Select,
+  Table,
+  useToast,
+} from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
 import { queryKeys } from '../../../lib/query'
 import { useAuthSession } from '../../auth/AuthSessionProvider'
 import { documentosApi, type CategoriaDocumento, type Documento, type VersaoDocumento } from '../api'
 
 const categories: CategoriaDocumento[] = ['ESTATUTO', 'REGIMENTO', 'ATA', 'CONTRATO', 'OUTRO']
-export function DocumentosPage() { const timeZone = useAtleticaTimeZone(); const { activeVinculo, state } = useAuthSession(); const client = useQueryClient(); const [busca, setBusca] = useState(''); const [categoria, setCategoria] = useState(''); const [incluirArquivados, setArquivados] = useState(false); const [upload, setUpload] = useState(false); const [detail, setDetail] = useState<Documento | null>(null); const [editing, setEditing] = useState<Documento | null>(null); const [archiving, setArchiving] = useState<Documento | null>(null); const [savingArchive, setSavingArchive] = useState(false); const toast = useToast(); const canPublish = state?.capacidades.includes('PUBLICAR_DOCUMENTOS') ?? false; const filters = { busca, categoria, incluirArquivados }; const docs = useQuery({ queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'documentos', filters), queryFn: ({ signal }) => documentosApi.listar(filters, signal), enabled: Boolean(activeVinculo) }); const counts = categories.map(value => ({ value, count: docs.data?.filter(doc => doc.categoria === value).length ?? 0 })); const refresh = async () => client.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'documentos'] }); return <><div className="page-title"><div><p className="eyebrow">Acervo institucional</p><h1>Documentos</h1></div>{canPublish && <Button icon="upload_file" onClick={() => setUpload(true)}>Enviar documento</Button>}</div><section className="document-counts">{counts.map(item => <Card key={item.value}><span>{categoriaDocumentoLabels[item.value]}</span><strong>{item.count}</strong></Card>)}</section><Card><div className="filters"><Input label="Buscar por título ou arquivo" value={busca} onChange={event => setBusca(event.target.value)} /><Select label="Categoria" value={categoria} onChange={event => setCategoria(event.target.value)}><option value="">Todas</option>{categories.map(item => <option key={item} value={item}>{categoriaDocumentoLabels[item]}</option>)}</Select><label className="check-field"><input type="checkbox" checked={incluirArquivados} onChange={event => setArquivados(event.target.checked)} /> Mostrar arquivados</label></div></Card>{docs.isLoading ? <LoadingState /> : docs.isError ? <ErrorState message={errorFeedback(docs.error)} /> : docs.data?.length ? <Card className="members-card"><Table caption="Biblioteca documental" columns={['Título / arquivo', 'Categoria', 'Envio', 'Responsável', 'Ações']}>{docs.data.map(documento => <tr key={documento.id}><td><b>{documento.titulo}</b><small>{documento.versaoAtual?.nomeArquivo ?? 'Sem arquivo'} {documento.arquivado && ' · Arquivado'}</small></td><td><Badge tone={documento.visibilidade === 'DIRETORIA' ? 'info' : 'success'}>{categoriaDocumentoLabels[documento.categoria]}</Badge><small>{visibilidadeDocumentoLabels[documento.visibilidade]}</small></td><td>{documento.versaoAtual ? formatDateTime(documento.versaoAtual.enviadoEm, timeZone) : '—'}</td><td>{documento.versaoAtual ? `Membro #${documento.versaoAtual.enviadoPorMembroId}` : '—'}</td><td><div className="row-actions"><Button variant="secondary" onClick={() => setDetail(documento)}>Detalhes</Button>{canPublish && <Button variant="ghost" onClick={() => setEditing(documento)}>Editar metadados</Button>}{canPublish && !documento.arquivado && <Button variant="ghost" onClick={() => setArchiving(documento)}>Arquivar</Button>}</div></td></tr>)}</Table></Card> : <EmptyState description="Nenhum documento encontrado." />}{upload && <UploadDocumento onClose={() => setUpload(false)} onDone={async () => { setUpload(false); await refresh() }} />}{editing && <EditarDocumento documento={editing} onClose={() => setEditing(null)} onDone={async () => { setEditing(null); await refresh() }} />}{archiving && <ConfirmDialog open title="Arquivar documento" message={`Arquivar “${archiving.titulo}”? As versões e o histórico serão preservados.`} confirmLabel="Arquivar" loading={savingArchive} onClose={() => setArchiving(null)} onConfirm={() => { void (async () => { setSavingArchive(true); try { await documentosApi.atualizar(archiving.id, { titulo: archiving.titulo, categoria: archiving.categoria, descricao: archiving.descricao, visibilidade: archiving.visibilidade, gestaoOrigemId: archiving.gestaoOrigemId, arquivado: true, version: archiving.version }); toast.success('Documento arquivado. O histórico foi preservado.'); setArchiving(null); await refresh() } catch (cause) { toast.error(errorFeedback(cause)) } finally { setSavingArchive(false) } })() }} />}{detail && <DocumentoDetalhe documento={detail} canPublish={canPublish} onClose={() => setDetail(null)} onDone={refresh} />}</> }
+export function DocumentosPage() {
+  const timeZone = useAtleticaTimeZone()
+  const { activeVinculo, state } = useAuthSession()
+  const client = useQueryClient()
+  const [busca, setBusca] = useState('')
+  const [categoria, setCategoria] = useState('')
+  const [incluirArquivados, setArquivados] = useState(false)
+  const [upload, setUpload] = useState(false)
+  const [detail, setDetail] = useState<Documento | null>(null)
+  const [editing, setEditing] = useState<Documento | null>(null)
+  const [archiving, setArchiving] = useState<Documento | null>(null)
+  const [savingArchive, setSavingArchive] = useState(false)
+  const toast = useToast()
+  const canPublish = state?.capacidades.includes('PUBLICAR_DOCUMENTOS') ?? false
+  const filters = { busca, categoria, incluirArquivados }
+  const docs = useQuery({
+    queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'documentos', filters),
+    queryFn: ({ signal }) => documentosApi.listar(filters, signal),
+    enabled: Boolean(activeVinculo),
+  })
+  const counts = categories.map((value) => ({
+    value,
+    count: docs.data?.filter((doc) => doc.categoria === value).length ?? 0,
+  }))
+  const refresh = async () =>
+    client.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'documentos'] })
+  return (
+    <>
+      <div className="page-title">
+        <div>
+          <p className="eyebrow">Acervo institucional</p>
+          <h1>Documentos</h1>
+        </div>
+        {canPublish && (
+          <Button icon="upload_file" onClick={() => setUpload(true)}>
+            Enviar documento
+          </Button>
+        )}
+      </div>
+      <section className="document-counts">
+        {counts.map((item) => (
+          <Card key={item.value}>
+            <span>{categoriaDocumentoLabels[item.value]}</span>
+            <strong>{item.count}</strong>
+          </Card>
+        ))}
+      </section>
+      <Card>
+        <div className="filters">
+          <Input
+            label="Buscar por título ou arquivo"
+            value={busca}
+            onChange={(event) => setBusca(event.target.value)}
+          />
+          <Select label="Categoria" value={categoria} onChange={(event) => setCategoria(event.target.value)}>
+            <option value="">Todas</option>
+            {categories.map((item) => (
+              <option key={item} value={item}>
+                {categoriaDocumentoLabels[item]}
+              </option>
+            ))}
+          </Select>
+          <label className="check-field">
+            <input
+              type="checkbox"
+              checked={incluirArquivados}
+              onChange={(event) => setArquivados(event.target.checked)}
+            />{' '}
+            Mostrar arquivados
+          </label>
+        </div>
+      </Card>
+      {docs.isLoading ? (
+        <LoadingState />
+      ) : docs.isError ? (
+        <ErrorState message={errorFeedback(docs.error)} />
+      ) : docs.data?.length ? (
+        <Card className="members-card">
+          <Table
+            caption="Biblioteca documental"
+            columns={['Título / arquivo', 'Categoria', 'Envio', 'Responsável', 'Ações']}
+          >
+            {docs.data.map((documento) => (
+              <tr key={documento.id}>
+                <td>
+                  <b>{documento.titulo}</b>
+                  <small>
+                    {documento.versaoAtual?.nomeArquivo ?? 'Sem arquivo'} {documento.arquivado && ' · Arquivado'}
+                  </small>
+                </td>
+                <td>
+                  <Badge tone={documento.visibilidade === 'DIRETORIA' ? 'info' : 'success'}>
+                    {categoriaDocumentoLabels[documento.categoria]}
+                  </Badge>
+                  <small>{visibilidadeDocumentoLabels[documento.visibilidade]}</small>
+                </td>
+                <td>{documento.versaoAtual ? formatDateTime(documento.versaoAtual.enviadoEm, timeZone) : '—'}</td>
+                <td>{documento.versaoAtual ? `Membro #${documento.versaoAtual.enviadoPorMembroId}` : '—'}</td>
+                <td>
+                  <div className="row-actions">
+                    <Button variant="secondary" onClick={() => setDetail(documento)}>
+                      Detalhes
+                    </Button>
+                    {canPublish && (
+                      <Button variant="ghost" onClick={() => setEditing(documento)}>
+                        Editar metadados
+                      </Button>
+                    )}
+                    {canPublish && !documento.arquivado && (
+                      <Button variant="ghost" onClick={() => setArchiving(documento)}>
+                        Arquivar
+                      </Button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </Table>
+        </Card>
+      ) : (
+        <EmptyState description="Nenhum documento encontrado." />
+      )}
+      {upload && (
+        <UploadDocumento
+          onClose={() => setUpload(false)}
+          onDone={async () => {
+            setUpload(false)
+            await refresh()
+          }}
+        />
+      )}
+      {editing && (
+        <EditarDocumento
+          documento={editing}
+          onClose={() => setEditing(null)}
+          onDone={async () => {
+            setEditing(null)
+            await refresh()
+          }}
+        />
+      )}
+      {archiving && (
+        <ConfirmDialog
+          open
+          title="Arquivar documento"
+          message={`Arquivar “${archiving.titulo}”? As versões e o histórico serão preservados.`}
+          confirmLabel="Arquivar"
+          loading={savingArchive}
+          onClose={() => setArchiving(null)}
+          onConfirm={() => {
+            void (async () => {
+              setSavingArchive(true)
+              try {
+                await documentosApi.atualizar(archiving.id, {
+                  titulo: archiving.titulo,
+                  categoria: archiving.categoria,
+                  descricao: archiving.descricao,
+                  visibilidade: archiving.visibilidade,
+                  gestaoOrigemId: archiving.gestaoOrigemId,
+                  arquivado: true,
+                  version: archiving.version,
+                })
+                toast.success('Documento arquivado. O histórico foi preservado.')
+                setArchiving(null)
+                await refresh()
+              } catch (cause) {
+                toast.error(errorFeedback(cause))
+              } finally {
+                setSavingArchive(false)
+              }
+            })()
+          }}
+        />
+      )}
+      {detail && (
+        <DocumentoDetalhe documento={detail} canPublish={canPublish} onClose={() => setDetail(null)} onDone={refresh} />
+      )}
+    </>
+  )
+}
 function UploadDocumento({ onClose, onDone }: { onClose: () => void; onDone: () => Promise<void> }) {
-  const toast = useToast(); const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<UploadDocumentoValues>({ resolver: zodResolver(uploadDocumentoSchema), defaultValues: { titulo: '', categoria: 'OUTRO', visibilidade: 'MEMBROS', descricao: '', observacao: '', gestaoOrigemId: '' } })
-  const save = async (v: UploadDocumentoValues) => { try { const form = new FormData(); form.append('titulo', v.titulo); form.append('categoria', v.categoria); form.append('visibilidade', v.visibilidade); if (v.descricao) form.append('descricao', v.descricao); if (v.observacao) form.append('observacao', v.observacao); if (v.gestaoOrigemId) form.append('gestaoOrigemId', v.gestaoOrigemId); form.append('arquivo', v.arquivo[0]); await documentosApi.criar(form); toast.success('Documento publicado com a versão inicial.'); await onDone() } catch (cause) { toast.error(errorFeedback(cause)) } }
-  return <Modal open title="Enviar documento" onClose={onClose} footer={<><Button variant="secondary" disabled={isSubmitting} onClick={onClose}>Cancelar</Button><Button type="submit" form="form-documento" loading={isSubmitting}>Publicar documento</Button></>}><form id="form-documento" onSubmit={handleSubmit(save)} noValidate><div className="form-grid"><Input label="Título" maxLength={200} error={errors.titulo?.message} {...register('titulo')} /><Select label="Categoria" error={errors.categoria?.message} {...register('categoria')}>{categories.map(c => <option key={c} value={c}>{categoriaDocumentoLabels[c]}</option>)}</Select><Select label="Visibilidade" error={errors.visibilidade?.message} {...register('visibilidade')}><option value="MEMBROS">Membros</option><option value="DIRETORIA">Diretoria</option></Select><Input label="Descrição" maxLength={2000} error={errors.descricao?.message} {...register('descricao')} /><Input label="Observação da versão" maxLength={1000} error={errors.observacao?.message} {...register('observacao')} /><Input label="Arquivo PDF" type="file" accept="application/pdf,.pdf" hint="PDF, tamanho máximo de 10 MiB." error={errors.arquivo?.message} {...register('arquivo')} /></div></form></Modal>
+  const toast = useToast()
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<UploadDocumentoValues>({
+    resolver: zodResolver(uploadDocumentoSchema),
+    defaultValues: {
+      titulo: '',
+      categoria: 'OUTRO',
+      visibilidade: 'MEMBROS',
+      descricao: '',
+      observacao: '',
+      gestaoOrigemId: '',
+    },
+  })
+  const save = async (v: UploadDocumentoValues) => {
+    try {
+      const form = new FormData()
+      form.append('titulo', v.titulo)
+      form.append('categoria', v.categoria)
+      form.append('visibilidade', v.visibilidade)
+      if (v.descricao) form.append('descricao', v.descricao)
+      if (v.observacao) form.append('observacao', v.observacao)
+      if (v.gestaoOrigemId) form.append('gestaoOrigemId', v.gestaoOrigemId)
+      form.append('arquivo', v.arquivo[0])
+      await documentosApi.criar(form)
+      toast.success('Documento publicado com a versão inicial.')
+      await onDone()
+    } catch (cause) {
+      toast.error(errorFeedback(cause))
+    }
+  }
+  return (
+    <Modal
+      open
+      title="Enviar documento"
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="secondary" disabled={isSubmitting} onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" form="form-documento" loading={isSubmitting}>
+            Publicar documento
+          </Button>
+        </>
+      }
+    >
+      <form id="form-documento" onSubmit={handleSubmit(save)} noValidate>
+        <div className="form-grid">
+          <Input label="Título" maxLength={200} error={errors.titulo?.message} {...register('titulo')} />
+          <Select label="Categoria" error={errors.categoria?.message} {...register('categoria')}>
+            {categories.map((c) => (
+              <option key={c} value={c}>
+                {categoriaDocumentoLabels[c]}
+              </option>
+            ))}
+          </Select>
+          <Select label="Visibilidade" error={errors.visibilidade?.message} {...register('visibilidade')}>
+            <option value="MEMBROS">Membros</option>
+            <option value="DIRETORIA">Diretoria</option>
+          </Select>
+          <Input label="Descrição" maxLength={2000} error={errors.descricao?.message} {...register('descricao')} />
+          <Input
+            label="Observação da versão"
+            maxLength={1000}
+            error={errors.observacao?.message}
+            {...register('observacao')}
+          />
+          <Input
+            label="Arquivo PDF"
+            type="file"
+            accept="application/pdf,.pdf"
+            hint="PDF, tamanho máximo de 10 MiB."
+            error={errors.arquivo?.message}
+            {...register('arquivo')}
+          />
+        </div>
+      </form>
+    </Modal>
+  )
 }
-function DocumentoDetalhe({ documento, canPublish, onClose, onDone }: { documento: Documento; canPublish: boolean; onClose: () => void; onDone: () => Promise<void> }) { const timeZone = useAtleticaTimeZone(); const { activeVinculo } = useAuthSession(); const toast = useToast(); const [upload, setUpload] = useState(false); const [preview, setPreview] = useState<{ url: string; nome: string } | null>(null); const versions = useQuery({ queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'documento-versoes', documento.id), queryFn: ({ signal }) => documentosApi.versoes(documento.id, signal) }); useEffect(() => () => { if (preview) URL.revokeObjectURL(preview.url) }, [preview]); const open = async (version: VersaoDocumento) => { try { const blob = await documentosApi.conteudo(documento.id, version.id); const url = URL.createObjectURL(blob); setPreview(current => { if (current) URL.revokeObjectURL(current.url); return { url, nome: version.nomeArquivo } }) } catch (cause) { toast.error(errorFeedback(cause)) } }; const closePreview = () => setPreview(current => { if (current) URL.revokeObjectURL(current.url); return null }); return <><Modal open title={documento.titulo} onClose={onClose} footer={<><Button variant="secondary" onClick={onClose}>Fechar</Button>{canPublish && <Button icon="upload_file" onClick={() => setUpload(true)}>Nova versão</Button>}</>}><p className="form-note">{documento.descricao ?? 'Sem descrição'} · {visibilidadeDocumentoLabels[documento.visibilidade]}</p>{versions.isLoading ? <LoadingState /> : versions.isError ? <ErrorState message={errorFeedback(versions.error)} /> : versions.data?.length ? <Table caption="Versões do documento" columns={['Versão', 'Arquivo', 'Data', 'Responsável', 'Observação', 'Ação']}>{versions.data.map(version => <tr key={version.id}><td>v{version.numeroVersao}</td><td>{version.nomeArquivo}</td><td>{formatDateTime(version.enviadoEm, timeZone)}</td><td>Membro #{version.enviadoPorMembroId}</td><td>{version.observacao ?? '—'}</td><td><Button variant="secondary" onClick={() => void open(version)}>Visualizar PDF</Button></td></tr>)}</Table> : <EmptyState description="Nenhuma versão disponível." />}</Modal>{upload && <NovaVersao documentoId={documento.id} onClose={() => setUpload(false)} onDone={async () => { setUpload(false); await onDone(); await versions.refetch() }} />}{preview && <Modal open title={preview.nome} onClose={closePreview} footer={<Button variant="secondary" onClick={closePreview}>Fechar visualização</Button>}><iframe className="pdf-preview" title={`Visualização de ${preview.nome}`} src={preview.url} /></Modal>}</> }
-function NovaVersao({ documentoId, onClose, onDone }: { documentoId: number; onClose: () => void; onDone: () => Promise<void> }) {
-  const toast = useToast(); const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<NovaVersaoValues>({ resolver: zodResolver(novaVersaoSchema), defaultValues: { observacao: '' } })
-  const save = async (v: NovaVersaoValues) => { try { const form = new FormData(); form.append('arquivo', v.arquivo[0]); if (v.observacao) form.append('observacao', v.observacao); await documentosApi.novaVersao(documentoId, form); toast.success('Nova versão publicada.'); await onDone() } catch (cause) { toast.error(errorFeedback(cause)) } }
-  return <Modal open title="Publicar nova versão" onClose={onClose} footer={<><Button variant="secondary" disabled={isSubmitting} onClick={onClose}>Cancelar</Button><Button type="submit" form="form-versao" loading={isSubmitting}>Publicar versão</Button></>}><form id="form-versao" onSubmit={handleSubmit(save)} noValidate><Input label="Arquivo PDF" type="file" accept="application/pdf,.pdf" hint="A versão anterior continuará preservada." error={errors.arquivo?.message} {...register('arquivo')} /><Input label="Observação" maxLength={1000} error={errors.observacao?.message} {...register('observacao')} /></form></Modal>
+function DocumentoDetalhe({
+  documento,
+  canPublish,
+  onClose,
+  onDone,
+}: {
+  documento: Documento
+  canPublish: boolean
+  onClose: () => void
+  onDone: () => Promise<void>
+}) {
+  const timeZone = useAtleticaTimeZone()
+  const { activeVinculo } = useAuthSession()
+  const toast = useToast()
+  const [upload, setUpload] = useState(false)
+  const [preview, setPreview] = useState<{ url: string; nome: string } | null>(null)
+  const versions = useQuery({
+    queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'documento-versoes', documento.id),
+    queryFn: ({ signal }) => documentosApi.versoes(documento.id, signal),
+  })
+  useEffect(
+    () => () => {
+      if (preview) URL.revokeObjectURL(preview.url)
+    },
+    [preview],
+  )
+  const open = async (version: VersaoDocumento) => {
+    try {
+      const blob = await documentosApi.conteudo(documento.id, version.id)
+      const url = URL.createObjectURL(blob)
+      setPreview((current) => {
+        if (current) URL.revokeObjectURL(current.url)
+        return { url, nome: version.nomeArquivo }
+      })
+    } catch (cause) {
+      toast.error(errorFeedback(cause))
+    }
+  }
+  const closePreview = () =>
+    setPreview((current) => {
+      if (current) URL.revokeObjectURL(current.url)
+      return null
+    })
+  return (
+    <>
+      <Modal
+        open
+        title={documento.titulo}
+        onClose={onClose}
+        footer={
+          <>
+            <Button variant="secondary" onClick={onClose}>
+              Fechar
+            </Button>
+            {canPublish && (
+              <Button icon="upload_file" onClick={() => setUpload(true)}>
+                Nova versão
+              </Button>
+            )}
+          </>
+        }
+      >
+        <p className="form-note">
+          {documento.descricao ?? 'Sem descrição'} · {visibilidadeDocumentoLabels[documento.visibilidade]}
+        </p>
+        {versions.isLoading ? (
+          <LoadingState />
+        ) : versions.isError ? (
+          <ErrorState message={errorFeedback(versions.error)} />
+        ) : versions.data?.length ? (
+          <Table
+            caption="Versões do documento"
+            columns={['Versão', 'Arquivo', 'Data', 'Responsável', 'Observação', 'Ação']}
+          >
+            {versions.data.map((version) => (
+              <tr key={version.id}>
+                <td>v{version.numeroVersao}</td>
+                <td>{version.nomeArquivo}</td>
+                <td>{formatDateTime(version.enviadoEm, timeZone)}</td>
+                <td>Membro #{version.enviadoPorMembroId}</td>
+                <td>{version.observacao ?? '—'}</td>
+                <td>
+                  <Button variant="secondary" onClick={() => void open(version)}>
+                    Visualizar PDF
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </Table>
+        ) : (
+          <EmptyState description="Nenhuma versão disponível." />
+        )}
+      </Modal>
+      {upload && (
+        <NovaVersao
+          documentoId={documento.id}
+          onClose={() => setUpload(false)}
+          onDone={async () => {
+            setUpload(false)
+            await onDone()
+            await versions.refetch()
+          }}
+        />
+      )}
+      {preview && (
+        <Modal
+          open
+          title={preview.nome}
+          onClose={closePreview}
+          footer={
+            <Button variant="secondary" onClick={closePreview}>
+              Fechar visualização
+            </Button>
+          }
+        >
+          <iframe className="pdf-preview" title={`Visualização de ${preview.nome}`} src={preview.url} />
+        </Modal>
+      )}
+    </>
+  )
 }
-function EditarDocumento({ documento, onClose, onDone }: { documento: Documento; onClose: () => void; onDone: () => Promise<void> }) {
-  const toast = useToast(); const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<DocumentoValues>({ resolver: zodResolver(documentoSchema), defaultValues: { titulo: documento.titulo, categoria: documento.categoria, descricao: documento.descricao ?? '', visibilidade: documento.visibilidade, gestaoOrigemId: documento.gestaoOrigemId ? String(documento.gestaoOrigemId) : '' } })
-  const save = async (v: DocumentoValues) => { try { await documentosApi.atualizar(documento.id, { ...v, gestaoOrigemId: v.gestaoOrigemId ? Number(v.gestaoOrigemId) : null, arquivado: documento.arquivado, version: documento.version }); toast.success('Metadados atualizados.'); await onDone() } catch (cause) { toast.error(errorFeedback(cause)) } }
-  return <Modal open title="Editar metadados" onClose={onClose} footer={<><Button variant="secondary" disabled={isSubmitting} onClick={onClose}>Cancelar</Button><Button type="submit" form="form-metadata" loading={isSubmitting}>Salvar</Button></>}><form id="form-metadata" onSubmit={handleSubmit(save)} noValidate><div className="form-grid"><Input label="Título" maxLength={200} error={errors.titulo?.message} {...register('titulo')} /><Select label="Categoria" error={errors.categoria?.message} {...register('categoria')}>{categories.map(c => <option key={c} value={c}>{categoriaDocumentoLabels[c]}</option>)}</Select><Input label="Descrição" maxLength={2000} error={errors.descricao?.message} {...register('descricao')} /><Select label="Visibilidade" error={errors.visibilidade?.message} {...register('visibilidade')}><option value="MEMBROS">Membros</option><option value="DIRETORIA">Diretoria</option></Select><Input label="ID da gestão de origem (opcional)" type="number" min="1" error={errors.gestaoOrigemId?.message} {...register('gestaoOrigemId')} /></div></form></Modal>
+function NovaVersao({
+  documentoId,
+  onClose,
+  onDone,
+}: {
+  documentoId: number
+  onClose: () => void
+  onDone: () => Promise<void>
+}) {
+  const toast = useToast()
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<NovaVersaoValues>({ resolver: zodResolver(novaVersaoSchema), defaultValues: { observacao: '' } })
+  const save = async (v: NovaVersaoValues) => {
+    try {
+      const form = new FormData()
+      form.append('arquivo', v.arquivo[0])
+      if (v.observacao) form.append('observacao', v.observacao)
+      await documentosApi.novaVersao(documentoId, form)
+      toast.success('Nova versão publicada.')
+      await onDone()
+    } catch (cause) {
+      toast.error(errorFeedback(cause))
+    }
+  }
+  return (
+    <Modal
+      open
+      title="Publicar nova versão"
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="secondary" disabled={isSubmitting} onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" form="form-versao" loading={isSubmitting}>
+            Publicar versão
+          </Button>
+        </>
+      }
+    >
+      <form id="form-versao" onSubmit={handleSubmit(save)} noValidate>
+        <Input
+          label="Arquivo PDF"
+          type="file"
+          accept="application/pdf,.pdf"
+          hint="A versão anterior continuará preservada."
+          error={errors.arquivo?.message}
+          {...register('arquivo')}
+        />
+        <Input label="Observação" maxLength={1000} error={errors.observacao?.message} {...register('observacao')} />
+      </form>
+    </Modal>
+  )
+}
+function EditarDocumento({
+  documento,
+  onClose,
+  onDone,
+}: {
+  documento: Documento
+  onClose: () => void
+  onDone: () => Promise<void>
+}) {
+  const toast = useToast()
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<DocumentoValues>({
+    resolver: zodResolver(documentoSchema),
+    defaultValues: {
+      titulo: documento.titulo,
+      categoria: documento.categoria,
+      descricao: documento.descricao ?? '',
+      visibilidade: documento.visibilidade,
+      gestaoOrigemId: documento.gestaoOrigemId ? String(documento.gestaoOrigemId) : '',
+    },
+  })
+  const save = async (v: DocumentoValues) => {
+    try {
+      await documentosApi.atualizar(documento.id, {
+        ...v,
+        gestaoOrigemId: v.gestaoOrigemId ? Number(v.gestaoOrigemId) : null,
+        arquivado: documento.arquivado,
+        version: documento.version,
+      })
+      toast.success('Metadados atualizados.')
+      await onDone()
+    } catch (cause) {
+      toast.error(errorFeedback(cause))
+    }
+  }
+  return (
+    <Modal
+      open
+      title="Editar metadados"
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="secondary" disabled={isSubmitting} onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" form="form-metadata" loading={isSubmitting}>
+            Salvar
+          </Button>
+        </>
+      }
+    >
+      <form id="form-metadata" onSubmit={handleSubmit(save)} noValidate>
+        <div className="form-grid">
+          <Input label="Título" maxLength={200} error={errors.titulo?.message} {...register('titulo')} />
+          <Select label="Categoria" error={errors.categoria?.message} {...register('categoria')}>
+            {categories.map((c) => (
+              <option key={c} value={c}>
+                {categoriaDocumentoLabels[c]}
+              </option>
+            ))}
+          </Select>
+          <Input label="Descrição" maxLength={2000} error={errors.descricao?.message} {...register('descricao')} />
+          <Select label="Visibilidade" error={errors.visibilidade?.message} {...register('visibilidade')}>
+            <option value="MEMBROS">Membros</option>
+            <option value="DIRETORIA">Diretoria</option>
+          </Select>
+          <Input
+            label="ID da gestão de origem (opcional)"
+            type="number"
+            min="1"
+            error={errors.gestaoOrigemId?.message}
+            {...register('gestaoOrigemId')}
+          />
+        </div>
+      </form>
+    </Modal>
+  )
 }

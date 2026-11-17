@@ -7,5 +7,85 @@ import { EmptyState, LoadingState } from '../../../components/ui'
 import { useAuthSession } from '../../auth/AuthSessionProvider'
 import { notificacoesApi } from '../api'
 
-export function PainelNotificacoes() { const { activeVinculo } = useAuthSession(); const [open, setOpen] = useState(false); const client = useQueryClient(); const resumo = useQuery({ queryKey: ['atletica', activeVinculo?.atleticaId, 'notificacoes-resumo'], queryFn: notificacoesApi.resumo, enabled: Boolean(activeVinculo), staleTime: Infinity }); const lista = useQuery({ queryKey: ['atletica', activeVinculo?.atleticaId, 'notificacoes'], queryFn: notificacoesApi.listar, enabled: Boolean(activeVinculo) && open, staleTime: 0 }); const abrir = () => { setOpen(value => !value) }; const marcar = async (id: number) => { await notificacoesApi.ler(id); await client.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'notificacoes'] }); await client.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'notificacoes-resumo'] }) }; return <div className="notifications"><button type="button" className="notification-trigger" aria-label="Abrir notificações" aria-expanded={open} onClick={abrir}><GoogleIcon name="notifications" />{(resumo.data?.naoLidas ?? 0) > 0 && <span>{resumo.data?.naoLidas}</span>}</button>{open && <section className="notification-panel"><header><strong>Notificações</strong><button type="button" onClick={() => setOpen(false)} aria-label="Fechar notificações"><GoogleIcon name="close" /></button></header>{lista.isLoading ? <LoadingState label="Carregando avisos..." /> : lista.data?.items.length ? <div>{lista.data.items.map(item => <article key={item.id} className={item.lidaEm ? 'read' : ''}><Link to="/tarefas" onClick={() => void marcar(item.id)}><BadgeIcon tipo={item.tipo} /><div><strong>{item.titulo}</strong><p>{item.mensagem}</p><small>Prazo: {formatDate(item.dataReferencia)}</small></div></Link>{!item.lidaEm && <button type="button" onClick={() => void marcar(item.id)}>Marcar como lida</button>}</article>)}</div> : <EmptyState title="Sem notificações" description="Você não possui avisos no momento." />}</section>}</div> }
-function BadgeIcon({ tipo }: { tipo: string }) { return <GoogleIcon className={tipo === 'ATRASADA' ? 'notification-late' : ''} name={tipo === 'ATRASADA' ? 'warning' : 'schedule'} /> }
+export function PainelNotificacoes() {
+  const { activeVinculo } = useAuthSession()
+  const [open, setOpen] = useState(false)
+  const client = useQueryClient()
+  const resumo = useQuery({
+    queryKey: ['atletica', activeVinculo?.atleticaId, 'notificacoes-resumo'],
+    queryFn: notificacoesApi.resumo,
+    enabled: Boolean(activeVinculo),
+    staleTime: Infinity,
+  })
+  const lista = useQuery({
+    queryKey: ['atletica', activeVinculo?.atleticaId, 'notificacoes'],
+    queryFn: notificacoesApi.listar,
+    enabled: Boolean(activeVinculo) && open,
+    staleTime: 0,
+  })
+  const abrir = () => {
+    setOpen((value) => !value)
+  }
+  const marcar = async (id: number) => {
+    await notificacoesApi.ler(id)
+    await client.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'notificacoes'] })
+    await client.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'notificacoes-resumo'] })
+  }
+  return (
+    <div className="notifications">
+      <button
+        type="button"
+        className="notification-trigger"
+        aria-label="Abrir notificações"
+        aria-expanded={open}
+        onClick={abrir}
+      >
+        <GoogleIcon name="notifications" />
+        {(resumo.data?.naoLidas ?? 0) > 0 && <span>{resumo.data?.naoLidas}</span>}
+      </button>
+      {open && (
+        <section className="notification-panel">
+          <header>
+            <strong>Notificações</strong>
+            <button type="button" onClick={() => setOpen(false)} aria-label="Fechar notificações">
+              <GoogleIcon name="close" />
+            </button>
+          </header>
+          {lista.isLoading ? (
+            <LoadingState label="Carregando avisos..." />
+          ) : lista.data?.items.length ? (
+            <div>
+              {lista.data.items.map((item) => (
+                <article key={item.id} className={item.lidaEm ? 'read' : ''}>
+                  <Link to="/tarefas" onClick={() => void marcar(item.id)}>
+                    <BadgeIcon tipo={item.tipo} />
+                    <div>
+                      <strong>{item.titulo}</strong>
+                      <p>{item.mensagem}</p>
+                      <small>Prazo: {formatDate(item.dataReferencia)}</small>
+                    </div>
+                  </Link>
+                  {!item.lidaEm && (
+                    <button type="button" onClick={() => void marcar(item.id)}>
+                      Marcar como lida
+                    </button>
+                  )}
+                </article>
+              ))}
+            </div>
+          ) : (
+            <EmptyState title="Sem notificações" description="Você não possui avisos no momento." />
+          )}
+        </section>
+      )}
+    </div>
+  )
+}
+function BadgeIcon({ tipo }: { tipo: string }) {
+  return (
+    <GoogleIcon
+      className={tipo === 'ATRASADA' ? 'notification-late' : ''}
+      name={tipo === 'ATRASADA' ? 'warning' : 'schedule'}
+    />
+  )
+}

@@ -13,7 +13,7 @@ import { MateriaisTab } from '../components/MateriaisTab'
 import { ParticipantesTab } from '../components/ParticipantesTab'
 import { ResponsaveisCard } from '../components/ResponsaveisCard'
 import { detalheEventoApi } from '../detalheApi'
-import type { ChecklistEvento } from '../types'
+import type { ChecklistEvento, ChecklistItem, StatusTarefaChecklist } from '../types'
 import { eventosApi } from '../api'
 import { EventoModal } from './EventosPage'
 
@@ -29,13 +29,33 @@ export function EventoDetalhePage() {
   const client = useQueryClient()
   const { success, error } = useToast()
   const event = useQuery({ queryKey: ['evento', id], queryFn: () => eventosApi.get(id) })
-  const cronograma = useQuery({ queryKey: ['evento', id, 'cronograma'], queryFn: () => detalheEventoApi.cronograma(id) })
-  const responsaveis = useQuery({ queryKey: ['evento', id, 'responsaveis'], queryFn: () => detalheEventoApi.responsaveis(id) })
+  const cronograma = useQuery({
+    queryKey: ['evento', id, 'cronograma'],
+    queryFn: () => detalheEventoApi.cronograma(id),
+  })
+  const responsaveis = useQuery({
+    queryKey: ['evento', id, 'responsaveis'],
+    queryFn: () => detalheEventoApi.responsaveis(id),
+  })
   const checklist = useQuery({ queryKey: ['evento', id, 'checklist'], queryFn: () => detalheEventoApi.checklist(id) })
-  const financeiro = useQuery({ queryKey: ['evento', id, 'financeiro'], queryFn: () => detalheEventoApi.financeiro(id) })
-  const participantes = useQuery({ queryKey: ['evento', id, 'participantes'], queryFn: () => detalheEventoApi.participantes(id), enabled: tab === 'participantes' })
-  const resumo = useQuery({ queryKey: ['evento', id, 'participacao-resumo'], queryFn: () => detalheEventoApi.participacaoResumo(id) })
-  const anexos = useQuery({ queryKey: ['evento', id, 'anexos'], queryFn: () => detalheEventoApi.anexos(id), enabled: tab === 'materiais' })
+  const financeiro = useQuery({
+    queryKey: ['evento', id, 'financeiro'],
+    queryFn: () => detalheEventoApi.financeiro(id),
+  })
+  const participantes = useQuery({
+    queryKey: ['evento', id, 'participantes'],
+    queryFn: () => detalheEventoApi.participantes(id),
+    enabled: tab === 'participantes',
+  })
+  const resumo = useQuery({
+    queryKey: ['evento', id, 'participacao-resumo'],
+    queryFn: () => detalheEventoApi.participacaoResumo(id),
+  })
+  const anexos = useQuery({
+    queryKey: ['evento', id, 'anexos'],
+    queryFn: () => detalheEventoApi.anexos(id),
+    enabled: tab === 'materiais',
+  })
   const invalidateEvent = () => void client.invalidateQueries({ queryKey: ['evento', id] })
 
   if (event.isLoading) return <LoadingState />
@@ -49,7 +69,11 @@ export function EventoDetalhePage() {
     }
     setTogglingTask(item.id)
     try {
-      await detalheEventoApi.atualizarTarefa(item.id, nextStatus, item.version, motivo)
+      await detalheEventoApi.atualizarTarefa(item.id, {
+        status: nextStatus,
+        version: item.version,
+        motivo,
+      })
       success('Checklist atualizado.')
       setRetornoChecklist(null)
       invalidateEvent()
@@ -61,57 +85,220 @@ export function EventoDetalhePage() {
   }
 
   const current = event.data
-  return <>
-    <Link className="back-link" to="/eventos">← Eventos</Link>
-    <div className="event-detail-head">
-      <div>
-        <Badge>{statusEventoLabels[current.status]}</Badge>
-        <h1>{current.nome}</h1>
-        <p>{current.local} · {formatDateTime(current.inicio, timeZone)}</p>
+  return (
+    <>
+      <Link className="back-link" to="/eventos">
+        ← Eventos
+      </Link>
+      <div className="event-detail-head">
+        <div>
+          <Badge>{statusEventoLabels[current.status]}</Badge>
+          <h1>{current.nome}</h1>
+          <p>
+            {current.local} · {formatDateTime(current.inicio, timeZone)}
+          </p>
+        </div>
+        {podeGerenciar && (
+          <Button icon="edit" onClick={() => setEditing(true)}>
+            Editar evento
+          </Button>
+        )}
       </div>
-      {podeGerenciar && <Button icon="edit" onClick={() => setEditing(true)}>Editar evento</Button>}
-    </div>
-    <Tabs active={tab} onChange={setTab} tabs={[
-      { id: 'visao', label: 'Visão geral' },
-      { id: 'participantes', label: `Participantes (${resumo.data?.inscritos ?? 0})` },
-      { id: 'materiais', label: 'Materiais' },
-    ]} />
-    {tab === 'visao' && <div className="detail-grid">
-      {cronograma.isError ? <ErrorState message={errorFeedback(cronograma.error)} onRetry={() => void cronograma.refetch()} /> : <CronogramaCard eventoId={id} atividades={cronograma.data ?? []} podeGerenciar={podeGerenciar} onChanged={invalidateEvent} />}
-      {responsaveis.isError ? <ErrorState message={errorFeedback(responsaveis.error)} onRetry={() => void responsaveis.refetch()} /> : <ResponsaveisCard eventoId={id} responsaveis={responsaveis.data ?? []} podeGerenciar={podeGerenciar} onChanged={invalidateEvent} />}
-      {checklist.isError ? <ErrorState message={errorFeedback(checklist.error)} onRetry={() => void checklist.refetch()} /> : <ChecklistCard checklist={checklist.data} loading={checklist.isLoading} podeGerenciar={podeGerenciar} togglingTask={togglingTask} onToggle={toggleChecklist} />}
-      <FinanceiroCard resumo={financeiro.data} loading={financeiro.isLoading} />
-    </div>}
-    {tab === 'participantes' && (participantes.isError ? <ErrorState message={errorFeedback(participantes.error)} onRetry={() => void participantes.refetch()} /> : <ParticipantesTab eventoId={id} participantes={participantes.data} resumo={resumo.data} podeGerenciar={podeGerenciar} onChanged={invalidateEvent} />)}
-    {tab === 'materiais' && (anexos.isError ? <ErrorState message={errorFeedback(anexos.error)} onRetry={() => void anexos.refetch()} /> : <MateriaisTab eventoId={id} anexos={anexos.data} eventoConcluido={current.status === 'CONCLUIDO'} podeGerenciar={podeGerenciar} onChanged={invalidateEvent} />)}
-    {editing && <EventoModal event={current} onClose={() => setEditing(false)} onSaved={() => { setEditing(false); invalidateEvent() }} />}
-    <MotivoDialog open={Boolean(retornoChecklist)} loading={togglingTask === retornoChecklist?.id} onClose={() => setRetornoChecklist(null)} onConfirm={motivo => { if (retornoChecklist) void toggleChecklist(retornoChecklist, motivo) }} />
-  </>
+      <Tabs
+        active={tab}
+        onChange={setTab}
+        tabs={[
+          { id: 'visao', label: 'Visão geral' },
+          { id: 'participantes', label: `Participantes (${resumo.data?.inscritos ?? 0})` },
+          { id: 'materiais', label: 'Materiais' },
+        ]}
+      />
+      {tab === 'visao' && (
+        <div className="detail-grid">
+          {cronograma.isError ? (
+            <ErrorState message={errorFeedback(cronograma.error)} onRetry={() => void cronograma.refetch()} />
+          ) : (
+            <CronogramaCard
+              eventoId={id}
+              atividades={cronograma.data ?? []}
+              podeGerenciar={podeGerenciar}
+              onChanged={invalidateEvent}
+            />
+          )}
+          {responsaveis.isError ? (
+            <ErrorState message={errorFeedback(responsaveis.error)} onRetry={() => void responsaveis.refetch()} />
+          ) : (
+            <ResponsaveisCard
+              eventoId={id}
+              responsaveis={responsaveis.data ?? []}
+              podeGerenciar={podeGerenciar}
+              onChanged={invalidateEvent}
+            />
+          )}
+          {checklist.isError ? (
+            <ErrorState message={errorFeedback(checklist.error)} onRetry={() => void checklist.refetch()} />
+          ) : (
+            <ChecklistCard
+              checklist={checklist.data}
+              loading={checklist.isLoading}
+              podeGerenciar={podeGerenciar}
+              togglingTask={togglingTask}
+              onToggle={toggleChecklist}
+            />
+          )}
+          <FinanceiroCard resumo={financeiro.data} loading={financeiro.isLoading} />
+        </div>
+      )}
+      {tab === 'participantes' &&
+        (participantes.isError ? (
+          <ErrorState message={errorFeedback(participantes.error)} onRetry={() => void participantes.refetch()} />
+        ) : (
+          <ParticipantesTab
+            eventoId={id}
+            participantes={participantes.data}
+            resumo={resumo.data}
+            podeGerenciar={podeGerenciar}
+            onChanged={invalidateEvent}
+          />
+        ))}
+      {tab === 'materiais' &&
+        (anexos.isError ? (
+          <ErrorState message={errorFeedback(anexos.error)} onRetry={() => void anexos.refetch()} />
+        ) : (
+          <MateriaisTab
+            eventoId={id}
+            anexos={anexos.data}
+            eventoConcluido={current.status === 'CONCLUIDO'}
+            podeGerenciar={podeGerenciar}
+            onChanged={invalidateEvent}
+          />
+        ))}
+      {editing && (
+        <EventoModal
+          event={current}
+          onClose={() => setEditing(false)}
+          onSaved={() => {
+            setEditing(false)
+            invalidateEvent()
+          }}
+        />
+      )}
+      <MotivoDialog
+        open={Boolean(retornoChecklist)}
+        loading={togglingTask === retornoChecklist?.id}
+        onClose={() => setRetornoChecklist(null)}
+        onConfirm={(motivo) => {
+          if (retornoChecklist) void toggleChecklist(retornoChecklist, motivo)
+        }}
+      />
+    </>
+  )
 }
 
-type ChecklistItem = { id: number; titulo: string; concluida: boolean; atrasada: boolean; status: string; version: number }
-
-function ChecklistCard({ checklist, loading, podeGerenciar, togglingTask, onToggle }: { checklist?: ChecklistEvento; loading: boolean; podeGerenciar: boolean; togglingTask: number | null; onToggle: (item: ChecklistItem) => Promise<void> }) {
-  return <Card title="Checklist">
-    {loading || !checklist ? <LoadingState /> : <>
-      <p>{checklist.total === 0 ? 'Nenhuma tarefa cadastrada para este evento' : `${checklist.concluidas} de ${checklist.total} concluídas`}</p>
-      <div className="checklist-progress" role="progressbar" aria-label="Progresso do checklist" aria-valuemin={0} aria-valuemax={100} aria-valuenow={checklist.total === 0 ? 0 : checklist.progresso} aria-valuetext={checklist.total === 0 ? 'Nenhuma tarefa cadastrada para este evento' : `${checklist.concluidas} de ${checklist.total} concluídas`}>
-        <div className="checklist-progress-fill" style={{ width: `${checklist.total === 0 ? 0 : checklist.progresso}%` }} />
-      </div>
-      {checklist.itens.map(item => <label className="check-item" key={item.id}><input type="checkbox" disabled={!podeGerenciar || togglingTask === item.id} checked={item.concluida} onChange={() => void onToggle(item)} />{item.titulo}<small>{item.atrasada ? `Atrasada · ${enumLabel(statusTarefaLabels, item.status)}` : enumLabel(statusTarefaLabels, item.status)}</small>{togglingTask === item.id && <span>Atualizando…</span>}</label>)}
-    </>}
-  </Card>
+function ChecklistCard({
+  checklist,
+  loading,
+  podeGerenciar,
+  togglingTask,
+  onToggle,
+}: {
+  checklist?: ChecklistEvento
+  loading: boolean
+  podeGerenciar: boolean
+  togglingTask: number | null
+  onToggle: (item: ChecklistItem) => Promise<void>
+}) {
+  return (
+    <Card title="Checklist">
+      {loading || !checklist ? (
+        <LoadingState />
+      ) : (
+        <>
+          <p>
+            {checklist.total === 0
+              ? 'Nenhuma tarefa cadastrada para este evento'
+              : `${checklist.concluidas} de ${checklist.total} concluídas`}
+          </p>
+          <div
+            className="checklist-progress"
+            role="progressbar"
+            aria-label="Progresso do checklist"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={checklist.total === 0 ? 0 : checklist.progresso}
+            aria-valuetext={
+              checklist.total === 0
+                ? 'Nenhuma tarefa cadastrada para este evento'
+                : `${checklist.concluidas} de ${checklist.total} concluídas`
+            }
+          >
+            <div
+              className="checklist-progress-fill"
+              style={{ width: `${checklist.total === 0 ? 0 : checklist.progresso}%` }}
+            />
+          </div>
+          {checklist.itens.map((item) => (
+            <label className="check-item" key={item.id}>
+              <input
+                type="checkbox"
+                disabled={!podeGerenciar || togglingTask === item.id}
+                checked={item.concluida}
+                onChange={() => void onToggle(item)}
+              />
+              {item.titulo}
+              <small>
+                {item.atrasada
+                  ? `Atrasada · ${enumLabel(statusTarefaLabels, item.status)}`
+                  : enumLabel(statusTarefaLabels, item.status)}
+              </small>
+              {togglingTask === item.id && <span>Atualizando…</span>}
+            </label>
+          ))}
+        </>
+      )}
+    </Card>
+  )
 }
 
-function FinanceiroCard({ resumo, loading }: { resumo?: { orcamentoPrevisto: string; realizado: string; saldoOrcamentario: string; percentualUtilizado: string | null; situacao: string }; loading: boolean }) {
-  return <Card title="Resumo financeiro">
-    {loading || !resumo ? <LoadingState /> : <>
-      <p>Previsto: <b>{formatMoney(resumo.orcamentoPrevisto)}</b></p>
-      <p>Realizado: <b>{formatMoney(resumo.realizado)}</b></p>
-      <p>Saldo: <b>{formatMoney(resumo.saldoOrcamentario)}</b></p>
-      <p>{resumo.situacao === 'SEM_ORCAMENTO' ? 'Este evento não possui orçamento previsto.' : `Utilizado: ${resumo.percentualUtilizado ?? '0'}%`}</p>
-    </>}
-  </Card>
+function FinanceiroCard({
+  resumo,
+  loading,
+}: {
+  resumo?: {
+    orcamentoPrevisto: string
+    realizado: string
+    saldoOrcamentario: string
+    percentualUtilizado: string | null
+    situacao: string
+  }
+  loading: boolean
+}) {
+  return (
+    <Card title="Resumo financeiro">
+      {loading || !resumo ? (
+        <LoadingState />
+      ) : (
+        <>
+          <p>
+            Previsto: <b>{formatMoney(resumo.orcamentoPrevisto)}</b>
+          </p>
+          <p>
+            Realizado: <b>{formatMoney(resumo.realizado)}</b>
+          </p>
+          <p>
+            Saldo: <b>{formatMoney(resumo.saldoOrcamentario)}</b>
+          </p>
+          <p>
+            {resumo.situacao === 'SEM_ORCAMENTO'
+              ? 'Este evento não possui orçamento previsto.'
+              : `Utilizado: ${resumo.percentualUtilizado ?? '0'}%`}
+          </p>
+        </>
+      )}
+    </Card>
+  )
 }
 
-function exigeMotivoRetorno(statusAtual: string, proximoStatus: string) { return proximoStatus === 'EM_ANDAMENTO' && (statusAtual === 'REVISAO' || statusAtual === 'CONCLUIDO') }
+function exigeMotivoRetorno(statusAtual: StatusTarefaChecklist, proximoStatus: StatusTarefaChecklist) {
+  return proximoStatus === 'EM_ANDAMENTO' && (statusAtual === 'REVISAO' || statusAtual === 'CONCLUIDO')
+}

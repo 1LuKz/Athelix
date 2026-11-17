@@ -10,6 +10,231 @@ import { errorFeedback } from '../../../lib/errorFeedback'
 import { queryKeys } from '../../../lib/query'
 import { useAuthSession } from '../../auth/AuthSessionProvider'
 import { dashboardApi } from '../api'
-export function DashboardPage() { const timeZone = useAtleticaTimeZone(); const { activeVinculo, state } = useAuthSession(); const id = activeVinculo?.atleticaId; const enabled = Boolean(activeVinculo); const resumo = useQuery({ queryKey: queryKeys.scoped(id, 'dashboard-resumo'), queryFn: ({ signal }) => dashboardApi.resumo(signal), enabled }); const financeiro = useQuery({ queryKey: queryKeys.scoped(id, 'dashboard-financeiro'), queryFn: ({ signal }) => dashboardApi.financeiro(signal), enabled }); const departamentos = useQuery({ queryKey: queryKeys.scoped(id, 'dashboard-departamentos'), queryFn: ({ signal }) => dashboardApi.departamentos(signal), enabled }); const eventos = useQuery({ queryKey: queryKeys.scoped(id, 'dashboard-eventos'), queryFn: ({ signal }) => dashboardApi.eventos(signal), enabled }); const tarefas = useQuery({ queryKey: queryKeys.scoped(id, 'dashboard-tarefas'), queryFn: ({ signal }) => dashboardApi.tarefas(signal), enabled }); const movimentos = useQuery({ queryKey: queryKeys.scoped(id, 'dashboard-movimentos'), queryFn: ({ signal }) => dashboardApi.movimentos(signal), enabled }); const canFinance = state?.capacidades.includes('CONSULTAR_RESUMOS_FINANCEIROS') ?? false; return <><div className="page-title"><div><p className="eyebrow">Visão geral</p><h1>Dashboard</h1></div></div>{resumo.isLoading ? <LoadingState /> : resumo.isError ? <ErrorState message={errorFeedback(resumo.error)} /> : resumo.data && <section className="dashboard-metrics"><Metric label="Membros ativos" value={String(resumo.data.ativos)} detail={`${resumo.data.pendentes} pendentes · ${resumo.data.inativos} inativos`} to="/membros?status=ATIVO" /><Metric label="Eventos ativos" value={String(resumo.data.eventosAtivos)} detail="Inscrições abertas e em andamento" to="/eventos?grupoStatus=ATIVOS" /><Metric label="Saldo atual" value={canFinance ? formatMoney(resumo.data.saldoAtual) : 'Não autorizado'} detail="Regime de caixa até hoje" to="/financeiro" /><Metric label="Patrimônio" value={String(resumo.data.cadastrosPatrimonio)} detail={`${resumo.data.unidadesPatrimonio} unidades cadastradas`} to="/patrimonio" /></section>}<section className="dashboard-grid"><Section title="Receitas e despesas" to="/financeiro" query={financeiro}>{financeiro.data && <><ResponsiveContainer width="100%" height={230}><BarChart data={financeiro.data.seisMeses.map(item => ({ mes: formatMonth(item.mes), Receitas: Number(item.receitas), Despesas: Number(item.despesas) }))}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="mes" /><YAxis /><Tooltip formatter={value => formatMoney(String(value ?? 0))} /><Legend /><Bar dataKey="Receitas" fill="#16805c" /><Bar dataKey="Despesas" fill="#c93843" /></BarChart></ResponsiveContainer><Table caption="Receitas e despesas dos últimos seis meses" columns={['Mês', 'Receitas', 'Despesas', 'Saldo']}>{financeiro.data.seisMeses.map(item => <tr key={item.mes}><td>{formatMonth(item.mes)}</td><td>{formatMoney(item.receitas)}</td><td>{formatMoney(item.despesas)}</td><td>{formatMoney(item.saldo)}</td></tr>)}</Table></>}</Section><Section title="Participação por departamento" to="/departamentos" query={departamentos}>{departamentos.data?.length ? <Table caption="Participação departamental" columns={['Departamento', 'Membros ativos', 'Participação']}>{departamentos.data.map(item => <tr key={item.id}><td>{item.nome}</td><td>{item.membrosAtivos}</td><td>{item.participacaoPercentual}%</td></tr>)}</Table> : <EmptyState description="Não há departamentos ativos para exibir." />}</Section><Section title="Próximos eventos" to="/eventos" query={eventos}>{eventos.data?.length ? <ul className="dashboard-list">{eventos.data.map(item => <li key={item.id}><Link to={`/eventos/${item.id}`}><b>{item.nome}</b><span>{formatDateTime(item.inicio, timeZone)} · {enumLabel(statusEventoLabels, item.status)}</span></Link></li>)}</ul> : <EmptyState description="Não há eventos futuros ou em andamento." />}</Section><Section title="Tarefas pendentes" to="/tarefas" query={tarefas}>{tarefas.data?.length ? <ul className="dashboard-list">{tarefas.data.map(item => <li key={item.id}><Link to="/tarefas"><b>{item.titulo}</b><span className={item.atrasada ? 'dashboard-late' : ''}>{item.prazo ? `Prazo: ${formatDate(item.prazo)}` : 'Sem prazo'} · {enumLabel(statusTarefaLabels, item.status)}</span></Link></li>)}</ul> : <EmptyState description="Nenhuma tarefa pendente no seu escopo." />}</Section><Section title="Últimas movimentações" to="/financeiro" query={movimentos}>{movimentos.data?.length ? <Table caption="Últimas movimentações" columns={['Data', 'Tipo', 'Descrição', 'Valor']}>{movimentos.data.map((item, index) => <tr key={`${item.data}-${index}`}><td>{formatDate(item.data)}</td><td>{enumLabel(tipoLancamentoLabels, item.tipo)}</td><td>{item.descricao}</td><td>{formatMoney(item.valor)}</td></tr>)}</Table> : <EmptyState description="Ainda não há movimentações financeiras recentes." />}</Section></section></> }
-function Metric({ label, value, detail, to }: { label: string; value: string; detail: string; to: string }) { return <Link className="dashboard-metric" to={to}><Card><span>{label}</span><strong>{value}</strong><small>{detail}</small></Card></Link> }
-function Section({ title, to, query, children }: { title: string; to: string; query: { isLoading: boolean; isError: boolean; error: unknown }; children: ReactNode }) { return <Card title={title} action={<Link className="section-link" to={to}>Ver detalhes</Link>}>{query.isLoading ? <LoadingState /> : query.isError ? <ErrorState message={errorFeedback(query.error)} /> : children}</Card> }
+export function DashboardPage() {
+  const timeZone = useAtleticaTimeZone()
+  const { activeVinculo, state } = useAuthSession()
+  const id = activeVinculo?.atleticaId
+  const enabled = Boolean(activeVinculo)
+  const resumo = useQuery({
+    queryKey: queryKeys.scoped(id, 'dashboard-resumo'),
+    queryFn: ({ signal }) => dashboardApi.resumo(signal),
+    enabled,
+  })
+  const financeiro = useQuery({
+    queryKey: queryKeys.scoped(id, 'dashboard-financeiro'),
+    queryFn: ({ signal }) => dashboardApi.financeiro(signal),
+    enabled,
+  })
+  const departamentos = useQuery({
+    queryKey: queryKeys.scoped(id, 'dashboard-departamentos'),
+    queryFn: ({ signal }) => dashboardApi.departamentos(signal),
+    enabled,
+  })
+  const eventos = useQuery({
+    queryKey: queryKeys.scoped(id, 'dashboard-eventos'),
+    queryFn: ({ signal }) => dashboardApi.eventos(signal),
+    enabled,
+  })
+  const tarefas = useQuery({
+    queryKey: queryKeys.scoped(id, 'dashboard-tarefas'),
+    queryFn: ({ signal }) => dashboardApi.tarefas(signal),
+    enabled,
+  })
+  const movimentos = useQuery({
+    queryKey: queryKeys.scoped(id, 'dashboard-movimentos'),
+    queryFn: ({ signal }) => dashboardApi.movimentos(signal),
+    enabled,
+  })
+  const canFinance = state?.capacidades.includes('CONSULTAR_RESUMOS_FINANCEIROS') ?? false
+  return (
+    <>
+      <div className="page-title">
+        <div>
+          <p className="eyebrow">Visão geral</p>
+          <h1>Dashboard</h1>
+        </div>
+      </div>
+      {resumo.isLoading ? (
+        <LoadingState />
+      ) : resumo.isError ? (
+        <ErrorState message={errorFeedback(resumo.error)} />
+      ) : (
+        resumo.data && (
+          <section className="dashboard-metrics">
+            <Metric
+              label="Membros ativos"
+              value={String(resumo.data.ativos)}
+              detail={`${resumo.data.pendentes} pendentes · ${resumo.data.inativos} inativos`}
+              to="/membros?status=ATIVO"
+            />
+            <Metric
+              label="Eventos ativos"
+              value={String(resumo.data.eventosAtivos)}
+              detail="Inscrições abertas e em andamento"
+              to="/eventos?grupoStatus=ATIVOS"
+            />
+            <Metric
+              label="Saldo atual"
+              value={canFinance ? formatMoney(resumo.data.saldoAtual) : 'Não autorizado'}
+              detail="Regime de caixa até hoje"
+              to="/financeiro"
+            />
+            <Metric
+              label="Patrimônio"
+              value={String(resumo.data.cadastrosPatrimonio)}
+              detail={`${resumo.data.unidadesPatrimonio} unidades cadastradas`}
+              to="/patrimonio"
+            />
+          </section>
+        )
+      )}
+      <section className="dashboard-grid">
+        <Section title="Receitas e despesas" to="/financeiro" query={financeiro}>
+          {financeiro.data && (
+            <>
+              <ResponsiveContainer width="100%" height={230}>
+                <BarChart
+                  data={financeiro.data.seisMeses.map((item) => ({
+                    mes: formatMonth(item.mes),
+                    Receitas: Number(item.receitas),
+                    Despesas: Number(item.despesas),
+                  }))}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="mes" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => formatMoney(String(value ?? 0))} />
+                  <Legend />
+                  <Bar dataKey="Receitas" fill="#16805c" />
+                  <Bar dataKey="Despesas" fill="#c93843" />
+                </BarChart>
+              </ResponsiveContainer>
+              <Table
+                caption="Receitas e despesas dos últimos seis meses"
+                columns={['Mês', 'Receitas', 'Despesas', 'Saldo']}
+              >
+                {financeiro.data.seisMeses.map((item) => (
+                  <tr key={item.mes}>
+                    <td>{formatMonth(item.mes)}</td>
+                    <td>{formatMoney(item.receitas)}</td>
+                    <td>{formatMoney(item.despesas)}</td>
+                    <td>{formatMoney(item.saldo)}</td>
+                  </tr>
+                ))}
+              </Table>
+            </>
+          )}
+        </Section>
+        <Section title="Participação por departamento" to="/departamentos" query={departamentos}>
+          {departamentos.data?.length ? (
+            <Table caption="Participação departamental" columns={['Departamento', 'Membros ativos', 'Participação']}>
+              {departamentos.data.map((item) => (
+                <tr key={item.id}>
+                  <td>{item.nome}</td>
+                  <td>{item.membrosAtivos}</td>
+                  <td>{item.participacaoPercentual}%</td>
+                </tr>
+              ))}
+            </Table>
+          ) : (
+            <EmptyState description="Não há departamentos ativos para exibir." />
+          )}
+        </Section>
+        <Section title="Próximos eventos" to="/eventos" query={eventos}>
+          {eventos.data?.length ? (
+            <ul className="dashboard-list">
+              {eventos.data.map((item) => (
+                <li key={item.id}>
+                  <Link to={`/eventos/${item.id}`}>
+                    <b>{item.nome}</b>
+                    <span>
+                      {formatDateTime(item.inicio, timeZone)} · {enumLabel(statusEventoLabels, item.status)}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState description="Não há eventos futuros ou em andamento." />
+          )}
+        </Section>
+        <Section title="Tarefas pendentes" to="/tarefas" query={tarefas}>
+          {tarefas.data?.length ? (
+            <ul className="dashboard-list">
+              {tarefas.data.map((item) => (
+                <li key={item.id}>
+                  <Link to="/tarefas">
+                    <b>{item.titulo}</b>
+                    <span className={item.atrasada ? 'dashboard-late' : ''}>
+                      {item.prazo ? `Prazo: ${formatDate(item.prazo)}` : 'Sem prazo'} ·{' '}
+                      {enumLabel(statusTarefaLabels, item.status)}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState description="Nenhuma tarefa pendente no seu escopo." />
+          )}
+        </Section>
+        <Section title="Últimas movimentações" to="/financeiro" query={movimentos}>
+          {movimentos.data?.length ? (
+            <Table caption="Últimas movimentações" columns={['Data', 'Tipo', 'Descrição', 'Valor']}>
+              {movimentos.data.map((item, index) => (
+                <tr key={`${item.data}-${index}`}>
+                  <td>{formatDate(item.data)}</td>
+                  <td>{enumLabel(tipoLancamentoLabels, item.tipo)}</td>
+                  <td>{item.descricao}</td>
+                  <td>{formatMoney(item.valor)}</td>
+                </tr>
+              ))}
+            </Table>
+          ) : (
+            <EmptyState description="Ainda não há movimentações financeiras recentes." />
+          )}
+        </Section>
+      </section>
+    </>
+  )
+}
+function Metric({ label, value, detail, to }: { label: string; value: string; detail: string; to: string }) {
+  return (
+    <Link className="dashboard-metric" to={to}>
+      <Card>
+        <span>{label}</span>
+        <strong>{value}</strong>
+        <small>{detail}</small>
+      </Card>
+    </Link>
+  )
+}
+function Section({
+  title,
+  to,
+  query,
+  children,
+}: {
+  title: string
+  to: string
+  query: { isLoading: boolean; isError: boolean; error: unknown }
+  children: ReactNode
+}) {
+  return (
+    <Card
+      title={title}
+      action={
+        <Link className="section-link" to={to}>
+          Ver detalhes
+        </Link>
+      }
+    >
+      {query.isLoading ? (
+        <LoadingState />
+      ) : query.isError ? (
+        <ErrorState message={errorFeedback(query.error)} />
+      ) : (
+        children
+      )}
+    </Card>
+  )
+}

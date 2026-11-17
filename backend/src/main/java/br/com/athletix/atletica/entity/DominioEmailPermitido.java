@@ -16,43 +16,44 @@ import jakarta.persistence.UniqueConstraint;
 /** Domínio de e-mail aceito exclusivamente para uma atlética. */
 @Entity
 @Table(
-        name = "dominios_email_permitidos",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_dominio_email_atletica_dominio",
-                columnNames = {"atletica_id", "dominio"}
-        )
-)
+    name = "dominios_email_permitidos",
+    uniqueConstraints =
+        @UniqueConstraint(
+            name = "uk_dominio_email_atletica_dominio",
+            columnNames = {"atletica_id", "dominio"}))
 public class DominioEmailPermitido implements AtleticaScoped {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "atletica_id", nullable = false, foreignKey = @ForeignKey(name = "fk_dominio_email_atletica"))
-    private Atletica atletica;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(
+      name = "atletica_id",
+      nullable = false,
+      foreignKey = @ForeignKey(name = "fk_dominio_email_atletica"))
+  private Atletica atletica;
 
-    @Column(nullable = false, length = 253)
-    private String dominio;
+  @Column(nullable = false, length = 253)
+  private String dominio;
 
-    protected DominioEmailPermitido() {
-    }
+  protected DominioEmailPermitido() {}
 
-    public DominioEmailPermitido(Atletica atletica, String dominio) {
-        this.atletica = atletica;
-        this.dominio = dominio;
-    }
+  public DominioEmailPermitido(Atletica atletica, String dominio) {
+    this.atletica = atletica;
+    this.dominio = dominio;
+  }
 
-    public Long getId() {
-        return id;
-    }
+  public Long getId() {
+    return id;
+  }
 
-    @Override
-    public Long getAtleticaId() {
-        return atletica.getId();
-    }
+  @Override
+  public Long getAtleticaId() {
+    return atletica.getId();
+  }
 
-    public String getDominio() {
-        return dominio;
-    }
+  public String getDominio() {
+    return dominio;
+  }
 }

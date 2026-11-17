@@ -1,11 +1,11 @@
 package br.com.athletix.financeiro.entity;
 
 public enum TipoAplicavelCategoria {
-    RECEITA,
-    DESPESA,
-    AMBOS;
+  RECEITA,
+  DESPESA,
+  AMBOS;
 
-    public boolean aceita(TipoLancamentoFinanceiro tipo) {
-        return this == AMBOS || name().equals(tipo.name());
-    }
+  public boolean aceita(TipoLancamentoFinanceiro tipo) {
+    return this == AMBOS || name().equals(tipo.name());
+  }
 }

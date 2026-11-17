@@ -15,55 +15,63 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "categorias_financeiras", uniqueConstraints = @UniqueConstraint(
-        name = "uk_categoria_financeira_atletica_nome_normalizado",
-        columnNames = {"atletica_id", "nome_normalizado"}
-))
+@Table(
+    name = "categorias_financeiras",
+    uniqueConstraints =
+        @UniqueConstraint(
+            name = "uk_categoria_financeira_atletica_nome_normalizado",
+            columnNames = {"atletica_id", "nome_normalizado"}))
 public class CategoriaFinanceira extends AuditableEntity implements AtleticaScoped {
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "atletica_id", nullable = false, foreignKey = @ForeignKey(name = "fk_categoria_financeira_atletica"))
-    private Atletica atletica;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(
+      name = "atletica_id",
+      nullable = false,
+      foreignKey = @ForeignKey(name = "fk_categoria_financeira_atletica"))
+  private Atletica atletica;
 
-    @Column(nullable = false, length = 100)
-    private String nome;
+  @Column(nullable = false, length = 100)
+  private String nome;
 
-    @Column(name = "nome_normalizado", nullable = false, length = 100)
-    private String nomeNormalizado;
+  @Column(name = "nome_normalizado", nullable = false, length = 100)
+  private String nomeNormalizado;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "tipo_aplicavel", nullable = false, length = 8)
-    private TipoAplicavelCategoria tipoAplicavel;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "tipo_aplicavel", nullable = false, length = 8)
+  private TipoAplicavelCategoria tipoAplicavel;
 
-    @Column(nullable = false)
-    private boolean ativa;
+  @Column(nullable = false)
+  private boolean ativa;
 
-    protected CategoriaFinanceira() {
-    }
+  protected CategoriaFinanceira() {}
 
-    public CategoriaFinanceira(Atletica atletica, String nome, String nomeNormalizado,
-                               TipoAplicavelCategoria tipoAplicavel, boolean ativa) {
-        this.atletica = atletica;
-        this.nome = nome;
-        this.nomeNormalizado = nomeNormalizado;
-        this.tipoAplicavel = tipoAplicavel;
-        this.ativa = ativa;
-    }
+  public CategoriaFinanceira(
+      Atletica atletica,
+      String nome,
+      String nomeNormalizado,
+      TipoAplicavelCategoria tipoAplicavel,
+      boolean ativa) {
+    this.atletica = atletica;
+    this.nome = nome;
+    this.nomeNormalizado = nomeNormalizado;
+    this.tipoAplicavel = tipoAplicavel;
+    this.ativa = ativa;
+  }
 
-    @Override
-    public Long getAtleticaId() {
-        return atletica.getId();
-    }
+  @Override
+  public Long getAtleticaId() {
+    return atletica.getId();
+  }
 
-    public String getNome() {
-        return nome;
-    }
+  public String getNome() {
+    return nome;
+  }
 
-    public TipoAplicavelCategoria getTipoAplicavel() {
-        return tipoAplicavel;
-    }
+  public TipoAplicavelCategoria getTipoAplicavel() {
+    return tipoAplicavel;
+  }
 
-    public boolean isAtiva() {
-        return ativa;
-    }
+  public boolean isAtiva() {
+    return ativa;
+  }
 }

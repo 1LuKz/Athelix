@@ -6,5 +6,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AtividadeUsuarioRepository extends JpaRepository<AtividadeUsuario, Long> {
-    Page<AtividadeUsuario> findAllByUsuarioIdAndAtleticaId(Long usuarioId, Long atleticaId, Pageable pageable);
+  Page<AtividadeUsuario> findAllByUsuarioIdAndAtleticaId(
+      Long usuarioId, Long atleticaId, Pageable pageable);
 }

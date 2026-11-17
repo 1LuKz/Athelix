@@ -5,7 +5,22 @@ import { membroSchema, type MembroValues } from '../schemas/membro'
 import { enumLabel, perfilAcessoLabels, statusMembroLabels, statusSolicitacaoLabels } from '../../../lib/labels'
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Badge, Button, Card, ConfirmDialog, EmptyState, ErrorState, Input, LoadingState, Modal, Pagination, Select, Table, Tabs, useToast } from '../../../components/ui'
+import {
+  Badge,
+  Button,
+  Card,
+  ConfirmDialog,
+  EmptyState,
+  ErrorState,
+  Input,
+  LoadingState,
+  Modal,
+  Pagination,
+  Select,
+  Table,
+  Tabs,
+  useToast,
+} from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
 import { queryKeys } from '../../../lib/query'
 import { useAuthSession } from '../../auth/AuthSessionProvider'
@@ -14,35 +29,530 @@ import type { Cargo, Membro, StatusMembro } from '../types'
 
 const statusTone = { PENDENTE: 'warning', ATIVO: 'success', INATIVO: 'neutral' } as const
 export function MembrosPage() {
-  const { activeVinculo, state } = useAuthSession(); const client = useQueryClient(); const { success, error } = useToast(); const admin = state?.capacidades.includes('GERENCIAR_MEMBROS') ?? false
+  const { activeVinculo, state } = useAuthSession()
+  const client = useQueryClient()
+  const { success, error } = useToast()
+  const admin = state?.capacidades.includes('GERENCIAR_MEMBROS') ?? false
   const canStructure = state?.capacidades.includes('CONFIGURAR_ESTRUTURA') ?? false
-  const [buscaDigitada, setBuscaDigitada] = useState(''); const [busca, setBusca] = useState(''); const [departamentoId, setDepartamentoId] = useState<number | undefined>(); const [status, setStatus] = useState<StatusMembro | undefined>(); const [page, setPage] = useState(0); const [tab, setTab] = useState('lista'); const [editing, setEditing] = useState<Membro | null>(null); const [inativar, setInativar] = useState<Membro | null>(null)
-  useEffect(() => { const timer = window.setTimeout(() => { setBusca(buscaDigitada); setPage(0) }, 300); return () => window.clearTimeout(timer) }, [buscaDigitada])
-  const filters = useMemo(() => ({ busca, departamentoId, status, page, size: 20 }), [busca, departamentoId, status, page]); const membersKey = queryKeys.scoped(activeVinculo?.atleticaId, 'membros', filters)
-  const members = useQuery({ queryKey: membersKey, queryFn: ({ signal }) => membrosApi.list(filters, signal), enabled: Boolean(activeVinculo) }); const cargos = useQuery({ queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'cargos'), queryFn: membrosApi.cargos, enabled: admin || canStructure }); const departamentos = useQuery({ queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'departamentos'), queryFn: membrosApi.departamentos, enabled: Boolean(activeVinculo) }); const solicitacoes = useQuery({ queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'solicitacoes-vinculo'), queryFn: membrosApi.solicitacoes, enabled: admin && tab === 'solicitacoes' })
-  const invalidate = () => void client.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'membros'] })
-  const approve = async (member: Membro) => { try { await membrosApi.aprovar(member.id, member.version); success('Membro aprovado.'); invalidate() } catch (cause) { error(errorFeedback(cause)) } }
-  const deactivate = async () => { if (!inativar) return; try { await membrosApi.inativar(inativar.id, inativar.version); success('Vínculo inativado. O histórico foi preservado.'); setInativar(null); invalidate() } catch (cause) { error(errorFeedback(cause)); setInativar(null) } }
-  const exportar = async () => { try { const csv = await membrosApi.exportar({ busca, departamentoId, status }); const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); const link = document.createElement('a'); link.href = url; link.download = 'membros.csv'; link.click(); URL.revokeObjectURL(url) } catch (cause) { error(errorFeedback(cause)) } }
-  return <><div className="page-title"><div><p className="eyebrow">Gestão de pessoas</p><h1>Membros</h1></div>{admin && <div><Button variant="secondary" icon="download" onClick={() => void exportar()}>Exportar</Button><Button icon="person_add" onClick={() => setEditing({} as Membro)}>Novo membro</Button></div>}</div><Tabs tabs={[{ id: 'lista', label: 'Membros' }, ...(admin ? [{ id: 'solicitacoes', label: 'Solicitações' }] : []), ...(canStructure ? [{ id: 'cargos', label: 'Cargos e perfis' }] : [])]} active={tab} onChange={setTab} />{tab === 'lista' && <Card className="members-card"><div className="filters"><Input label="Buscar" placeholder="Nome, curso ou e-mail" value={buscaDigitada} onChange={event => setBuscaDigitada(event.target.value)} /><Select label="Departamento" value={departamentoId ?? ''} onChange={event => { setDepartamentoId(event.target.value ? Number(event.target.value) : undefined); setPage(0) }}><option value="">Todos</option>{departamentos.data?.map(item => <option key={item.id} value={item.id}>{item.nome}</option>)}</Select><Select label="Status" value={status ?? ''} onChange={event => { setStatus(event.target.value as StatusMembro || undefined); setPage(0) }}><option value="">Todos</option><option value="PENDENTE">Pendente</option><option value="ATIVO">Ativo</option><option value="INATIVO">Inativo</option></Select></div>{members.isLoading ? <LoadingState /> : members.isError ? <ErrorState message={errorFeedback(members.error)} onRetry={() => void members.refetch()} /> : members.data?.items.length ? <><Table caption="Lista de membros" columns={['Membro', 'Curso', 'Cargo', 'Departamento', 'Status', 'Ações']}>{members.data.items.map(member => <tr key={member.id}><td><strong>{member.nome}</strong>{member.email && <small>{member.email}</small>}</td><td>{member.curso}</td><td>{member.cargo}</td><td>{member.departamento}</td><td><Badge tone={statusTone[member.status]}>{statusMembroLabels[member.status]}</Badge></td><td className="row-actions">{admin && <><Button variant="ghost" icon="edit" onClick={() => setEditing(member)}>Editar</Button>{member.status === 'PENDENTE' && <Button variant="ghost" icon="verified" onClick={() => void approve(member)}>Aprovar</Button>}{member.status !== 'INATIVO' && <Button variant="ghost" icon="person_off" onClick={() => setInativar(member)}>Inativar</Button>}</>}</td></tr>)}</Table><Pagination page={members.data.page} totalPages={members.data.totalPages} onPageChange={setPage} /><p className="total-label">{members.data.totalItems} membro(s) encontrado(s)</p></> : <EmptyState description="Ajuste os filtros ou cadastre o primeiro membro." />}</Card>}{tab === 'cargos' && canStructure && (cargos.isError ? <ErrorState message={errorFeedback(cargos.error)} onRetry={() => void cargos.refetch()} /> : <Cargos cargos={cargos.data} loading={cargos.isLoading} onSaved={async () => { await client.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'cargos'] }) }} />)}{tab === 'solicitacoes' && <Solicitacoes data={solicitacoes.data?.items ?? []} loading={solicitacoes.isLoading} />}{editing && <MembroModal membro={editing.id ? editing : null} cargos={cargos.data ?? []} departamentos={departamentos.data ?? []} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); invalidate() }} />}<ConfirmDialog open={Boolean(inativar)} title="Inativar vínculo" message="O vínculo será inativado e o histórico de tarefas, documentos e movimentações será preservado. Dependências abertas serão informadas antes da conclusão." confirmLabel="Inativar vínculo" onClose={() => setInativar(null)} onConfirm={() => void deactivate()} /></>
+  const [buscaDigitada, setBuscaDigitada] = useState('')
+  const [busca, setBusca] = useState('')
+  const [departamentoId, setDepartamentoId] = useState<number | undefined>()
+  const [status, setStatus] = useState<StatusMembro | undefined>()
+  const [page, setPage] = useState(0)
+  const [tab, setTab] = useState('lista')
+  const [editing, setEditing] = useState<Membro | null>(null)
+  const [inativar, setInativar] = useState<Membro | null>(null)
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setBusca(buscaDigitada)
+      setPage(0)
+    }, 300)
+    return () => window.clearTimeout(timer)
+  }, [buscaDigitada])
+  const filters = useMemo(
+    () => ({ busca, departamentoId, status, page, size: 20 }),
+    [busca, departamentoId, status, page],
+  )
+  const membersKey = queryKeys.scoped(activeVinculo?.atleticaId, 'membros', filters)
+  const members = useQuery({
+    queryKey: membersKey,
+    queryFn: ({ signal }) => membrosApi.list(filters, signal),
+    enabled: Boolean(activeVinculo),
+  })
+  const cargos = useQuery({
+    queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'cargos'),
+    queryFn: membrosApi.cargos,
+    enabled: admin || canStructure,
+  })
+  const departamentos = useQuery({
+    queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'departamentos'),
+    queryFn: membrosApi.departamentos,
+    enabled: Boolean(activeVinculo),
+  })
+  const solicitacoes = useQuery({
+    queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'solicitacoes-vinculo'),
+    queryFn: membrosApi.solicitacoes,
+    enabled: admin && tab === 'solicitacoes',
+  })
+  const invalidate = () =>
+    void client.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'membros'] })
+  const approve = async (member: Membro) => {
+    try {
+      await membrosApi.aprovar(member.id, member.version)
+      success('Membro aprovado.')
+      invalidate()
+    } catch (cause) {
+      error(errorFeedback(cause))
+    }
+  }
+  const deactivate = async () => {
+    if (!inativar) return
+    try {
+      await membrosApi.inativar(inativar.id, inativar.version)
+      success('Vínculo inativado. O histórico foi preservado.')
+      setInativar(null)
+      invalidate()
+    } catch (cause) {
+      error(errorFeedback(cause))
+      setInativar(null)
+    }
+  }
+  const exportar = async () => {
+    try {
+      const csv = await membrosApi.exportar({ busca, departamentoId, status })
+      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'membros.csv'
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (cause) {
+      error(errorFeedback(cause))
+    }
+  }
+  return (
+    <>
+      <div className="page-title">
+        <div>
+          <p className="eyebrow">Gestão de pessoas</p>
+          <h1>Membros</h1>
+        </div>
+        {admin && (
+          <div>
+            <Button variant="secondary" icon="download" onClick={() => void exportar()}>
+              Exportar
+            </Button>
+            <Button icon="person_add" onClick={() => setEditing({} as Membro)}>
+              Novo membro
+            </Button>
+          </div>
+        )}
+      </div>
+      <Tabs
+        tabs={[
+          { id: 'lista', label: 'Membros' },
+          ...(admin ? [{ id: 'solicitacoes', label: 'Solicitações' }] : []),
+          ...(canStructure ? [{ id: 'cargos', label: 'Cargos e perfis' }] : []),
+        ]}
+        active={tab}
+        onChange={setTab}
+      />
+      {tab === 'lista' && (
+        <Card className="members-card">
+          <div className="filters">
+            <Input
+              label="Buscar"
+              placeholder="Nome, curso ou e-mail"
+              value={buscaDigitada}
+              onChange={(event) => setBuscaDigitada(event.target.value)}
+            />
+            <Select
+              label="Departamento"
+              value={departamentoId ?? ''}
+              onChange={(event) => {
+                setDepartamentoId(event.target.value ? Number(event.target.value) : undefined)
+                setPage(0)
+              }}
+            >
+              <option value="">Todos</option>
+              {departamentos.data?.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.nome}
+                </option>
+              ))}
+            </Select>
+            <Select
+              label="Status"
+              value={status ?? ''}
+              onChange={(event) => {
+                setStatus((event.target.value as StatusMembro) || undefined)
+                setPage(0)
+              }}
+            >
+              <option value="">Todos</option>
+              <option value="PENDENTE">Pendente</option>
+              <option value="ATIVO">Ativo</option>
+              <option value="INATIVO">Inativo</option>
+            </Select>
+          </div>
+          {members.isLoading ? (
+            <LoadingState />
+          ) : members.isError ? (
+            <ErrorState message={errorFeedback(members.error)} onRetry={() => void members.refetch()} />
+          ) : members.data?.items.length ? (
+            <>
+              <Table
+                caption="Lista de membros"
+                columns={['Membro', 'Curso', 'Cargo', 'Departamento', 'Status', 'Ações']}
+              >
+                {members.data.items.map((member) => (
+                  <tr key={member.id}>
+                    <td>
+                      <strong>{member.nome}</strong>
+                      {member.email && <small>{member.email}</small>}
+                    </td>
+                    <td>{member.curso}</td>
+                    <td>{member.cargo}</td>
+                    <td>{member.departamento}</td>
+                    <td>
+                      <Badge tone={statusTone[member.status]}>{statusMembroLabels[member.status]}</Badge>
+                    </td>
+                    <td className="row-actions">
+                      {admin && (
+                        <>
+                          <Button variant="ghost" icon="edit" onClick={() => setEditing(member)}>
+                            Editar
+                          </Button>
+                          {member.status === 'PENDENTE' && (
+                            <Button variant="ghost" icon="verified" onClick={() => void approve(member)}>
+                              Aprovar
+                            </Button>
+                          )}
+                          {member.status !== 'INATIVO' && (
+                            <Button variant="ghost" icon="person_off" onClick={() => setInativar(member)}>
+                              Inativar
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </Table>
+              <Pagination page={members.data.page} totalPages={members.data.totalPages} onPageChange={setPage} />
+              <p className="total-label">{members.data.totalItems} membro(s) encontrado(s)</p>
+            </>
+          ) : (
+            <EmptyState description="Ajuste os filtros ou cadastre o primeiro membro." />
+          )}
+        </Card>
+      )}
+      {tab === 'cargos' &&
+        canStructure &&
+        (cargos.isError ? (
+          <ErrorState message={errorFeedback(cargos.error)} onRetry={() => void cargos.refetch()} />
+        ) : (
+          <Cargos
+            cargos={cargos.data}
+            loading={cargos.isLoading}
+            onSaved={async () => {
+              await client.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'cargos'] })
+            }}
+          />
+        ))}
+      {tab === 'solicitacoes' && (
+        <Solicitacoes data={solicitacoes.data?.items ?? []} loading={solicitacoes.isLoading} />
+      )}
+      {editing && (
+        <MembroModal
+          membro={editing.id ? editing : null}
+          cargos={cargos.data ?? []}
+          departamentos={departamentos.data ?? []}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null)
+            invalidate()
+          }}
+        />
+      )}
+      <ConfirmDialog
+        open={Boolean(inativar)}
+        title="Inativar vínculo"
+        message="O vínculo será inativado e o histórico de tarefas, documentos e movimentações será preservado. Dependências abertas serão informadas antes da conclusão."
+        confirmLabel="Inativar vínculo"
+        onClose={() => setInativar(null)}
+        onConfirm={() => void deactivate()}
+      />
+    </>
+  )
 }
 function Cargos({ cargos, loading, onSaved }: { cargos?: Cargo[]; loading: boolean; onSaved: () => Promise<void> }) {
   const [editing, setEditing] = useState<Cargo | 'new' | null>(null)
-  return <Card title="Cargos e perfis" action={<Button icon="add" onClick={() => setEditing('new')}>Novo cargo</Button>}>
-    {loading ? <LoadingState /> : cargos?.length ? <Table caption="Cargos configurados" columns={['Cargo', 'Descrição', 'Perfil', 'Situação', 'Ação']}>{cargos.map(cargo => <tr key={cargo.id}><td>{cargo.nome}</td><td>{cargo.descricao || '—'}</td><td>{enumLabel(perfilAcessoLabels, cargo.perfilAcesso)}</td><td><Badge tone={cargo.ativo ? 'success' : 'neutral'}>{cargo.ativo ? 'Ativo' : 'Inativo'}</Badge></td><td><Button variant="secondary" onClick={() => setEditing(cargo)}>Editar</Button></td></tr>)}</Table> : <EmptyState description="Nenhum cargo cadastrado." />}
-    {editing && <CargoModal cargo={editing === 'new' ? null : editing} onClose={() => setEditing(null)} onSaved={async () => { setEditing(null); await onSaved() }} />}
-  </Card>
+  return (
+    <Card
+      title="Cargos e perfis"
+      action={
+        <Button icon="add" onClick={() => setEditing('new')}>
+          Novo cargo
+        </Button>
+      }
+    >
+      {loading ? (
+        <LoadingState />
+      ) : cargos?.length ? (
+        <Table caption="Cargos configurados" columns={['Cargo', 'Descrição', 'Perfil', 'Situação', 'Ação']}>
+          {cargos.map((cargo) => (
+            <tr key={cargo.id}>
+              <td>{cargo.nome}</td>
+              <td>{cargo.descricao || '—'}</td>
+              <td>{enumLabel(perfilAcessoLabels, cargo.perfilAcesso)}</td>
+              <td>
+                <Badge tone={cargo.ativo ? 'success' : 'neutral'}>{cargo.ativo ? 'Ativo' : 'Inativo'}</Badge>
+              </td>
+              <td>
+                <Button variant="secondary" onClick={() => setEditing(cargo)}>
+                  Editar
+                </Button>
+              </td>
+            </tr>
+          ))}
+        </Table>
+      ) : (
+        <EmptyState description="Nenhum cargo cadastrado." />
+      )}
+      {editing && (
+        <CargoModal
+          cargo={editing === 'new' ? null : editing}
+          onClose={() => setEditing(null)}
+          onSaved={async () => {
+            setEditing(null)
+            await onSaved()
+          }}
+        />
+      )}
+    </Card>
+  )
 }
-function CargoModal({ cargo, onClose, onSaved }: { cargo: Cargo | null; onClose: () => void; onSaved: () => Promise<void> }) {
-  const toast = useToast(); const perfil = cargo?.perfilAcesso
+function CargoModal({
+  cargo,
+  onClose,
+  onSaved,
+}: {
+  cargo: Cargo | null
+  onClose: () => void
+  onSaved: () => Promise<void>
+}) {
+  const toast = useToast()
+  const perfil = cargo?.perfilAcesso
   const initialPerfil = perfil === 'GESTOR' || perfil === 'FINANCEIRO' || perfil === 'ADMINISTRADOR' ? perfil : 'MEMBRO'
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<CargoValues>({ resolver: zodResolver(cargoSchema), defaultValues: { nome: cargo?.nome ?? '', descricao: cargo?.descricao ?? '', perfilAcesso: initialPerfil, ativo: cargo?.ativo ?? true } })
-  const save = async (v: CargoValues) => { try { if (cargo) await membrosApi.atualizarCargo(cargo.id, { ...v, version: cargo.version }); else await membrosApi.criarCargo(v); toast.success(cargo ? 'Cargo atualizado.' : 'Cargo criado.'); await onSaved() } catch (cause) { toast.error(errorFeedback(cause)) } }
-  return <Modal open title={cargo ? 'Editar cargo' : 'Novo cargo'} onClose={onClose} footer={<><Button variant="secondary" disabled={isSubmitting} onClick={onClose}>Cancelar</Button><Button type="submit" form="form-cargo" loading={isSubmitting}>Salvar</Button></>}><form id="form-cargo" onSubmit={handleSubmit(save)} noValidate><div className="form-grid"><Input label="Nome" maxLength={100} error={errors.nome?.message} {...register('nome')} /><Input label="Descrição" maxLength={500} error={errors.descricao?.message} {...register('descricao')} /><Select label="Perfil de acesso" error={errors.perfilAcesso?.message} {...register('perfilAcesso')}><option value="MEMBRO">Membro</option><option value="GESTOR">Gestor</option><option value="FINANCEIRO">Financeiro</option><option value="ADMINISTRADOR">Administrador</option></Select><label className="check-field"><input type="checkbox" {...register('ativo')} /> Cargo ativo</label></div></form></Modal>
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<CargoValues>({
+    resolver: zodResolver(cargoSchema),
+    defaultValues: {
+      nome: cargo?.nome ?? '',
+      descricao: cargo?.descricao ?? '',
+      perfilAcesso: initialPerfil,
+      ativo: cargo?.ativo ?? true,
+    },
+  })
+  const save = async (v: CargoValues) => {
+    try {
+      if (cargo) await membrosApi.atualizarCargo(cargo.id, { ...v, version: cargo.version })
+      else await membrosApi.criarCargo(v)
+      toast.success(cargo ? 'Cargo atualizado.' : 'Cargo criado.')
+      await onSaved()
+    } catch (cause) {
+      toast.error(errorFeedback(cause))
+    }
+  }
+  return (
+    <Modal
+      open
+      title={cargo ? 'Editar cargo' : 'Novo cargo'}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="secondary" disabled={isSubmitting} onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" form="form-cargo" loading={isSubmitting}>
+            Salvar
+          </Button>
+        </>
+      }
+    >
+      <form id="form-cargo" onSubmit={handleSubmit(save)} noValidate>
+        <div className="form-grid">
+          <Input label="Nome" maxLength={100} error={errors.nome?.message} {...register('nome')} />
+          <Input label="Descrição" maxLength={500} error={errors.descricao?.message} {...register('descricao')} />
+          <Select label="Perfil de acesso" error={errors.perfilAcesso?.message} {...register('perfilAcesso')}>
+            <option value="MEMBRO">Membro</option>
+            <option value="GESTOR">Gestor</option>
+            <option value="FINANCEIRO">Financeiro</option>
+            <option value="ADMINISTRADOR">Administrador</option>
+          </Select>
+          <label className="check-field">
+            <input type="checkbox" {...register('ativo')} /> Cargo ativo
+          </label>
+        </div>
+      </form>
+    </Modal>
+  )
 }
-function Solicitacoes({ data, loading }: { data: { id: number; membroId: number; cargoPretendido: string; departamentoPretendido: string; motivo: string; status: string; version: number }[]; loading: boolean }) { const { success, error } = useToast(); const client = useQueryClient(); const { activeVinculo } = useAuthSession(); if (loading) return <LoadingState />; const decidir = async (item: { id: number; membroId: number; version: number }, decisao: 'APROVAR' | 'REJEITAR') => { const observacao = window.prompt(`Fundamente a decisão de ${decisao.toLowerCase()}:`); if (!observacao?.trim()) return; try { const membro = await membrosApi.get(item.membroId); await membrosApi.decidir(item.id, { decisao, observacao, version: item.version, membroVersion: membro.version }); success('Solicitação avaliada.'); void client.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'solicitacoes-vinculo'] }) } catch (cause) { error(errorFeedback(cause)) } }; return <Card title="Solicitações de alteração"><Table caption="Solicitações de vínculo" columns={['Cargo pretendido', 'Departamento', 'Motivo', 'Status', 'Decisão']}>{data.map(item => <tr key={item.id}><td>{item.cargoPretendido}</td><td>{item.departamentoPretendido}</td><td>{item.motivo}</td><td><Badge>{enumLabel(statusSolicitacaoLabels, item.status)}</Badge></td><td>{item.status === 'PENDENTE' && <div className="row-actions"><Button variant="ghost" onClick={() => void decidir(item, 'APROVAR')}>Aprovar</Button><Button variant="ghost" onClick={() => void decidir(item, 'REJEITAR')}>Rejeitar</Button></div>}</td></tr>)}</Table></Card> }
-function MembroModal({ membro, cargos, departamentos, onClose, onSaved }: { membro: Membro | null; cargos: { id: number; nome: string }[]; departamentos: { id: number; nome: string }[]; onClose: () => void; onSaved: () => void }) {
-  const { success, error } = useToast(); const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<MembroValues>({ resolver: zodResolver(membroSchema), defaultValues: { nome: membro?.nome ?? '', email: membro?.email ?? '', telefone: membro?.telefone ?? '', curso: membro?.curso ?? '', periodoCurso: String(membro?.periodoCurso ?? ''), cargoId: String(membro?.cargoId ?? ''), departamentoId: String(membro?.departamentoId ?? ''), criando: !membro } })
-  const save = async (v: MembroValues) => { try { const common = { curso: v.curso, periodoCurso: v.periodoCurso ? Number(v.periodoCurso) : undefined, cargoId: Number(v.cargoId), departamentoId: Number(v.departamentoId) }; if (membro) await membrosApi.update(membro.id, { ...common, version: membro.version }); else await membrosApi.create({ ...common, nome: v.nome.trim(), email: v.email.trim(), telefone: v.telefone || undefined, membroDesde: new Date().toISOString().slice(0, 10) }); success(membro ? 'Membro atualizado.' : 'Membro cadastrado como pendente.'); onSaved() } catch (cause) { error(errorFeedback(cause)) } }
-  return <Modal open title={membro ? 'Editar membro' : 'Cadastrar membro'} onClose={onClose} footer={<><Button variant="secondary" disabled={isSubmitting} onClick={onClose}>Cancelar</Button><Button type="submit" form="form-membro" loading={isSubmitting}>Salvar</Button></>}><form id="form-membro" onSubmit={handleSubmit(save)} noValidate><div className="form-grid">{!membro && <><Input label="Nome" maxLength={120} error={errors.nome?.message} {...register('nome')} /><Input label="E-mail" type="email" maxLength={254} error={errors.email?.message} {...register('email')} /><Input label="Telefone" maxLength={20} error={errors.telefone?.message} {...register('telefone')} /></>}<Input label="Curso" maxLength={160} error={errors.curso?.message} {...register('curso')} /><Input label="Período" type="number" min="1" max="30" error={errors.periodoCurso?.message} {...register('periodoCurso')} /><Select label="Cargo" error={errors.cargoId?.message} {...register('cargoId')}><option value="">Selecione</option>{cargos.filter(c => !('ativo' in c) || c.ativo).map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}</Select><Select label="Departamento" error={errors.departamentoId?.message} {...register('departamentoId')}><option value="">Selecione</option>{departamentos.map(d => <option key={d.id} value={d.id}>{d.nome}</option>)}</Select></div></form></Modal>
+function Solicitacoes({
+  data,
+  loading,
+}: {
+  data: {
+    id: number
+    membroId: number
+    cargoPretendido: string
+    departamentoPretendido: string
+    motivo: string
+    status: string
+    version: number
+  }[]
+  loading: boolean
+}) {
+  const { success, error } = useToast()
+  const client = useQueryClient()
+  const { activeVinculo } = useAuthSession()
+  if (loading) return <LoadingState />
+  const decidir = async (item: { id: number; membroId: number; version: number }, decisao: 'APROVAR' | 'REJEITAR') => {
+    const observacao = window.prompt(`Fundamente a decisão de ${decisao.toLowerCase()}:`)
+    if (!observacao?.trim()) return
+    try {
+      const membro = await membrosApi.get(item.membroId)
+      await membrosApi.decidir(item.id, { decisao, observacao, version: item.version, membroVersion: membro.version })
+      success('Solicitação avaliada.')
+      void client.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'solicitacoes-vinculo'] })
+    } catch (cause) {
+      error(errorFeedback(cause))
+    }
+  }
+  return (
+    <Card title="Solicitações de alteração">
+      <Table
+        caption="Solicitações de vínculo"
+        columns={['Cargo pretendido', 'Departamento', 'Motivo', 'Status', 'Decisão']}
+      >
+        {data.map((item) => (
+          <tr key={item.id}>
+            <td>{item.cargoPretendido}</td>
+            <td>{item.departamentoPretendido}</td>
+            <td>{item.motivo}</td>
+            <td>
+              <Badge>{enumLabel(statusSolicitacaoLabels, item.status)}</Badge>
+            </td>
+            <td>
+              {item.status === 'PENDENTE' && (
+                <div className="row-actions">
+                  <Button variant="ghost" onClick={() => void decidir(item, 'APROVAR')}>
+                    Aprovar
+                  </Button>
+                  <Button variant="ghost" onClick={() => void decidir(item, 'REJEITAR')}>
+                    Rejeitar
+                  </Button>
+                </div>
+              )}
+            </td>
+          </tr>
+        ))}
+      </Table>
+    </Card>
+  )
+}
+function MembroModal({
+  membro,
+  cargos,
+  departamentos,
+  onClose,
+  onSaved,
+}: {
+  membro: Membro | null
+  cargos: { id: number; nome: string }[]
+  departamentos: { id: number; nome: string }[]
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const { success, error } = useToast()
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<MembroValues>({
+    resolver: zodResolver(membroSchema),
+    defaultValues: {
+      nome: membro?.nome ?? '',
+      email: membro?.email ?? '',
+      telefone: membro?.telefone ?? '',
+      curso: membro?.curso ?? '',
+      periodoCurso: String(membro?.periodoCurso ?? ''),
+      cargoId: String(membro?.cargoId ?? ''),
+      departamentoId: String(membro?.departamentoId ?? ''),
+      criando: !membro,
+    },
+  })
+  const save = async (v: MembroValues) => {
+    try {
+      const common = {
+        curso: v.curso,
+        periodoCurso: v.periodoCurso ? Number(v.periodoCurso) : undefined,
+        cargoId: Number(v.cargoId),
+        departamentoId: Number(v.departamentoId),
+      }
+      if (membro) await membrosApi.update(membro.id, { ...common, version: membro.version })
+      else
+        await membrosApi.create({
+          ...common,
+          nome: v.nome.trim(),
+          email: v.email.trim(),
+          telefone: v.telefone || undefined,
+          membroDesde: new Date().toISOString().slice(0, 10),
+        })
+      success(membro ? 'Membro atualizado.' : 'Membro cadastrado como pendente.')
+      onSaved()
+    } catch (cause) {
+      error(errorFeedback(cause))
+    }
+  }
+  return (
+    <Modal
+      open
+      title={membro ? 'Editar membro' : 'Cadastrar membro'}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="secondary" disabled={isSubmitting} onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" form="form-membro" loading={isSubmitting}>
+            Salvar
+          </Button>
+        </>
+      }
+    >
+      <form id="form-membro" onSubmit={handleSubmit(save)} noValidate>
+        <div className="form-grid">
+          {!membro && (
+            <>
+              <Input label="Nome" maxLength={120} error={errors.nome?.message} {...register('nome')} />
+              <Input label="E-mail" type="email" maxLength={254} error={errors.email?.message} {...register('email')} />
+              <Input label="Telefone" maxLength={20} error={errors.telefone?.message} {...register('telefone')} />
+            </>
+          )}
+          <Input label="Curso" maxLength={160} error={errors.curso?.message} {...register('curso')} />
+          <Input
+            label="Período"
+            type="number"
+            min="1"
+            max="30"
+            error={errors.periodoCurso?.message}
+            {...register('periodoCurso')}
+          />
+          <Select label="Cargo" error={errors.cargoId?.message} {...register('cargoId')}>
+            <option value="">Selecione</option>
+            {cargos
+              .filter((c) => !('ativo' in c) || c.ativo)
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nome}
+                </option>
+              ))}
+          </Select>
+          <Select label="Departamento" error={errors.departamentoId?.message} {...register('departamentoId')}>
+            <option value="">Selecione</option>
+            {departamentos.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.nome}
+              </option>
+            ))}
+          </Select>
+        </div>
+      </form>
+    </Modal>
+  )
 }

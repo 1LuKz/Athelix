@@ -13,17 +13,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/eventos")
 public class EventoChecklistController {
-    private final TarefaService service;
-    private final AutorizacaoAtualService autorizacao;
+  private final TarefaService service;
+  private final AutorizacaoAtualService autorizacao;
 
-    public EventoChecklistController(TarefaService service, AutorizacaoAtualService autorizacao) {
-        this.service = service;
-        this.autorizacao = autorizacao;
-    }
+  public EventoChecklistController(TarefaService service, AutorizacaoAtualService autorizacao) {
+    this.service = service;
+    this.autorizacao = autorizacao;
+  }
 
-    @GetMapping("/{eventoId}/checklist")
-    public ChecklistEventoResponse checklist(@PathVariable Long eventoId, Authentication authentication,
-                                             HttpServletRequest request) {
-        return service.checklist(eventoId, autorizacao.membroAtual(authentication, request));
-    }
+  @GetMapping("/{eventoId}/checklist")
+  public ChecklistEventoResponse checklist(
+      @PathVariable Long eventoId, Authentication authentication, HttpServletRequest request) {
+    return service.checklist(eventoId, autorizacao.membroAtual(authentication, request));
+  }
 }

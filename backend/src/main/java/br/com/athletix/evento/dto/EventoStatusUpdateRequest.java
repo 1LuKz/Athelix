@@ -6,8 +6,6 @@ import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 public record EventoStatusUpdateRequest(
-        @NotNull StatusEvento status,
-        @Size(max = 500) String motivoCorrecao,
-        @NotNull @PositiveOrZero Long version
-) {
-}
+    @NotNull StatusEvento status,
+    @Size(max = 500) String motivoCorrecao,
+    @NotNull @PositiveOrZero Long version) {}

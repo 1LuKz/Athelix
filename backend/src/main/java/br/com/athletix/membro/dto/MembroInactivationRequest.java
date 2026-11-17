@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 
 public record MembroInactivationRequest(
-        @NotNull(message = "A versão é obrigatória.")
-        @PositiveOrZero(message = "A versão deve ser maior ou igual a zero.") Long version
-) implements UpdateRequest {
-}
+    @NotNull(message = "A versão é obrigatória.")
+        @PositiveOrZero(message = "A versão deve ser maior ou igual a zero.")
+        Long version)
+    implements UpdateRequest {}

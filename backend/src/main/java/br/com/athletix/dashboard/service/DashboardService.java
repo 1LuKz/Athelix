@@ -1,32 +1,238 @@
 package br.com.athletix.dashboard.service;
-import br.com.athletix.dashboard.dto.DashboardResponses.*; import br.com.athletix.financeiro.service.FinanceiroConsultaService; import br.com.athletix.membro.entity.*; import br.com.athletix.membro.repository.MembroRepository; import br.com.athletix.evento.entity.*; import br.com.athletix.evento.repository.EventoRepository; import br.com.athletix.tarefa.entity.*; import br.com.athletix.tarefa.repository.TarefaRepository; import br.com.athletix.patrimonio.entity.ItemPatrimonio; import br.com.athletix.patrimonio.repository.ItemPatrimonioRepository; import br.com.athletix.departamento.repository.DepartamentoRepository; import br.com.athletix.membro.entity.Membro; import br.com.athletix.shared.tenancy.AtleticaResourceResolver; import org.springframework.stereotype.Service; import org.springframework.transaction.annotation.Transactional; import java.time.*; import java.util.*;
+
+import br.com.athletix.atletica.entity.Atletica;
+import br.com.athletix.atletica.repository.AtleticaRepository;
 import br.com.athletix.auth.service.Capacidade;
 import br.com.athletix.auth.service.CapacidadeService;
+import br.com.athletix.cargo.entity.PerfilAcesso;
+import br.com.athletix.dashboard.dto.DashboardResponses.Departamento;
+import br.com.athletix.dashboard.dto.DashboardResponses.Evento;
+import br.com.athletix.dashboard.dto.DashboardResponses.Financeiro;
+import br.com.athletix.dashboard.dto.DashboardResponses.Movimento;
+import br.com.athletix.dashboard.dto.DashboardResponses.Resumo;
+import br.com.athletix.dashboard.dto.DashboardResponses.Tarefa;
+import br.com.athletix.departamento.repository.DepartamentoRepository;
+import br.com.athletix.evento.entity.StatusEvento;
+import br.com.athletix.evento.repository.EventoRepository;
 import br.com.athletix.financeiro.entity.StatusLiquidacao;
 import br.com.athletix.financeiro.entity.TipoLancamentoFinanceiro;
-import br.com.athletix.financeiro.repository.LancamentoFinanceiroRepository;
 import br.com.athletix.financeiro.repository.EstornoFinanceiroRepository;
+import br.com.athletix.financeiro.repository.LancamentoFinanceiroRepository;
+import br.com.athletix.financeiro.service.FinanceiroConsultaService;
+import br.com.athletix.membro.entity.Membro;
+import br.com.athletix.membro.entity.StatusMembro;
+import br.com.athletix.membro.repository.MembroRepository;
+import br.com.athletix.patrimonio.repository.ItemPatrimonioRepository;
 import br.com.athletix.shared.money.MoneyValues;
+import br.com.athletix.shared.tenancy.AtleticaResourceResolver;
+import br.com.athletix.shared.time.FusoHorarioAtletica;
+import br.com.athletix.tarefa.repository.TarefaRepository;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.PageRequest;
-@Service public class DashboardService {private final LancamentoFinanceiroRepository lancamentos; private final EstornoFinanceiroRepository estornos; private final CapacidadeService capacidades; private final MembroRepository membros;private final EventoRepository eventos;private final TarefaRepository tarefas;private final ItemPatrimonioRepository itens;private final DepartamentoRepository departamentos;private final FinanceiroConsultaService financeiro;private final AtleticaResourceResolver resolver;public DashboardService(MembroRepository m,EventoRepository e,TarefaRepository t,ItemPatrimonioRepository i,DepartamentoRepository d,FinanceiroConsultaService f,AtleticaResourceResolver r, LancamentoFinanceiroRepository l, EstornoFinanceiroRepository es, CapacidadeService c){lancamentos=l;estornos=es;capacidades=c;membros=m;eventos=e;tarefas=t;itens=i;departamentos=d;financeiro=f;resolver=r;}
- @Transactional(readOnly=true) public Resumo resumo(Membro m){Long a=resolver.atleticaIdAtual();List<Membro> ms=membros.findAll(org.springframework.data.domain.Sort.unsorted()).stream().filter(x->a.equals(x.getAtleticaId())).toList();List<ItemPatrimonio> ps=itens.findAll().stream().filter(x->a.equals(x.getAtleticaId())&&x.isAtivo()).toList();long ea=eventos.findAll().stream().filter(x->a.equals(x.getAtleticaId())&&(x.getStatus()==StatusEvento.INSCRICOES_ABERTAS||x.getStatus()==StatusEvento.EM_ANDAMENTO)).count();var f=financeiro.resumo(null,m);return new Resumo(ms.size(),ms.stream().filter(x->x.getStatus()==StatusMembro.PENDENTE).count(),ms.stream().filter(x->x.getStatus()==StatusMembro.ATIVO).count(),ms.stream().filter(x->x.getStatus()==StatusMembro.INATIVO).count(),ea,f.saldoDisponivel(),ps.size(),ps.stream().mapToLong(ItemPatrimonio::getQuantidadeTotal).sum());}
- @Transactional(readOnly=true) public Financeiro financeiro(Membro m){YearMonth fim=YearMonth.now(),ini=fim.minusMonths(5);return new Financeiro(financeiro.resumo(null,m),financeiro.evolucaoMensal(ini,fim,m));}
- @Transactional(readOnly=true) public List<Departamento> departamentos(){Long a=resolver.atleticaIdAtual();List<Membro> ativos=membros.findAll(org.springframework.data.domain.Sort.unsorted()).stream().filter(m->a.equals(m.getAtleticaId())&&m.getStatus()==StatusMembro.ATIVO).toList();long total=ativos.size();return departamentos.findAllByAtletica_IdOrderByNomeAsc(a).stream().map(d->{long n=ativos.stream().filter(m->m.getDepartamentoId().equals(d.getId())).count();return new Departamento(d.getId(),d.getNome(),n,total==0?0:(int)Math.round(n*100.0/total));}).toList();}
- @Transactional(readOnly=true) public List<br.com.athletix.dashboard.dto.DashboardResponses.Evento> proximos(){Long a=resolver.atleticaIdAtual();return eventos.findAll().stream().filter(e->a.equals(e.getAtleticaId())&&e.getStatus()!=StatusEvento.CONCLUIDO).sorted(Comparator.comparing(br.com.athletix.evento.entity.Evento::getInicio)).limit(10).map(e->new br.com.athletix.dashboard.dto.DashboardResponses.Evento(e.getId(),e.getNome(),e.getInicio(),e.getStatus().name())).toList();}
- @Transactional(readOnly=true) public List<br.com.athletix.dashboard.dto.DashboardResponses.Tarefa> pendentes(Membro m){Long a=resolver.atleticaIdAtual();LocalDate h=LocalDate.now();return tarefas.findAll().stream().filter(t->a.equals(t.getAtleticaId())&&t.getStatus()!=StatusTarefa.CONCLUIDO&&(m.getPerfilAcesso()!=br.com.athletix.cargo.entity.PerfilAcesso.MEMBRO||m.getId().equals(t.getResponsavelMembroId()))).sorted(Comparator.comparing(t->t.getPrazo()==null?LocalDate.MAX:t.getPrazo())).limit(20).map(t->new br.com.athletix.dashboard.dto.DashboardResponses.Tarefa(t.getId(),t.getTitulo(),t.getPrazo(),t.getStatus().name(),t.getPrazo()!=null&&t.getPrazo().isBefore(h))).toList();}
- private record MovimentoOrdenado(LocalDate data, Long id, Movimento movimento) {}
- @Transactional(readOnly=true) public List<Movimento> movimentacoes(Membro membro) {
-     if (!capacidades.para(membro.getPerfilAcesso()).contains(Capacidade.CONSULTAR_RESUMOS_FINANCEIROS)) return List.of();
-     Long atleticaId = resolver.atleticaIdAtual();
-     var limite = PageRequest.of(0, 10);
-     List<MovimentoOrdenado> movimentos = new ArrayList<>();
-     for (var lancamento : lancamentos.findByAtletica_IdAndStatusLiquidacaoAndDataLiquidacaoIsNotNullOrderByDataLiquidacaoDescIdDesc(atleticaId, StatusLiquidacao.LIQUIDADO, limite)) {
-         var valor = lancamento.getTipo() == TipoLancamentoFinanceiro.DESPESA ? lancamento.getValor().negate() : lancamento.getValor();
-         movimentos.add(new MovimentoOrdenado(lancamento.getDataLiquidacao(), lancamento.getId(), new Movimento(lancamento.getTipo().name(), lancamento.getDataLiquidacao(), MoneyValues.format(valor), lancamento.getDescricao())));
-     }
-     for (var estorno : estornos.findByAtletica_IdOrderByDataEstornoDescIdDesc(atleticaId, limite)) {
-         var valor = estorno.getTipoLancamento() == TipoLancamentoFinanceiro.RECEITA ? estorno.getValorLancamento().negate() : estorno.getValorLancamento();
-         movimentos.add(new MovimentoOrdenado(estorno.getDataEstorno(), estorno.getId(), new Movimento("ESTORNO", estorno.getDataEstorno(), MoneyValues.format(valor), "Estorno: " + estorno.getDescricaoLancamento())));
-     }
-     return movimentos.stream().sorted(Comparator.comparing(MovimentoOrdenado::data).reversed().thenComparing(MovimentoOrdenado::id, Comparator.reverseOrder()).thenComparing(m -> m.movimento().tipo())).limit(10).map(MovimentoOrdenado::movimento).toList();
- }}
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class DashboardService {
+
+  private final LancamentoFinanceiroRepository lancamentos;
+  private final EstornoFinanceiroRepository estornos;
+  private final CapacidadeService capacidades;
+  private final MembroRepository membros;
+  private final EventoRepository eventos;
+  private final TarefaRepository tarefas;
+  private final ItemPatrimonioRepository itens;
+  private final DepartamentoRepository departamentos;
+  private final FinanceiroConsultaService financeiro;
+  private final AtleticaResourceResolver resolver;
+  private final AtleticaRepository atleticas;
+
+  public DashboardService(
+      MembroRepository membros,
+      EventoRepository eventos,
+      TarefaRepository tarefas,
+      ItemPatrimonioRepository itens,
+      DepartamentoRepository departamentos,
+      FinanceiroConsultaService financeiro,
+      AtleticaResourceResolver resolver,
+      LancamentoFinanceiroRepository lancamentos,
+      EstornoFinanceiroRepository estornos,
+      CapacidadeService capacidades,
+      AtleticaRepository atleticas) {
+    this.lancamentos = lancamentos;
+    this.estornos = estornos;
+    this.capacidades = capacidades;
+    this.membros = membros;
+    this.eventos = eventos;
+    this.tarefas = tarefas;
+    this.itens = itens;
+    this.departamentos = departamentos;
+    this.financeiro = financeiro;
+    this.resolver = resolver;
+    this.atleticas = atleticas;
+  }
+
+  @Transactional(readOnly = true)
+  public Resumo resumo(Membro membro) {
+    Long atleticaId = resolver.atleticaIdAtual();
+    long pendentes = membros.countByAtletica_IdAndStatus(atleticaId, StatusMembro.PENDENTE);
+    long ativos = membros.countByAtletica_IdAndStatus(atleticaId, StatusMembro.ATIVO);
+    long inativos = membros.countByAtletica_IdAndStatus(atleticaId, StatusMembro.INATIVO);
+    var resumoFinanceiro = financeiro.resumo(null, membro);
+
+    return new Resumo(
+        pendentes + ativos + inativos,
+        pendentes,
+        ativos,
+        inativos,
+        eventos.countByAtletica_IdAndStatusIn(
+            atleticaId, EnumSet.of(StatusEvento.INSCRICOES_ABERTAS, StatusEvento.EM_ANDAMENTO)),
+        resumoFinanceiro.saldoDisponivel(),
+        itens.countByAtletica_IdAndAtivoTrue(atleticaId),
+        itens.sumQuantidadeTotalByAtleticaIdAndAtivoTrue(atleticaId));
+  }
+
+  @Transactional(readOnly = true)
+  public Financeiro financeiro(Membro membro) {
+    YearMonth fim = YearMonth.from(hojeDaAtletica());
+    YearMonth inicio = fim.minusMonths(5);
+    return new Financeiro(
+        financeiro.resumo(null, membro), financeiro.evolucaoMensal(inicio, fim, membro));
+  }
+
+  @Transactional(readOnly = true)
+  public List<Departamento> departamentos() {
+    Long atleticaId = resolver.atleticaIdAtual();
+    long totalAtivos = membros.countByAtletica_IdAndStatus(atleticaId, StatusMembro.ATIVO);
+    Map<Long, Long> ativosPorDepartamento =
+        membros
+            .countByAtleticaIdAndStatusGroupedByDepartamento(atleticaId, StatusMembro.ATIVO)
+            .stream()
+            .collect(
+                Collectors.toMap(
+                    MembroRepository.ContagemPorDepartamento::getDepartamentoId,
+                    MembroRepository.ContagemPorDepartamento::getQuantidade));
+
+    return departamentos.findAllByAtletica_IdOrderByNomeAsc(atleticaId).stream()
+        .map(
+            departamento -> {
+              long membrosAtivos = ativosPorDepartamento.getOrDefault(departamento.getId(), 0L);
+              int participacao =
+                  totalAtivos == 0 ? 0 : (int) Math.round(membrosAtivos * 100.0 / totalAtivos);
+              return new Departamento(
+                  departamento.getId(), departamento.getNome(), membrosAtivos, participacao);
+            })
+        .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public List<Evento> proximos() {
+    Long atleticaId = resolver.atleticaIdAtual();
+    return eventos
+        .findAllByAtletica_IdAndStatusNotOrderByInicioAsc(
+            atleticaId, StatusEvento.CONCLUIDO, PageRequest.of(0, 10))
+        .stream()
+        .map(
+            evento ->
+                new Evento(
+                    evento.getId(),
+                    evento.getNome(),
+                    evento.getInicio(),
+                    evento.getStatus().name()))
+        .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public List<Tarefa> pendentes(Membro membro) {
+    Long atleticaId = resolver.atleticaIdAtual();
+    List<br.com.athletix.tarefa.entity.Tarefa> tarefasPendentes =
+        membro.getPerfilAcesso() == PerfilAcesso.MEMBRO
+            ? tarefas.findPendentesByAtleticaIdAndResponsavelMembroId(
+                atleticaId, membro.getId(), PageRequest.of(0, 20))
+            : tarefas.findPendentesByAtleticaId(atleticaId, PageRequest.of(0, 20));
+    LocalDate hoje = hojeDaAtletica();
+
+    return tarefasPendentes.stream()
+        .map(
+            tarefa ->
+                new Tarefa(
+                    tarefa.getId(),
+                    tarefa.getTitulo(),
+                    tarefa.getPrazo(),
+                    tarefa.getStatus().name(),
+                    tarefa.getPrazo() != null && tarefa.getPrazo().isBefore(hoje)))
+        .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public List<Movimento> movimentacoes(Membro membro) {
+    if (!capacidades
+        .para(membro.getPerfilAcesso())
+        .contains(Capacidade.CONSULTAR_RESUMOS_FINANCEIROS)) {
+      return List.of();
+    }
+
+    Long atleticaId = resolver.atleticaIdAtual();
+    var limite = PageRequest.of(0, 10);
+    List<MovimentoOrdenado> movimentos = new ArrayList<>();
+
+    for (var lancamento :
+        lancamentos
+            .findByAtletica_IdAndStatusLiquidacaoAndDataLiquidacaoIsNotNullOrderByDataLiquidacaoDescIdDesc(
+                atleticaId, StatusLiquidacao.LIQUIDADO, limite)) {
+      var valor =
+          lancamento.getTipo() == TipoLancamentoFinanceiro.DESPESA
+              ? lancamento.getValor().negate()
+              : lancamento.getValor();
+      movimentos.add(
+          new MovimentoOrdenado(
+              lancamento.getDataLiquidacao(),
+              lancamento.getId(),
+              new Movimento(
+                  lancamento.getTipo().name(),
+                  lancamento.getDataLiquidacao(),
+                  MoneyValues.format(valor),
+                  lancamento.getDescricao())));
+    }
+
+    for (var estorno : estornos.findByAtletica_IdOrderByDataEstornoDescIdDesc(atleticaId, limite)) {
+      var valor =
+          estorno.getTipoLancamento() == TipoLancamentoFinanceiro.RECEITA
+              ? estorno.getValorLancamento().negate()
+              : estorno.getValorLancamento();
+      movimentos.add(
+          new MovimentoOrdenado(
+              estorno.getDataEstorno(),
+              estorno.getId(),
+              new Movimento(
+                  "ESTORNO",
+                  estorno.getDataEstorno(),
+                  MoneyValues.format(valor),
+                  "Estorno: " + estorno.getDescricaoLancamento())));
+    }
+
+    return movimentos.stream()
+        .sorted(
+            Comparator.comparing(MovimentoOrdenado::data)
+                .reversed()
+                .thenComparing(MovimentoOrdenado::id, Comparator.reverseOrder())
+                .thenComparing(movimento -> movimento.movimento().tipo()))
+        .limit(10)
+        .map(MovimentoOrdenado::movimento)
+        .toList();
+  }
+
+  private LocalDate hojeDaAtletica() {
+    Atletica atletica = atleticas.findById(resolver.atleticaIdAtual()).orElseThrow();
+    return FusoHorarioAtletica.hoje(atletica.getFusoHorario());
+  }
+
+  private record MovimentoOrdenado(LocalDate data, Long id, Movimento movimento) {}
+}
