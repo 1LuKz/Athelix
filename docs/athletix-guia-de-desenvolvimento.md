@@ -6,9 +6,9 @@
 
 **Cobre:** preparação do backend e base de RNF18 e RNF19.
 
-Criar o backend com Java 17, Maven Wrapper e Spring Boot 4.1.2. Configurar compilação e execução para Java 17, sem usar APIs ou recursos exclusivos de versões superiores. Organizar os módulos por domínio, conforme a estrutura definida na conversa.
+Criar o backend com Java 17, Maven Wrapper e Spring Boot 3.4.1. Configurar compilação e execução para Java 17, sem usar APIs ou recursos exclusivos de versões superiores. Organizar os módulos por domínio, conforme a estrutura definida na conversa.
 
-Adicionar as dependências de aplicação: Spring MVC, Spring Data JPA, Validation, Security, H2 em escopo runtime, Spring Mail e springdoc OpenAPI 3.2.0. Usar o gerenciamento de versões do Spring Boot para as dependências que ele cobre. Preservar as versões escolhidas nas próximas etapas.
+Adicionar as dependências de aplicação: Spring MVC, Spring Data JPA, Validation, Security, H2 em escopo runtime, Spring Mail e springdoc OpenAPI 2.7.0. Usar o gerenciamento de versões do Spring Boot para as dependências que ele cobre. Preservar as versões escolhidas nas próximas etapas.
 
 Usar exclusivamente `application.properties` e `application-dev.properties` nas configurações. Ativar o perfil `dev` na execução local. Configurar o plugin Maven do Spring Boot e a execução pela IDE ou pelo Maven Wrapper.
 

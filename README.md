@@ -1,100 +1,106 @@
 # Athletix
 
-Plataforma local para gestão de atléticas acadêmicas, com isolamento por atlética, sessão HTTP e autorização baseada no perfil do cargo.
+Plataforma acadêmica para a gestão de atléticas, com isolamento por atlética, autorização por perfil e sessão HTTP.
 
 ## Requisitos
 
-- Java 17 ou superior (o projeto compila para Java 17)
-- Node.js 20 ou superior e npm
-- Nenhum banco externo, Docker ou serviço em nuvem é necessário para a execução básica
+- Java 17 ou superior
+- Node.js 20 ou superior, com npm
 
-## Execução local
+Não é necessário instalar banco de dados, Docker ou serviço em nuvem para executar o projeto localmente.
 
-Em dois terminais, na raiz do projeto:
+## Executar o backend
 
-```bash
-cd backend
-./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
-```
-
-No Windows, use `mvnw.cmd` no lugar de `./mvnw`.
+Na raiz do projeto, execute:
 
 ```bash
-cd frontend
-npm install
-npm run dev
+cd backend && ./mvnw spring-boot:run
 ```
 
-Para gerar a versão de produção do frontend:
+O perfil local ativo é `dev`. A API inicia em `http://localhost:8080/api/v1`.
+
+- Swagger UI: `http://localhost:8080/api/v1/swagger-ui.html`
+- Console H2: `http://localhost:8080/api/v1/h2-console`
+- Especificação OpenAPI gerada: `http://localhost:8080/api/v1/v3/api-docs`
+
+No console H2, use a URL JDBC `jdbc:h2:mem:athletix;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE`, usuário `sa` e senha em branco.
+
+## Executar o frontend
+
+Em outro terminal, na raiz do projeto:
 
 ```bash
-cd frontend
-npm run build
+cd frontend && npm install && npm run dev
 ```
 
-Também é possível iniciar `AthletixApplication` pela IDE, com o perfil ativo `dev`. A API fica em `http://localhost:8080/api/v1`; o frontend local fica em `http://localhost:5173` e encaminha chamadas `/api` para o backend.
+O Vite inicia em `http://localhost:5173`. Durante o desenvolvimento, o proxy encaminha as chamadas iniciadas por `/api` para o backend em `http://localhost:8080`.
 
-Para validar o backend antes de entregar:
+## Build e testes
+
+Backend:
 
 ```bash
 cd backend
 ./mvnw test
+./mvnw package
 ```
 
-## Interfaces e contratos
-
-- Swagger UI: `http://localhost:8080/api/v1/swagger-ui.html`
-- Especificação gerada: `http://localhost:8080/api/v1/v3/api-docs`
-- Contrato versionado e revisado do projeto: [docs/api/openapi.yaml](docs/api/openapi.yaml)
-- Regras de negócio: [docs/regras-de-negocio.md](docs/regras-de-negocio.md)
-- Convenções e detalhes dos endpoints: [docs/api/README.md](docs/api/README.md)
-- Organização modular do código: [docs/arquitetura.md](docs/arquitetura.md)
-
-Antes de uma chamada mutável, obtenha o CSRF em `GET /api/v1/auth/csrf` e envie o token no cabeçalho indicado pela resposta. O Swagger é uma ferramenta de consulta; as operações protegidas continuam exigindo sessão e CSRF.
-
-## Dados locais e demonstração
-
-O H2 é exclusivamente em memória. Seus dados são perdidos ao encerrar a aplicação. A cada nova execução com perfil `dev`, o inicializador recria o cenário de demonstração com dados sintéticos e datas relativas ao dia atual.
-
-No perfil `dev`, a carga recria um cenário sintético completo em cada inicialização. As senhas abaixo existem somente nesse perfil e são persistidas apenas como hash BCrypt:
-
-- `admin@athletix.local` / `Athletix@2026` — administrador
-- `financeiro@athletix.local` / `Financeiro@2026` — financeiro
-- `gestor@athletix.local` / `Gestor@2026` — gestor de eventos
-- `membro@athletix.local` / `Membro@2026` — membro
-- `admin@saude.athletix.local` / `Saude@2026` — administrador da segunda atlética, para validar isolamento
-
-O cenário inclui duas atléticas, vínculos ativos/pendentes/inativos, gestão atual e histórica, eventos, tarefas, financeiro, patrimônio, inventário, documentos sintéticos e auditoria. As datas são calculadas a partir do dia de execução.
-
-Antes de chamadas mutáveis da API, obtenha o CSRF em `GET /api/v1/auth/csrf` e envie o token no cabeçalho informado. O Vite já encaminha `/api` para o backend local.
-
-## E-mail de desenvolvimento
-
-Convites e recuperação usam SMTP real; a API não devolve links secretos. Configure uma caixa SMTP de desenvolvimento (por exemplo, Mailtrap) por variáveis de ambiente antes de testar esses fluxos:
+Frontend:
 
 ```bash
-export ATHLETIX_SMTP_HOST=...
+cd frontend
+npx tsc -b
+npx eslint .
+npx vite build
+```
+
+Também é possível usar `npm run build`, que executa a verificação TypeScript e o build do Vite.
+
+## Dados locais e contas de demonstração
+
+O H2 usado no perfil `dev` é somente em memória. Os dados são perdidos quando o backend é encerrado e, na próxima inicialização, a base é recriada com a carga de demonstração sintética.
+
+As contas abaixo são criadas por `InitialAtleticasConfiguration`. As contas pendente e inativa existem para testar os fluxos de vínculo, mas não podem autenticar até que seu status permita acesso.
+
+| E-mail | Perfil | Status | Senha de demonstração |
+| --- | --- | --- | --- |
+| `admin@athletix.local` | Administrador | Ativo | `Athletix@2026` |
+| `financeiro@athletix.local` | Financeiro | Ativo | `Financeiro@2026` |
+| `gestor@athletix.local` | Gestor | Ativo | `Gestor@2026` |
+| `membro@athletix.local` | Membro | Ativo | `Membro@2026` |
+| `pendente@athletix.local` | Membro | Pendente | `Pendente@2026` |
+| `inativo@athletix.local` | Membro | Inativo | `Inativo@2026` |
+| `admin@saude.athletix.local` | Administrador | Ativo | `Saude@2026` |
+
+As senhas são exclusivas da carga `dev` e são persistidas como hash. O cenário inclui duas atléticas, permitindo validar o isolamento de escopo; a segunda atlética foi reduzida intencionalmente.
+
+## Configuração de e-mail
+
+Convites e recuperação de senha usam SMTP real. Defina as variáveis de ambiente antes de testar esses fluxos:
+
+```bash
+export ATHLETIX_SMTP_HOST=sandbox.smtp.mailtrap.io
 export ATHLETIX_SMTP_PORT=587
-export ATHLETIX_SMTP_USERNAME=...
-export ATHLETIX_SMTP_PASSWORD=...
+export ATHLETIX_SMTP_USERNAME=seu_usuario_mailtrap
+export ATHLETIX_SMTP_PASSWORD=sua_senha_mailtrap
 export ATHLETIX_MAIL_FROM=no-reply@athletix.local
 export ATHLETIX_FRONTEND_BASE_URL=http://localhost:5173
 ```
 
-Os mesmos valores podem ser definidos pela configuração da IDE. Sem SMTP configurado, a aplicação não afirma que houve envio e não expõe links ou tokens secretos.
+O exemplo usa uma caixa de testes do Mailtrap; substitua host e credenciais pelos valores exibidos no inbox criado para o projeto. As configurações opcionais `ATHLETIX_SMTP_AUTH` e `ATHLETIX_SMTP_STARTTLS` têm valor padrão `true`.
 
-## Segurança em uma demonstração pública
+Sem SMTP configurado, a aplicação não confirma entrega de mensagens e não expõe links ou tokens secretos pela API.
 
-A execução local usa HTTP e, por isso, `ATHLETIX_COOKIE_SECURE=false`. Caso o grupo publique temporariamente uma demonstração em HTTPS, defina `ATHLETIX_COOKIE_SECURE=true`, use um certificado válido e mantenha `SameSite=Lax` e `HttpOnly`. Não exponha o console H2 nem as contas de demonstração fora de um ambiente controlado.
+## Privacidade e retenção
 
-## Desempenho e privacidade
+Os dados pessoais são tratados para gerir vínculos e acessos, organizar atividades institucionais, controlar patrimônio e obrigações financeiras, disponibilizar documentos e manter auditoria da atlética. A carga `dev` contém somente identidades, arquivos e cenários sintéticos.
 
-As listagens seguem paginação estável (`items`, `page`, `size`, `totalItems`, `totalPages`) e ordenações explicitamente permitidas. Resumos devem ser obtidos por agregações/projeções no banco, e não pela carga de coleções completas. BLOBs são carregados somente nas rotas de conteúdo autorizado; listagens retornam apenas metadados. DTOs não expõem senhas, tokens, BLOBs e contatos fora das capacidades autorizadas.
+A política inicial é reter o histórico operacional e de auditoria enquanto houver obrigação institucional, financeira ou de prestação de contas. Antes de uma implantação com dados reais, a organização deve formalizar prazo de retenção, base legal, responsável pelo tratamento e processo de revisão ou eliminação dos dados pessoais.
 
-Finalidades de tratamento: administrar vínculos e acessos, organizar atividades, registrar obrigações financeiras e patrimoniais, disponibilizar documentos institucionais e manter auditoria. Perfis autorizados e visibilidades são definidos nas regras de negócio. Para uma implantação real, o grupo responsável deve formalizar a base legal, o responsável pelo tratamento, canal de solicitação e prazos de retenção antes de inserir dados pessoais reais; a carga `dev` não contém dados pessoais reais.
+## Documentação
 
-## Organização
-
-- `docs/`: regras do negocio e documentacao da API
-- `backend/`: API e regras de negocio
-- `frontend/`: interface web
+- [Contrato OpenAPI](docs/api/openapi.yaml)
+- [Convenções da API](docs/api/README.md)
+- [Regras de negócio](docs/regras-de-negocio.md)
+- [Guia de desenvolvimento](docs/athletix-guia-de-desenvolvimento.md)
+- [Arquitetura](docs/arquitetura.md)
