@@ -1,10 +1,10 @@
-import { formatDateTime, formatMoney } from '../../../lib/format'
-import { enumLabel, statusEventoLabels, statusTarefaLabels } from '../../../lib/labels'
+import { formatDateTime } from '../../../lib/format'
+import { statusEventoLabels } from '../../../lib/labels'
 import { useAtleticaTimeZone } from '../../auth/AuthSessionProvider'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Badge, Button, Card, ErrorState, LoadingState, Tabs, useToast } from '../../../components/ui'
+import { useQueryClient } from '@tanstack/react-query'
+import { Badge, Button, ErrorState, LoadingState, Tabs, useToast } from '../../../components/ui'
 import { MotivoDialog } from '../../../components/MotivoDialog'
 import { errorFeedback } from '../../../lib/errorFeedback'
 import { useAuthSession } from '../../auth/AuthSessionProvider'
@@ -12,10 +12,16 @@ import { CronogramaCard } from '../components/CronogramaCard'
 import { MateriaisTab } from '../components/MateriaisTab'
 import { ParticipantesTab } from '../components/ParticipantesTab'
 import { ResponsaveisCard } from '../components/ResponsaveisCard'
+import { ChecklistCard } from '../components/ChecklistCard'
+import { FinanceiroEventoCard } from '../components/FinanceiroEventoCard'
 import { detalheEventoApi } from '../detalheApi'
-import type { ChecklistEvento, ChecklistItem, ResumoFinanceiroEvento, StatusTarefaChecklist } from '../types'
-import { eventosApi } from '../api'
-import { EventoModal } from './EventosPage'
+import type { ChecklistItem, StatusTarefaChecklist } from '../types'
+import { EventoModal } from '../components/EventoModal'
+import { useEventoDetalhe } from '../hooks/useEventoDetalhe'
+
+function exigeMotivoRetorno(statusAtual: StatusTarefaChecklist, proximoStatus: StatusTarefaChecklist) {
+  return proximoStatus === 'EM_ANDAMENTO' && (statusAtual === 'REVISAO' || statusAtual === 'CONCLUIDO')
+}
 
 export function EventoDetalhePage() {
   const timeZone = useAtleticaTimeZone()
@@ -28,38 +34,14 @@ export function EventoDetalhePage() {
   const [retornoChecklist, setRetornoChecklist] = useState<ChecklistItem | null>(null)
   const client = useQueryClient()
   const { success, error } = useToast()
-  const event = useQuery({ queryKey: ['evento', id], queryFn: () => eventosApi.get(id) })
-  const cronograma = useQuery({
-    queryKey: ['evento', id, 'cronograma'],
-    queryFn: () => detalheEventoApi.cronograma(id),
-  })
-  const responsaveis = useQuery({
-    queryKey: ['evento', id, 'responsaveis'],
-    queryFn: () => detalheEventoApi.responsaveis(id),
-  })
-  const checklist = useQuery({ queryKey: ['evento', id, 'checklist'], queryFn: () => detalheEventoApi.checklist(id) })
-  const financeiro = useQuery({
-    queryKey: ['evento', id, 'financeiro'],
-    queryFn: () => detalheEventoApi.financeiro(id),
-  })
-  const participantes = useQuery({
-    queryKey: ['evento', id, 'participantes'],
-    queryFn: () => detalheEventoApi.participantes(id),
-    enabled: tab === 'participantes',
-  })
-  const resumo = useQuery({
-    queryKey: ['evento', id, 'participacao-resumo'],
-    queryFn: () => detalheEventoApi.participacaoResumo(id),
-  })
-  const anexos = useQuery({
-    queryKey: ['evento', id, 'anexos'],
-    queryFn: () => detalheEventoApi.anexos(id),
-    enabled: tab === 'materiais',
-  })
+  const { evento, cronograma, responsaveis, checklist, financeiro, participantes, resumo, anexos } = useEventoDetalhe(
+    id,
+    tab,
+  )
   const invalidateEvent = () => void client.invalidateQueries({ queryKey: ['evento', id] })
 
-  if (event.isLoading) return <LoadingState />
-  if (event.isError || !event.data) return <ErrorState message={errorFeedback(event.error)} />
+  if (evento.isLoading) return <LoadingState />
+  if (evento.isError || !evento.data) return <ErrorState message={errorFeedback(evento.error)} />
 
   const toggleChecklist = async (item: ChecklistItem, motivo?: string) => {
     const nextStatus = item.concluida ? 'EM_ANDAMENTO' : 'CONCLUIDO'
@@ -84,7 +66,7 @@ export function EventoDetalhePage() {
     }
   }
 
-  const current = event.data
+  const current = evento.data
   return (
     <>
       <Link className="back-link" to="/eventos">
@@ -146,7 +128,7 @@ export function EventoDetalhePage() {
               onToggle={toggleChecklist}
             />
           )}
-          <FinanceiroCard resumo={financeiro.data} loading={financeiro.isLoading} />
+          <FinanceiroEventoCard resumo={financeiro.data} loading={financeiro.isLoading} />
         </div>
       )}
       {tab === 'participantes' &&
@@ -193,100 +175,4 @@ export function EventoDetalhePage() {
       />
     </>
   )
-}
-
-function ChecklistCard({
-  checklist,
-  loading,
-  podeGerenciar,
-  togglingTask,
-  onToggle,
-}: {
-  checklist?: ChecklistEvento
-  loading: boolean
-  podeGerenciar: boolean
-  togglingTask: number | null
-  onToggle: (item: ChecklistItem) => Promise<void>
-}) {
-  return (
-    <Card title="Checklist">
-      {loading || !checklist ? (
-        <LoadingState />
-      ) : (
-        <>
-          <p>
-            {checklist.total === 0
-              ? 'Nenhuma tarefa cadastrada para este evento'
-              : `${checklist.concluidas} de ${checklist.total} concluídas`}
-          </p>
-          <div
-            className="checklist-progress"
-            role="progressbar"
-            aria-label="Progresso do checklist"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={checklist.total === 0 ? 0 : checklist.progresso}
-            aria-valuetext={
-              checklist.total === 0
-                ? 'Nenhuma tarefa cadastrada para este evento'
-                : `${checklist.concluidas} de ${checklist.total} concluídas`
-            }
-          >
-            <div
-              className="checklist-progress-fill"
-              style={{ width: `${checklist.total === 0 ? 0 : checklist.progresso}%` }}
-            />
-          </div>
-          {checklist.itens.map((item) => (
-            <label className="check-item" key={item.id}>
-              <input
-                type="checkbox"
-                disabled={!podeGerenciar || togglingTask === item.id}
-                checked={item.concluida}
-                onChange={() => void onToggle(item)}
-              />
-              {item.titulo}
-              <small>
-                {item.atrasada
-                  ? `Atrasada · ${enumLabel(statusTarefaLabels, item.status)}`
-                  : enumLabel(statusTarefaLabels, item.status)}
-              </small>
-              {togglingTask === item.id && <span>Atualizando…</span>}
-            </label>
-          ))}
-        </>
-      )}
-    </Card>
-  )
-}
-
-function FinanceiroCard({ resumo, loading }: { resumo?: ResumoFinanceiroEvento; loading: boolean }) {
-  return (
-    <Card title="Resumo financeiro">
-      {loading || !resumo ? (
-        <LoadingState />
-      ) : (
-        <>
-          <p>
-            Previsto: <b>{formatMoney(resumo.orcamentoPrevisto)}</b>
-          </p>
-          <p>
-            Realizado: <b>{formatMoney(resumo.realizado)}</b>
-          </p>
-          <p>
-            Saldo: <b>{formatMoney(resumo.saldoOrcamentario)}</b>
-          </p>
-          <p>
-            {resumo.situacao === 'SEM_ORCAMENTO'
-              ? 'Este evento não possui orçamento previsto.'
-              : `Utilizado: ${resumo.percentualUtilizado ?? '0'}%`}
-          </p>
-        </>
-      )}
-    </Card>
-  )
-}
-
-function exigeMotivoRetorno(statusAtual: StatusTarefaChecklist, proximoStatus: StatusTarefaChecklist) {
-  return proximoStatus === 'EM_ANDAMENTO' && (statusAtual === 'REVISAO' || statusAtual === 'CONCLUIDO')
 }
