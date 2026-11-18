@@ -1,5 +1,13 @@
 import { useLocation } from 'react-router-dom'
 import { Button, Modal } from '../../components/ui'
+
+const mensagemAjudaMembros =
+  'Use busca e filtros para localizar vínculos. Aprovar, inativar e alterar acessos exigem autorização administrativa.'
+const mensagemAjudaPatrimonio =
+  'A disponibilidade é calculada pelo servidor. Retiradas, devoluções e manutenção podem mudar o saldo do item.'
+const mensagemAjudaGestoes =
+  'Consultas históricas não restauram privilégios. Confira a prévia completa antes de concluir uma transferência.'
+
 const help: Record<string, { title: string; text: string }> = {
   '/dashboard': {
     title: 'Ajuda do painel',
@@ -7,7 +15,7 @@ const help: Record<string, { title: string; text: string }> = {
   },
   '/membros': {
     title: 'Ajuda de membros',
-    text: 'Use busca e filtros para localizar vínculos. Aprovar, inativar e alterar acessos exigem autorização administrativa.',
+    text: mensagemAjudaMembros,
   },
   '/eventos': {
     title: 'Ajuda de eventos',
@@ -23,7 +31,7 @@ const help: Record<string, { title: string; text: string }> = {
   },
   '/patrimonio': {
     title: 'Ajuda de patrimônio',
-    text: 'A disponibilidade é calculada pelo servidor. Retiradas, devoluções e manutenção podem mudar o saldo do item.',
+    text: mensagemAjudaPatrimonio,
   },
   '/documentos': {
     title: 'Ajuda de documentos',
@@ -35,7 +43,7 @@ const help: Record<string, { title: string; text: string }> = {
   },
   '/gestoes': {
     title: 'Ajuda de gestões',
-    text: 'Consultas históricas não restauram privilégios. Confira a prévia completa antes de concluir uma transferência.',
+    text: mensagemAjudaGestoes,
   },
 }
 export function HelpPanel({ open, onClose }: { open: boolean; onClose: () => void }) {

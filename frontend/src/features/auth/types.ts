@@ -6,7 +6,7 @@ export type VinculoAtletica = {
   atleticaNome: string
   departamentoId: number | null
   perfilAcesso: PerfilAcesso
-  fusoHorario?: string | null
+  fusoHorario: string
 }
 export type AuthState = {
   usuario: UsuarioSessao
@@ -14,6 +14,5 @@ export type AuthState = {
   membroSelecionadoId: number | null
   selecaoNecessaria: boolean
   capacidades: string[]
-  fusoHorario?: string | null
 }
 export type LoginRequest = { email: string; senha: string }

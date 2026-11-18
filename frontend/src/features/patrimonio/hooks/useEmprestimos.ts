@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { useToast } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
+import { toOffsetDateTime } from '../../../lib/format'
 import { queryKeys } from '../../../lib/query'
-import { useAuthSession } from '../../auth/AuthSessionProvider'
+import { useAtleticaTimeZone, useAuthSession } from '../../auth/AuthSessionProvider'
 import { membrosApi } from '../../membros/api'
 import { patrimonioApi } from '../api'
 import type { DevolucaoValues, EmprestimoValues } from '../schemas/operacoes'
@@ -25,6 +26,7 @@ export function useMembrosResponsaveis() {
 
 export function useRegistrarEmprestimo(onDone: () => Promise<void>) {
   const toast = useToast()
+  const fusoHorario = useAtleticaTimeZone() ?? 'America/Sao_Paulo'
 
   return async (valoresDoFormulario: EmprestimoValues) => {
     try {
@@ -34,7 +36,7 @@ export function useRegistrarEmprestimo(onDone: () => Promise<void>) {
         membroResponsavelId: Number(valoresDoFormulario.membroResponsavelId),
         quantidade: Number(valoresDoFormulario.quantidade),
         devolucaoPrevistaEm: valoresDoFormulario.devolucaoPrevistaEm
-          ? new Date(`${valoresDoFormulario.devolucaoPrevistaEm}T12:00:00`).toISOString()
+          ? toOffsetDateTime(`${valoresDoFormulario.devolucaoPrevistaEm}T12:00`, fusoHorario)
           : undefined,
       })
       toast.success('Retirada registrada.')

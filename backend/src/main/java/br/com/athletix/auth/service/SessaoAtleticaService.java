@@ -104,6 +104,7 @@ public class SessaoAtleticaService {
         membro.getId(),
         membro.getAtleticaId(),
         membro.getNomeAtletica(),
+        membro.getFusoHorarioAtletica(),
         membro.getDepartamentoId(),
         membro.getPerfilAcesso());
   }

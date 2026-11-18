@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { useToast } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
+import { toOffsetDateTime } from '../../../lib/format'
 import { queryKeys } from '../../../lib/query'
+import { useAtleticaTimeZone } from '../../auth/AuthSessionProvider'
 import { patrimonioApi } from '../api'
 import type { ManutencaoValues } from '../schemas/operacoes'
 
@@ -15,6 +17,7 @@ export function useManutencoes(atleticaId: number | undefined, habilitada: boole
 
 export function useIniciarManutencao(onDone: () => Promise<void>) {
   const toast = useToast()
+  const fusoHorario = useAtleticaTimeZone() ?? 'America/Sao_Paulo'
 
   return async (valoresDoFormulario: ManutencaoValues) => {
     try {
@@ -23,7 +26,7 @@ export function useIniciarManutencao(onDone: () => Promise<void>) {
         itemId: Number(valoresDoFormulario.itemId),
         quantidade: Number(valoresDoFormulario.quantidade),
         previsaoConclusaoEm: valoresDoFormulario.previsaoConclusaoEm
-          ? new Date(`${valoresDoFormulario.previsaoConclusaoEm}T12:00:00`).toISOString()
+          ? toOffsetDateTime(`${valoresDoFormulario.previsaoConclusaoEm}T12:00`, fusoHorario)
           : undefined,
       })
       toast.success('Manutenção iniciada.')

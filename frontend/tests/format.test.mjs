@@ -41,3 +41,11 @@ test('variações percentuais usam sinal e formatação brasileira', () => {
   assert.equal(format.formatVariacaoPercentual('-3.2'), '-3,2%')
   assert.equal(format.formatVariacaoPercentual('0.0'), '0%')
 })
+test('datetime-local usa o fuso da atlética, não o fuso do navegador', () => {
+  const horarioLocal = '2026-07-10T09:30'
+  const fusoDaAtletica = 'America/Sao_Paulo'
+
+  assert.equal(format.toOffsetDateTime(horarioLocal, fusoDaAtletica), '2026-07-10T09:30:00-03:00')
+  assert.equal(format.deLocalInputValue('2026-07-10T12:30:00Z', fusoDaAtletica), horarioLocal)
+  assert.equal(format.toOffsetDateTime(horarioLocal, 'Asia/Tokyo'), '2026-07-10T09:30:00+09:00')
+})

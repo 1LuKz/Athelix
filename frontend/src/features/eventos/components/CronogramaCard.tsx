@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { atividadeSchema, type AtividadeValues } from '../schemas/atividade'
-import { formatDateTime } from '../../../lib/format'
+import { deLocalInputValue, formatDateTime, toOffsetDateTime } from '../../../lib/format'
 import { statusCronogramaLabels as statusLabels } from '../../../lib/labels'
 import { useAtleticaTimeZone } from '../../auth/AuthSessionProvider'
 import { useState } from 'react'
@@ -129,6 +129,7 @@ export function CronogramaCard({
         <AtividadeModal
           atividade={editing.id ? editing : null}
           eventoId={eventoId}
+          fusoHorario={timeZone ?? 'America/Sao_Paulo'}
           saving={saving}
           onClose={() => setEditing(null)}
           onSaveStart={() => setSaving(true)}
@@ -155,6 +156,7 @@ export function CronogramaCard({
 function AtividadeModal({
   atividade,
   eventoId,
+  fusoHorario,
   saving,
   onClose,
   onSaveStart,
@@ -163,6 +165,7 @@ function AtividadeModal({
 }: {
   atividade: AtividadeCronograma | null
   eventoId: string
+  fusoHorario: string
   saving: boolean
   onClose: () => void
   onSaveStart: () => void
@@ -179,8 +182,8 @@ function AtividadeModal({
     defaultValues: {
       titulo: atividade?.titulo ?? '',
       descricao: atividade?.descricao ?? '',
-      inicio: atividade ? localDate(atividade.inicio) : '',
-      fim: atividade?.fim ? localDate(atividade.fim) : '',
+      inicio: atividade ? deLocalInputValue(atividade.inicio, fusoHorario) : '',
+      fim: atividade?.fim ? deLocalInputValue(atividade.fim, fusoHorario) : '',
       status: atividade?.status ?? 'AGENDADO',
       ordem: String(atividade?.ordem ?? 0),
     },
@@ -191,8 +194,8 @@ function AtividadeModal({
       const body = {
         titulo: valores.titulo,
         descricao: valores.descricao || undefined,
-        inicio: new Date(valores.inicio).toISOString(),
-        fim: valores.fim ? new Date(valores.fim).toISOString() : undefined,
+        inicio: toOffsetDateTime(valores.inicio, fusoHorario),
+        fim: valores.fim ? toOffsetDateTime(valores.fim, fusoHorario) : undefined,
         status: valores.status,
         ordem: Number(valores.ordem),
         ...(atividade ? { version: atividade.version } : {}),
@@ -241,8 +244,4 @@ function AtividadeModal({
       </form>
     </Modal>
   )
-}
-
-function localDate(value: string) {
-  return new Date(value).toISOString().slice(0, 16)
 }

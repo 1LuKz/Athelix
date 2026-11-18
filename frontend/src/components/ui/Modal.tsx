@@ -1,6 +1,15 @@
 import { type ReactNode, useEffect, useRef } from 'react'
 import { Icon } from '../Icon'
 
+const seletorElementosFocaveis = [
+  'button:not([disabled])',
+  '[href]',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(', ')
+
 export function Modal({
   open,
   title,
@@ -26,9 +35,7 @@ export function Modal({
       }
       if (evento.key !== 'Tab') return
       const elementosFocaveis = Array.from(
-        dialogo.current?.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        ) ?? [],
+        dialogo.current?.querySelectorAll<HTMLElement>(seletorElementosFocaveis) ?? [],
       )
       if (!elementosFocaveis.length) {
         evento.preventDefault()

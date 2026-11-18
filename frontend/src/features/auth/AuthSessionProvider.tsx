@@ -95,6 +95,6 @@ export function useAuthSession() {
 
 /** Fuso informado pela sessão, quando disponível; o formatador aplica o padrão brasileiro. */
 export function useAtleticaTimeZone() {
-  const { activeVinculo, state } = useAuthSession()
-  return activeVinculo?.fusoHorario ?? state?.fusoHorario ?? undefined
+  const { activeVinculo } = useAuthSession()
+  return activeVinculo?.fusoHorario
 }

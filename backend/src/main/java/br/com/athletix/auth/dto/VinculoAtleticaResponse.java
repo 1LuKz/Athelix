@@ -7,6 +7,7 @@ public record VinculoAtleticaResponse(
     Long membroId,
     Long atleticaId,
     String atleticaNome,
+    String fusoHorario,
     Long departamentoId,
     PerfilAcesso perfilAcesso)
     implements ResponseDto {}

@@ -160,6 +160,10 @@ public class Membro extends AuditableEntity implements AtleticaScoped {
     return atletica.getNome();
   }
 
+  public String getFusoHorarioAtletica() {
+    return atletica.getFusoHorario();
+  }
+
   public Long getDepartamentoId() {
     return departamento.getId();
   }

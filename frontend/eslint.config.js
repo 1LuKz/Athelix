@@ -8,10 +8,14 @@ export default tseslint.config(
   { ignores: ['dist', 'node_modules'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  prettier,
   {
     files: ['src/**/*.{ts,tsx}'],
     plugins: { 'react-hooks': reactHooks, 'react-refresh': reactRefresh },
-    rules: { ...reactHooks.configs.recommended.rules, 'react-refresh/only-export-components': 'off' },
+    rules: {
+      ...reactHooks.configs.recommended.rules,
+      'max-len': ['error', { code: 120, ignoreUrls: true }],
+      'react-refresh/only-export-components': 'off',
+    },
   },
-  prettier,
 )

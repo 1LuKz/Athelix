@@ -3917,7 +3917,7 @@ components:
         - CONCLUIR_TRANSFERENCIA_GESTAO
     VinculoAtletica:
       type: object
-      required: [membroId, atleticaId, atleticaNome, departamentoId, perfilAcesso]
+      required: [membroId, atleticaId, atleticaNome, fusoHorario, departamentoId, perfilAcesso]
       properties:
         membroId:
           type: integer
@@ -3927,6 +3927,8 @@ components:
           format: int64
         atleticaNome:
           type: string
+        fusoHorario:
+          $ref: '#/components/schemas/TimeZone'
         departamentoId:
           type: integer
           format: int64
