@@ -104,9 +104,13 @@ export type AtualizacaoStatusTarefa = {
 }
 
 export type ResumoFinanceiroEvento = {
+  eventoId: number
+  dataReferencia: string
   orcamentoPrevisto: string
   realizado: string
   saldoOrcamentario: string
-  percentualUtilizado: string | null
+  percentualUtilizado: number | null
   situacao: string
+  receitasRealizadas: string
+  despesasAbertas: string
 }

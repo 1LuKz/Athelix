@@ -13,7 +13,7 @@ import { MateriaisTab } from '../components/MateriaisTab'
 import { ParticipantesTab } from '../components/ParticipantesTab'
 import { ResponsaveisCard } from '../components/ResponsaveisCard'
 import { detalheEventoApi } from '../detalheApi'
-import type { ChecklistEvento, ChecklistItem, StatusTarefaChecklist } from '../types'
+import type { ChecklistEvento, ChecklistItem, ResumoFinanceiroEvento, StatusTarefaChecklist } from '../types'
 import { eventosApi } from '../api'
 import { EventoModal } from './EventosPage'
 
@@ -260,19 +260,7 @@ function ChecklistCard({
   )
 }
 
-function FinanceiroCard({
-  resumo,
-  loading,
-}: {
-  resumo?: {
-    orcamentoPrevisto: string
-    realizado: string
-    saldoOrcamentario: string
-    percentualUtilizado: string | null
-    situacao: string
-  }
-  loading: boolean
-}) {
+function FinanceiroCard({ resumo, loading }: { resumo?: ResumoFinanceiroEvento; loading: boolean }) {
   return (
     <Card title="Resumo financeiro">
       {loading || !resumo ? (
