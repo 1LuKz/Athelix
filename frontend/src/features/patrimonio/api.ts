@@ -79,12 +79,12 @@ export type ItemConferencia = {
   version: number
 }
 type Value = string | number | boolean | undefined
-const qs = (values: Record<string, Value>) => {
-  const q = new URLSearchParams()
-  Object.entries(values).forEach(([key, value]) => {
-    if (value !== undefined && value !== '') q.set(key, String(value))
+const montarQueryString = (valores: Record<string, Value>) => {
+  const parametrosDeBusca = new URLSearchParams()
+  Object.entries(valores).forEach(([chave, valor]) => {
+    if (valor !== undefined && valor !== '') parametrosDeBusca.set(chave, String(valor))
   })
-  return q.toString() ? `?${q}` : ''
+  return parametrosDeBusca.toString() ? `?${parametrosDeBusca}` : ''
 }
 export const patrimonioApi = {
   resumo: (signal?: AbortSignal) => http<Resumo>('/patrimonio/resumo', { signal }),
@@ -92,7 +92,7 @@ export const patrimonioApi = {
   criarCategoria: (body: { nome: string; ativa: boolean }) =>
     http<Categoria>('/patrimonio/categorias', { method: 'POST', body }),
   itens: (filters: Record<string, Value>, signal?: AbortSignal) =>
-    http<Page<Item>>(`/patrimonio/itens${qs(filters)}`, { signal }),
+    http<Page<Item>>(`/patrimonio/itens${montarQueryString(filters)}`, { signal }),
   criarItem: (body: Record<string, unknown>) => http<Item>('/patrimonio/itens', { method: 'POST', body }),
   atualizarItem: (id: number, body: Record<string, unknown>) =>
     http<Item>(`/patrimonio/itens/${id}`, { method: 'PUT', body }),

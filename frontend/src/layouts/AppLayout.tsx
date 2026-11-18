@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { GoogleIcon } from '../components/GoogleIcon'
+import { Icon } from '../components/Icon'
 import { Logo } from '../components/Logo'
 import { useAuthSession } from '../features/auth/AuthSessionProvider'
 import { useToast } from '../components/ui'
@@ -52,14 +52,14 @@ export function AppLayout() {
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
-        <GoogleIcon name="menu" />
+        <Icon name="menu" />
       </button>
       <aside className={`sidebar ${open ? 'open' : ''}`}>
         <Logo />
         <nav aria-label="Navegação principal">
           {navigation.filter(permitted).map(([to, icon, label]) => (
             <NavLink key={to} to={`/${to}`} onClick={() => setOpen(false)}>
-              <GoogleIcon name={icon} />
+              <Icon name={icon} />
               {label}
             </NavLink>
           ))}
@@ -78,7 +78,7 @@ export function AppLayout() {
               onClick={() => setHelpOpen(true)}
               aria-label="Abrir ajuda desta tela"
             >
-              <GoogleIcon name="help" />
+              <Icon name="help" />
             </button>
             <PainelNotificacoes />
             <NavLink to="/perfil" className="user-menu">
@@ -86,7 +86,7 @@ export function AppLayout() {
               <span>{state?.usuario.nome}</span>
             </NavLink>
             <button type="button" className="header-logout" onClick={() => void sair()}>
-              <GoogleIcon name="logout" />
+              <Icon name="logout" />
               <span>Sair</span>
             </button>
           </div>

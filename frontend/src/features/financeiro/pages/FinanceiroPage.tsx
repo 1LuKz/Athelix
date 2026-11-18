@@ -30,24 +30,24 @@ import { useAuthSession } from '../../auth/AuthSessionProvider'
 import { eventosApi } from '../../eventos/api'
 import { financeiroApi, type Lancamento, type ModoData, type TipoLancamento } from '../api'
 
-const today = () => new Date().toISOString().slice(0, 10)
-const month = (offset: number) => {
-  const date = new Date()
-  date.setMonth(date.getMonth() + offset)
-  return date.toISOString().slice(0, 7)
+const dataAtual = () => new Date().toISOString().slice(0, 10)
+const mesComDeslocamento = (deslocamento: number) => {
+  const data = new Date()
+  data.setMonth(data.getMonth() + deslocamento)
+  return data.toISOString().slice(0, 7)
 }
-const roleCanManage = (capabilities: string[]) => capabilities.includes('GERENCIAR_FINANCEIRO')
+const podeGerenciarFinanceiro = (capacidades: string[]) => capacidades.includes('GERENCIAR_FINANCEIRO')
 
 export function FinanceiroPage() {
   const { activeVinculo, state } = useAuthSession()
-  const client = useQueryClient()
+  const clienteDeConsultas = useQueryClient()
   const toast = useToast()
-  const [tab, setTab] = useState('lancamentos')
-  const [page, setPage] = useState(0)
-  const [createType, setCreateType] = useState<TipoLancamento | null>(null)
-  const [edit, setEdit] = useState<Lancamento | null>(null)
+  const [abaAtiva, setAbaAtiva] = useState('lancamentos')
+  const [paginaAtual, setPaginaAtual] = useState(0)
+  const [tipoNovoLancamento, setTipoNovoLancamento] = useState<TipoLancamento | null>(null)
+  const [lancamentoEmEdicao, setLancamentoEmEdicao] = useState<Lancamento | null>(null)
   const [novaCategoria, setNovaCategoria] = useState(false)
-  const [filters, setFilters] = useState({
+  const [filtros, setFiltros] = useState({
     modoData: 'LIQUIDACAO' as ModoData,
     dataDe: '',
     dataAte: '',
@@ -55,16 +55,17 @@ export function FinanceiroPage() {
     tipo: '',
     situacao: '',
   })
-  const [action, setAction] = useState<{
+  const [acaoSelecionada, setAcaoSelecionada] = useState<{
     kind: 'APROVAR' | 'REJEITAR' | 'LIQUIDAR' | 'CANCELAR' | 'ESTORNAR'
     item: Lancamento
   } | null>(null)
-  const active = Boolean(activeVinculo)
-  const canManage = roleCanManage(state?.capacidades ?? [])
-  const memberId = activeVinculo?.membroId
-  const selectedTab = !canManage && (tab === 'lancamentos' || tab === 'aprovacoes') ? 'contas' : tab
-  const invalidate = async () => {
-    await client.invalidateQueries({
+  const possuiVinculoAtivo = Boolean(activeVinculo)
+  const podeGerenciar = podeGerenciarFinanceiro(state?.capacidades ?? [])
+  const membroAtualId = activeVinculo?.membroId
+  const abaSelecionada =
+    !podeGerenciar && (abaAtiva === 'lancamentos' || abaAtiva === 'aprovacoes') ? 'contas' : abaAtiva
+  const invalidarConsultas = async () => {
+    await clienteDeConsultas.invalidateQueries({
       predicate: (query) =>
         query.queryKey[0] === 'atletica' &&
         query.queryKey[1] === activeVinculo?.atleticaId &&
@@ -75,31 +76,31 @@ export function FinanceiroPage() {
   const resumo = useQuery({
     queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'financeiro-resumo'),
     queryFn: ({ signal }) => financeiroApi.resumo(undefined, signal),
-    enabled: active,
+    enabled: possuiVinculoAtivo,
   })
   const evolucao = useQuery({
     queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'financeiro-evolucao', {
-      mesDe: month(-5),
-      mesAte: month(0),
+      mesDe: mesComDeslocamento(-5),
+      mesAte: mesComDeslocamento(0),
     }),
-    queryFn: ({ signal }) => financeiroApi.evolucao(month(-5), month(0), signal),
-    enabled: active,
+    queryFn: ({ signal }) => financeiroApi.evolucao(mesComDeslocamento(-5), mesComDeslocamento(0), signal),
+    enabled: possuiVinculoAtivo,
   })
   const categorias = useQuery({
     queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'financeiro-categorias'),
     queryFn: ({ signal }) => financeiroApi.categorias(signal),
-    enabled: active && canManage,
+    enabled: possuiVinculoAtivo && podeGerenciar,
   })
   const lancamentos = useQuery({
-    queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'financeiro-lancamentos', { ...filters, page }),
+    queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'financeiro-lancamentos', { ...filtros, page: paginaAtual }),
     queryFn: ({ signal }) =>
-      financeiroApi.lancamentos({ ...filters, page, size: 12, sort: 'dataCompetencia,desc' }, signal),
-    enabled: active && canManage,
+      financeiroApi.lancamentos({ ...filtros, page: paginaAtual, size: 12, sort: 'dataCompetencia,desc' }, signal),
+    enabled: possuiVinculoAtivo && podeGerenciar,
   })
   const contas = useQuery({
     queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'financeiro-contas'),
     queryFn: ({ signal }) => financeiroApi.contas({ page: 0, size: 30, sort: 'dataVencimento,asc' }, signal),
-    enabled: active && selectedTab === 'contas',
+    enabled: possuiVinculoAtivo && abaSelecionada === 'contas',
   })
   const mutate = useMutation({
     mutationFn: async ({
@@ -107,29 +108,29 @@ export function FinanceiroPage() {
       item,
       motivo,
     }: {
-      kind: NonNullable<typeof action>['kind']
+      kind: NonNullable<typeof acaoSelecionada>['kind']
       item: Lancamento
       motivo: string
     }) => {
       if (kind === 'APROVAR' || kind === 'REJEITAR') return financeiroApi.aprovar(item.id, kind, motivo, item.version)
-      if (kind === 'LIQUIDAR') return financeiroApi.liquidar(item.id, today(), item.version)
+      if (kind === 'LIQUIDAR') return financeiroApi.liquidar(item.id, dataAtual(), item.version)
       if (kind === 'CANCELAR') return financeiroApi.cancelar(item.id, motivo, item.version)
-      return financeiroApi.estornar(item.id, today(), motivo)
+      return financeiroApi.estornar(item.id, dataAtual(), motivo)
     },
     onSuccess: async () => {
       toast.success('Operação financeira registrada.')
-      setAction(null)
-      await invalidate()
+      setAcaoSelecionada(null)
+      await invalidarConsultas()
     },
     onError: (cause) => toast.error(errorFeedback(cause)),
   })
-  const report = async () => {
-    if (!filters.dataDe || !filters.dataAte) {
+  const exportarRelatorio = async () => {
+    if (!filtros.dataDe || !filtros.dataAte) {
       toast.error('Informe o período para exportar a prestação de contas.')
       return
     }
     try {
-      const csv = await financeiroApi.relatorio(filters.dataDe, filters.dataAte)
+      const csv = await financeiroApi.relatorio(filtros.dataDe, filtros.dataAte)
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
       const url = URL.createObjectURL(blob)
       const anchor = document.createElement('a')
@@ -137,8 +138,8 @@ export function FinanceiroPage() {
       anchor.download = 'relatorio-financeiro.csv'
       anchor.click()
       URL.revokeObjectURL(url)
-    } catch (cause) {
-      toast.error(errorFeedback(cause))
+    } catch (erro) {
+      toast.error(errorFeedback(erro))
     }
   }
   const chartData = useMemo(
@@ -150,9 +151,9 @@ export function FinanceiroPage() {
       })),
     [evolucao.data],
   )
-  const changeFilter = (key: keyof typeof filters, value: string) => {
-    setFilters((current) => ({ ...current, [key]: value }))
-    setPage(0)
+  const alterarFiltro = (campo: keyof typeof filtros, valor: string) => {
+    setFiltros((filtrosAtuais) => ({ ...filtrosAtuais, [campo]: valor }))
+    setPaginaAtual(0)
   }
   return (
     <>
@@ -161,18 +162,18 @@ export function FinanceiroPage() {
           <p className="eyebrow">Prestação de contas</p>
           <h1>Financeiro</h1>
         </div>
-        {canManage && (
+        {podeGerenciar && (
           <div>
             <Button variant="secondary" onClick={() => setNovaCategoria(true)}>
               Nova categoria
             </Button>
-            <Button variant="secondary" icon="download" onClick={() => void report()}>
+            <Button variant="secondary" icon="download" onClick={() => void exportarRelatorio()}>
               Exportar CSV
             </Button>
-            <Button icon="add" onClick={() => setCreateType('RECEITA')}>
+            <Button icon="add" onClick={() => setTipoNovoLancamento('RECEITA')}>
               Nova receita
             </Button>
-            <Button icon="remove" onClick={() => setCreateType('DESPESA')}>
+            <Button icon="remove" onClick={() => setTipoNovoLancamento('DESPESA')}>
               Nova despesa
             </Button>
           </div>
@@ -210,10 +211,10 @@ export function FinanceiroPage() {
               )}
             </Card>
             <Tabs
-              active={selectedTab}
-              onChange={setTab}
+              active={abaSelecionada}
+              onChange={setAbaAtiva}
               tabs={[
-                ...(canManage
+                ...(podeGerenciar
                   ? [
                       { id: 'lancamentos', label: 'Lançamentos' },
                       { id: 'aprovacoes', label: 'Pendências de aprovação' },
@@ -223,9 +224,9 @@ export function FinanceiroPage() {
                 { id: 'relatorio', label: 'Prestação de contas' },
               ]}
             />
-            {selectedTab === 'contas' ? (
+            {abaSelecionada === 'contas' ? (
               <ContasSection query={contas} />
-            ) : selectedTab === 'relatorio' ? (
+            ) : abaSelecionada === 'relatorio' ? (
               <Card title="Prestação de contas">
                 <p>
                   Escolha o período na listagem e exporte o CSV. O relatório traz critérios, saldo inicial, entradas,
@@ -234,29 +235,33 @@ export function FinanceiroPage() {
                 <p className="form-note">
                   Dados pessoais de contrapartes e anexos restritos são omitidos conforme a sua autorização.
                 </p>
-                <Button icon="download" onClick={() => void report()}>
+                <Button icon="download" onClick={() => void exportarRelatorio()}>
                   Baixar CSV do período
                 </Button>
               </Card>
-            ) : canManage ? (
+            ) : podeGerenciar ? (
               <Card
                 className="members-card"
-                title={selectedTab === 'aprovacoes' ? 'Despesas aguardando decisão' : 'Lançamentos'}
+                title={abaSelecionada === 'aprovacoes' ? 'Despesas aguardando decisão' : 'Lançamentos'}
               >
-                {selectedTab === 'lancamentos' && (
-                  <Filters filters={filters} onChange={changeFilter} categorias={categorias.data ?? []} />
+                {abaSelecionada === 'lancamentos' && (
+                  <Filters filters={filtros} onChange={alterarFiltro} categorias={categorias.data ?? []} />
                 )}
                 <LancamentosTable
                   items={(lancamentos.data?.items ?? []).filter(
-                    (item) => selectedTab !== 'aprovacoes' || item.statusAprovacao === 'PENDENTE',
+                    (lancamento) => abaSelecionada !== 'aprovacoes' || lancamento.statusAprovacao === 'PENDENTE',
                   )}
-                  canManage={canManage}
-                  memberId={memberId}
-                  onAction={setAction}
-                  onEdit={setEdit}
+                  canManage={podeGerenciar}
+                  memberId={membroAtualId}
+                  onAction={setAcaoSelecionada}
+                  onEdit={setLancamentoEmEdicao}
                 />
                 {lancamentos.data && (
-                  <Pagination page={page} totalPages={lancamentos.data.totalPages} onPageChange={setPage} />
+                  <Pagination
+                    page={paginaAtual}
+                    totalPages={lancamentos.data.totalPages}
+                    onPageChange={setPaginaAtual}
+                  />
                 )}
               </Card>
             ) : (
@@ -273,36 +278,36 @@ export function FinanceiroPage() {
           onClose={() => setNovaCategoria(false)}
           onSave={async (nome, tipoAplicavel) => {
             await financeiroApi.criarCategoria({ nome, tipoAplicavel, ativa: true })
-            await invalidate()
+            await invalidarConsultas()
           }}
         />
       )}
-      {edit && (
+      {lancamentoEmEdicao && (
         <LancamentoModal
-          tipo={edit.tipo}
-          item={edit}
-          onClose={() => setEdit(null)}
+          tipo={lancamentoEmEdicao.tipo}
+          item={lancamentoEmEdicao}
+          onClose={() => setLancamentoEmEdicao(null)}
           onCreated={async () => {
-            setEdit(null)
-            await invalidate()
+            setLancamentoEmEdicao(null)
+            await invalidarConsultas()
           }}
         />
       )}
-      {createType && (
+      {tipoNovoLancamento && (
         <LancamentoModal
-          tipo={createType}
-          onClose={() => setCreateType(null)}
+          tipo={tipoNovoLancamento}
+          onClose={() => setTipoNovoLancamento(null)}
           onCreated={async () => {
-            setCreateType(null)
-            await invalidate()
+            setTipoNovoLancamento(null)
+            await invalidarConsultas()
           }}
         />
       )}
-      {action && (
+      {acaoSelecionada && (
         <ActionDialog
-          action={action}
-          onClose={() => setAction(null)}
-          onConfirm={(motivo) => mutate.mutate({ ...action, motivo })}
+          action={acaoSelecionada}
+          onClose={() => setAcaoSelecionada(null)}
+          onConfirm={(motivo) => mutate.mutate({ ...acaoSelecionada, motivo })}
           loading={mutate.isPending}
         />
       )}
@@ -541,7 +546,7 @@ function LancamentoModal({
       descricao: item?.descricao ?? '',
       categoriaId: item ? String(item.categoriaId) : '',
       valor: item?.valor ?? '',
-      dataCompetencia: item?.dataCompetencia ?? today(),
+      dataCompetencia: item?.dataCompetencia ?? dataAtual(),
       dataVencimento: item?.dataVencimento ?? '',
       eventoId: item?.eventoId ? String(item.eventoId) : '',
     },

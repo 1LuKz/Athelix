@@ -2,7 +2,7 @@ import { formatDate } from '../../../lib/format'
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { GoogleIcon } from '../../../components/GoogleIcon'
+import { Icon } from '../../../components/Icon'
 import { EmptyState, LoadingState } from '../../../components/ui'
 import { useAuthSession } from '../../auth/AuthSessionProvider'
 import { notificacoesApi } from '../api'
@@ -40,7 +40,7 @@ export function PainelNotificacoes() {
         aria-expanded={open}
         onClick={abrir}
       >
-        <GoogleIcon name="notifications" />
+        <Icon name="notifications" />
         {(resumo.data?.naoLidas ?? 0) > 0 && <span>{resumo.data?.naoLidas}</span>}
       </button>
       {open && (
@@ -48,7 +48,7 @@ export function PainelNotificacoes() {
           <header>
             <strong>Notificações</strong>
             <button type="button" onClick={() => setOpen(false)} aria-label="Fechar notificações">
-              <GoogleIcon name="close" />
+              <Icon name="close" />
             </button>
           </header>
           {lista.isLoading ? (
@@ -83,7 +83,7 @@ export function PainelNotificacoes() {
 }
 function BadgeIcon({ tipo }: { tipo: string }) {
   return (
-    <GoogleIcon
+    <Icon
       className={tipo === 'ATRASADA' ? 'notification-late' : ''}
       name={tipo === 'ATRASADA' ? 'warning' : 'schedule'}
     />

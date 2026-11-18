@@ -2,50 +2,50 @@ import { formatDate, formatDateTime, formatMoney, formatMonth } from '../../../l
 import { enumLabel, statusEventoLabels, statusTarefaLabels, tipoLancamentoLabels } from '../../../lib/labels'
 import { useAtleticaTimeZone } from '../../auth/AuthSessionProvider'
 import { Link } from 'react-router-dom'
-import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Card, EmptyState, ErrorState, LoadingState, Table } from '../../../components/ui'
+import { EmptyState, ErrorState, LoadingState, Table } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
 import { queryKeys } from '../../../lib/query'
 import { useAuthSession } from '../../auth/AuthSessionProvider'
 import { dashboardApi } from '../api'
+import { MetricaDashboard, SecaoDashboard } from '../components/DashboardCard'
 export function DashboardPage() {
-  const timeZone = useAtleticaTimeZone()
+  const fusoHorario = useAtleticaTimeZone()
   const { activeVinculo, state } = useAuthSession()
-  const id = activeVinculo?.atleticaId
-  const enabled = Boolean(activeVinculo)
+  const atleticaId = activeVinculo?.atleticaId
+  const consultasHabilitadas = Boolean(activeVinculo)
   const resumo = useQuery({
-    queryKey: queryKeys.scoped(id, 'dashboard-resumo'),
+    queryKey: queryKeys.scoped(atleticaId, 'dashboard-resumo'),
     queryFn: ({ signal }) => dashboardApi.resumo(signal),
-    enabled,
+    enabled: consultasHabilitadas,
   })
   const financeiro = useQuery({
-    queryKey: queryKeys.scoped(id, 'dashboard-financeiro'),
+    queryKey: queryKeys.scoped(atleticaId, 'dashboard-financeiro'),
     queryFn: ({ signal }) => dashboardApi.financeiro(signal),
-    enabled,
+    enabled: consultasHabilitadas,
   })
   const departamentos = useQuery({
-    queryKey: queryKeys.scoped(id, 'dashboard-departamentos'),
+    queryKey: queryKeys.scoped(atleticaId, 'dashboard-departamentos'),
     queryFn: ({ signal }) => dashboardApi.departamentos(signal),
-    enabled,
+    enabled: consultasHabilitadas,
   })
   const eventos = useQuery({
-    queryKey: queryKeys.scoped(id, 'dashboard-eventos'),
+    queryKey: queryKeys.scoped(atleticaId, 'dashboard-eventos'),
     queryFn: ({ signal }) => dashboardApi.eventos(signal),
-    enabled,
+    enabled: consultasHabilitadas,
   })
   const tarefas = useQuery({
-    queryKey: queryKeys.scoped(id, 'dashboard-tarefas'),
+    queryKey: queryKeys.scoped(atleticaId, 'dashboard-tarefas'),
     queryFn: ({ signal }) => dashboardApi.tarefas(signal),
-    enabled,
+    enabled: consultasHabilitadas,
   })
   const movimentos = useQuery({
-    queryKey: queryKeys.scoped(id, 'dashboard-movimentos'),
+    queryKey: queryKeys.scoped(atleticaId, 'dashboard-movimentos'),
     queryFn: ({ signal }) => dashboardApi.movimentos(signal),
-    enabled,
+    enabled: consultasHabilitadas,
   })
-  const canFinance = state?.capacidades.includes('CONSULTAR_RESUMOS_FINANCEIROS') ?? false
+  const podeConsultarFinanceiro = state?.capacidades.includes('CONSULTAR_RESUMOS_FINANCEIROS') ?? false
   return (
     <>
       <div className="page-title">
@@ -61,25 +61,25 @@ export function DashboardPage() {
       ) : (
         resumo.data && (
           <section className="dashboard-metrics">
-            <Metric
+            <MetricaDashboard
               label="Membros ativos"
               value={String(resumo.data.ativos)}
               detail={`${resumo.data.pendentes} pendentes · ${resumo.data.inativos} inativos`}
               to="/membros?status=ATIVO"
             />
-            <Metric
+            <MetricaDashboard
               label="Eventos ativos"
               value={String(resumo.data.eventosAtivos)}
               detail="Inscrições abertas e em andamento"
               to="/eventos?grupoStatus=ATIVOS"
             />
-            <Metric
+            <MetricaDashboard
               label="Saldo atual"
-              value={canFinance ? formatMoney(resumo.data.saldoAtual) : 'Não autorizado'}
+              value={podeConsultarFinanceiro ? formatMoney(resumo.data.saldoAtual) : 'Não autorizado'}
               detail="Regime de caixa até hoje"
               to="/financeiro"
             />
-            <Metric
+            <MetricaDashboard
               label="Patrimônio"
               value={String(resumo.data.cadastrosPatrimonio)}
               detail={`${resumo.data.unidadesPatrimonio} unidades cadastradas`}
@@ -89,7 +89,7 @@ export function DashboardPage() {
         )
       )}
       <section className="dashboard-grid">
-        <Section title="Receitas e despesas" to="/financeiro" query={financeiro}>
+        <SecaoDashboard title="Receitas e despesas" to="/financeiro" query={financeiro}>
           {financeiro.data && (
             <>
               <ResponsiveContainer width="100%" height={230}>
@@ -124,8 +124,8 @@ export function DashboardPage() {
               </Table>
             </>
           )}
-        </Section>
-        <Section title="Participação por departamento" to="/departamentos" query={departamentos}>
+        </SecaoDashboard>
+        <SecaoDashboard title="Participação por departamento" to="/departamentos" query={departamentos}>
           {departamentos.data?.length ? (
             <Table caption="Participação departamental" columns={['Departamento', 'Membros ativos', 'Participação']}>
               {departamentos.data.map((item) => (
@@ -139,8 +139,8 @@ export function DashboardPage() {
           ) : (
             <EmptyState description="Não há departamentos ativos para exibir." />
           )}
-        </Section>
-        <Section title="Próximos eventos" to="/eventos" query={eventos}>
+        </SecaoDashboard>
+        <SecaoDashboard title="Próximos eventos" to="/eventos" query={eventos}>
           {eventos.data?.length ? (
             <ul className="dashboard-list">
               {eventos.data.map((item) => (
@@ -148,7 +148,7 @@ export function DashboardPage() {
                   <Link to={`/eventos/${item.id}`}>
                     <b>{item.nome}</b>
                     <span>
-                      {formatDateTime(item.inicio, timeZone)} · {enumLabel(statusEventoLabels, item.status)}
+                      {formatDateTime(item.inicio, fusoHorario)} · {enumLabel(statusEventoLabels, item.status)}
                     </span>
                   </Link>
                 </li>
@@ -157,8 +157,8 @@ export function DashboardPage() {
           ) : (
             <EmptyState description="Não há eventos futuros ou em andamento." />
           )}
-        </Section>
-        <Section title="Tarefas pendentes" to="/tarefas" query={tarefas}>
+        </SecaoDashboard>
+        <SecaoDashboard title="Tarefas pendentes" to="/tarefas" query={tarefas}>
           {tarefas.data?.length ? (
             <ul className="dashboard-list">
               {tarefas.data.map((item) => (
@@ -176,8 +176,8 @@ export function DashboardPage() {
           ) : (
             <EmptyState description="Nenhuma tarefa pendente no seu escopo." />
           )}
-        </Section>
-        <Section title="Últimas movimentações" to="/financeiro" query={movimentos}>
+        </SecaoDashboard>
+        <SecaoDashboard title="Últimas movimentações" to="/financeiro" query={movimentos}>
           {movimentos.data?.length ? (
             <Table caption="Últimas movimentações" columns={['Data', 'Tipo', 'Descrição', 'Valor']}>
               {movimentos.data.map((item, index) => (
@@ -192,49 +192,8 @@ export function DashboardPage() {
           ) : (
             <EmptyState description="Ainda não há movimentações financeiras recentes." />
           )}
-        </Section>
+        </SecaoDashboard>
       </section>
     </>
-  )
-}
-function Metric({ label, value, detail, to }: { label: string; value: string; detail: string; to: string }) {
-  return (
-    <Link className="dashboard-metric" to={to}>
-      <Card>
-        <span>{label}</span>
-        <strong>{value}</strong>
-        <small>{detail}</small>
-      </Card>
-    </Link>
-  )
-}
-function Section({
-  title,
-  to,
-  query,
-  children,
-}: {
-  title: string
-  to: string
-  query: { isLoading: boolean; isError: boolean; error: unknown }
-  children: ReactNode
-}) {
-  return (
-    <Card
-      title={title}
-      action={
-        <Link className="section-link" to={to}>
-          Ver detalhes
-        </Link>
-      }
-    >
-      {query.isLoading ? (
-        <LoadingState />
-      ) : query.isError ? (
-        <ErrorState message={errorFeedback(query.error)} />
-      ) : (
-        children
-      )}
-    </Card>
   )
 }

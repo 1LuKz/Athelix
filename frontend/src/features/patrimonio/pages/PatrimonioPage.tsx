@@ -1,24 +1,5 @@
-import {
-  emprestimoSchema,
-  manutencaoSchema,
-  devolucaoSchema,
-  conferenciaSchema,
-  contagemSchema,
-  type EmprestimoValues,
-  type ManutencaoValues,
-  type DevolucaoValues,
-  type ConferenciaValues,
-  type ContagemValues,
-} from '../schemas/operacoes'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm, useWatch } from 'react-hook-form'
-import { normalizeMoney } from '../../../lib/formSchemas'
-import { itemSchema, type ItemValues } from '../schemas/item'
-import { formatDateTime, formatMoney as money } from '../../../lib/format'
-import { conservacaoLabels, situacaoPatrimonioLabels, statusConferenciaLabels } from '../../../lib/labels'
-import { useAtleticaTimeZone } from '../../auth/AuthSessionProvider'
-import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 import {
   Badge,
   Button,
@@ -27,119 +8,80 @@ import {
   ErrorState,
   Input,
   LoadingState,
-  Modal,
   Pagination,
   Select,
   Table,
   Tabs,
-  useToast,
 } from '../../../components/ui'
 import { NovaCategoriaModal } from '../../../components/NovaCategoriaModal'
 import { errorFeedback } from '../../../lib/errorFeedback'
+import { formatMoney } from '../../../lib/format'
+import { conservacaoLabels, situacaoPatrimonioLabels } from '../../../lib/labels'
 import { queryKeys } from '../../../lib/query'
 import { useAuthSession } from '../../auth/AuthSessionProvider'
-import { membrosApi } from '../../membros/api'
-import { patrimonioApi, type Conferencia, type Item, type Situacao } from '../api'
+import { ConferenciaModal, ConferenciasCard } from '../components/ConferenciasCard'
+import { ItemModal } from '../components/ItemModal'
+import { EmprestimoModal, EmprestimosCard, ManutencaoModal, ManutencoesCard } from '../components/PatrimonioOperacoes'
+import { patrimonioApi, type Item, type Situacao } from '../api'
 
-const manage = (caps: string[]) =>
-  caps.includes('GERENCIAR_PATRIMONIO') || caps.includes('GERENCIAR_PATRIMONIO_DO_PROPRIO_DEPARTAMENTO')
+type AbaPatrimonio = 'itens' | 'emprestimos' | 'manutencoes' | 'conferencias'
+type ModalPatrimonio = 'categoria' | 'item' | 'emprestimo' | 'manutencao' | 'conferencia' | null
+type FiltrosPatrimonio = { nome: string; categoriaId: string; conservacao: string; situacao: string }
+
+const podeGerenciarPatrimonio = (capacidades: string[]) =>
+  capacidades.includes('GERENCIAR_PATRIMONIO') || capacidades.includes('GERENCIAR_PATRIMONIO_DO_PROPRIO_DEPARTAMENTO')
 
 export function PatrimonioPage() {
   const { activeVinculo, state } = useAuthSession()
-  const client = useQueryClient()
-  const [tab, setTab] = useState('itens')
-  const [page, setPage] = useState(0)
-  const [modal, setModal] = useState<'categoria' | 'item' | 'emprestimo' | 'manutencao' | 'conferencia' | null>(null)
-  const [edit, setEdit] = useState<Item | null>(null)
-  const [filters, setFilters] = useState({ nome: '', categoriaId: '', conservacao: '', situacao: '' })
-  const canManage = manage(state?.capacidades ?? [])
-  const active = Boolean(activeVinculo)
-  const invalidate = async () => {
-    await client.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'patrimonio'] })
+  const clienteDeConsultas = useQueryClient()
+  const [abaAtiva, setAbaAtiva] = useState<AbaPatrimonio>('itens')
+  const [paginaAtual, setPaginaAtual] = useState(0)
+  const [modalAberto, setModalAberto] = useState<ModalPatrimonio>(null)
+  const [itemEmEdicao, setItemEmEdicao] = useState<Item | null>(null)
+  const [filtros, setFiltros] = useState<FiltrosPatrimonio>({
+    nome: '',
+    categoriaId: '',
+    conservacao: '',
+    situacao: '',
+  })
+  const podeGerenciar = podeGerenciarPatrimonio(state?.capacidades ?? [])
+  const possuiVinculoAtivo = Boolean(activeVinculo)
+  const resumo = useResumoPatrimonio(activeVinculo?.atleticaId, possuiVinculoAtivo)
+  const categorias = useCategoriasPatrimonio(activeVinculo?.atleticaId, possuiVinculoAtivo)
+  const itens = useItensPatrimonio(activeVinculo?.atleticaId, filtros, paginaAtual, possuiVinculoAtivo)
+  const emprestimos = useEmprestimosPatrimonio(activeVinculo?.atleticaId, possuiVinculoAtivo, abaAtiva)
+  const manutencoes = useManutencoesPatrimonio(activeVinculo?.atleticaId, possuiVinculoAtivo, abaAtiva)
+  const conferencias = useConferenciasPatrimonio(activeVinculo?.atleticaId, possuiVinculoAtivo, abaAtiva)
+
+  const atualizarDadosPatrimonio = async () => {
+    await clienteDeConsultas.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'patrimonio'] })
   }
-  const resumo = useQuery({
-    queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'patrimonio-resumo'),
-    queryFn: ({ signal }) => patrimonioApi.resumo(signal),
-    enabled: active,
-  })
-  const categorias = useQuery({
-    queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'patrimonio-categorias'),
-    queryFn: ({ signal }) => patrimonioApi.categorias(signal),
-    enabled: active,
-  })
-  const itens = useQuery({
-    queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'patrimonio-itens', { ...filters, page }),
-    queryFn: ({ signal }) => patrimonioApi.itens({ ...filters, page, size: 12, sort: 'nome,asc' }, signal),
-    enabled: active,
-  })
-  const emprestimos = useQuery({
-    queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'patrimonio-emprestimos'),
-    queryFn: ({ signal }) => patrimonioApi.emprestimos(signal),
-    enabled: active && tab === 'emprestimos',
-  })
-  const manutencoes = useQuery({
-    queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'patrimonio-manutencoes'),
-    queryFn: ({ signal }) => patrimonioApi.manutencoes(signal),
-    enabled: active && tab === 'manutencoes',
-  })
-  const conferencias = useQuery({
-    queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'patrimonio-conferencias'),
-    queryFn: ({ signal }) => patrimonioApi.conferencias(signal),
-    enabled: active && tab === 'conferencias',
-  })
-  const change = (key: keyof typeof filters, value: string) => {
-    setFilters({ ...filters, [key]: value })
-    setPage(0)
+
+  const alterarFiltro = (campo: keyof FiltrosPatrimonio, valor: string) => {
+    setFiltros({ ...filtros, [campo]: valor })
+    setPaginaAtual(0)
   }
+
+  const fecharModalEAAtualizarDados = async () => {
+    setModalAberto(null)
+    await atualizarDadosPatrimonio()
+  }
+
   return (
     <>
-      <div className="page-title">
-        <div>
-          <p className="eyebrow">Controle institucional</p>
-          <h1>Patrimônio</h1>
-        </div>
-        {canManage && (
-          <div>
-            {activeVinculo?.perfilAcesso === 'ADMINISTRADOR' && (
-              <Button variant="secondary" onClick={() => setModal('categoria')}>
-                Nova categoria
-              </Button>
-            )}
-            <Button icon="assignment" onClick={() => setModal('conferencia')}>
-              Nova conferência
-            </Button>
-            <Button
-              icon="add"
-              onClick={() => {
-                setEdit(null)
-                setModal('item')
-              }}
-            >
-              Novo item
-            </Button>
-          </div>
-        )}
-      </div>
-      {resumo.isLoading ? (
-        <LoadingState />
-      ) : resumo.isError ? (
-        <ErrorState message={errorFeedback(resumo.error)} />
-      ) : (
-        resumo.data && (
-          <section className="finance-summary patrimonio-summary">
-            <Metric label="Unidades disponíveis" value={String(resumo.data.quantidadeDisponivel)} />
-            <Metric label="Emprestadas" value={String(resumo.data.quantidadeEmprestada)} />
-            <Metric label="Em manutenção" value={String(resumo.data.quantidadeEmManutencao)} />
-            <Metric label="Valor estimado" value={money(resumo.data.valorEstimadoTotal)} />
-            <span className="summary-note">
-              {resumo.data.itensAtivos} cadastros ativos · {resumo.data.quantidadeTotal} unidades no total
-            </span>
-          </section>
-        )
-      )}
+      <CabecalhoPatrimonio
+        podeGerenciar={podeGerenciar}
+        perfilAcesso={activeVinculo?.perfilAcesso}
+        onAbrirModal={setModalAberto}
+        onNovoItem={() => {
+          setItemEmEdicao(null)
+          setModalAberto('item')
+        }}
+      />
+      <ResumoPatrimonio resumo={resumo} />
       <Tabs
-        active={tab}
-        onChange={setTab}
+        active={abaAtiva}
+        onChange={(aba) => setAbaAtiva(aba as AbaPatrimonio)}
         tabs={[
           { id: 'itens', label: 'Itens' },
           { id: 'emprestimos', label: 'Empréstimos' },
@@ -147,184 +89,194 @@ export function PatrimonioPage() {
           { id: 'conferencias', label: 'Conferências' },
         ]}
       />
-      {tab === 'itens' && (
-        <Card className="members-card">
-          <div className="filters patrimonio-filters">
-            <Input
-              label="Buscar por nome"
-              value={filters.nome}
-              onChange={(event) => change('nome', event.target.value)}
-            />
-            <Select
-              label="Categoria"
-              value={filters.categoriaId}
-              onChange={(event) => change('categoriaId', event.target.value)}
-            >
-              <option value="">Todas</option>
-              {categorias.data?.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.nome}
-                </option>
-              ))}
-            </Select>
-            <Select
-              label="Conservação"
-              value={filters.conservacao}
-              onChange={(event) => change('conservacao', event.target.value)}
-            >
-              <option value="">Todas</option>
-              <option value="OTIMO">Ótimo</option>
-              <option value="BOM">Bom</option>
-              <option value="REGULAR">Regular</option>
-              <option value="RUIM">Ruim</option>
-            </Select>
-            <Select
-              label="Situação operacional"
-              value={filters.situacao}
-              onChange={(event) => change('situacao', event.target.value)}
-            >
-              <option value="">Todas</option>
-              <option value="DISPONIVEL">Disponível</option>
-              <option value="EMPRESTADO">Emprestado</option>
-              <option value="EM_MANUTENCAO">Em manutenção</option>
-            </Select>
-          </div>
-          {itens.isLoading ? (
-            <LoadingState />
-          ) : itens.isError ? (
-            <ErrorState message={errorFeedback(itens.error)} />
-          ) : itens.data?.items.length ? (
-            <Table
-              caption="Itens de patrimônio"
-              columns={['Item', 'Categoria', 'Quantidade', 'Conservação', 'Localização', 'Situação', 'Ações']}
-            >
-              {itens.data.items.map((item) => (
-                <tr key={item.id}>
-                  <td>
-                    <b>{item.nome}</b>
-                    <small>{item.descricao ?? 'Sem descrição'}</small>
-                  </td>
-                  <td>{item.categoriaNome}</td>
-                  <td>
-                    {item.quantidadeDisponivel} disponível<small>{item.quantidadeTotal} total</small>
-                  </td>
-                  <td>{conservacaoLabels[item.conservacao]}</td>
-                  <td>{item.localizacao}</td>
-                  <td>
-                    <Badge tone={situacaoTone(item.situacaoOperacional)}>
-                      {situacaoLabel(item.situacaoOperacional)}
-                    </Badge>
-                  </td>
-                  <td>
-                    {canManage && (
-                      <div className="row-actions">
-                        <Button
-                          variant="secondary"
-                          onClick={() => {
-                            setEdit(item)
-                            setModal('item')
-                          }}
-                        >
-                          Editar
-                        </Button>
-                        <Button variant="ghost" onClick={() => setModal('emprestimo')}>
-                          Retirar
-                        </Button>
-                        <Button variant="ghost" onClick={() => setModal('manutencao')}>
-                          Manutenção
-                        </Button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </Table>
-          ) : (
-            <EmptyState description="Nenhum item corresponde aos filtros." />
-          )}
-          {itens.data && <Pagination page={page} totalPages={itens.data.totalPages} onPageChange={setPage} />}
-        </Card>
+      {abaAtiva === 'itens' && (
+        <ItensPatrimonioCard
+          categorias={categorias.data}
+          filtros={filtros}
+          itens={itens}
+          paginaAtual={paginaAtual}
+          podeGerenciar={podeGerenciar}
+          onAlterarFiltro={alterarFiltro}
+          onEditarItem={(item) => {
+            setItemEmEdicao(item)
+            setModalAberto('item')
+          }}
+          onAbrirModal={setModalAberto}
+          onMudarPagina={setPaginaAtual}
+        />
       )}
-      {tab === 'emprestimos' && (
-        <Operacoes
-          emprestimos={emprestimos}
+      {abaAtiva === 'emprestimos' && (
+        <EmprestimosCard
+          emprestimos={emprestimos.data}
+          carregando={emprestimos.isLoading}
           itens={itens.data?.items ?? []}
-          canManage={canManage}
-          onNew={() => setModal('emprestimo')}
-          onDone={invalidate}
+          podeGerenciar={podeGerenciar}
+          onNew={() => setModalAberto('emprestimo')}
+          onDone={atualizarDadosPatrimonio}
         />
       )}
-      {tab === 'manutencoes' && (
-        <Manutencoes
-          query={manutencoes}
+      {abaAtiva === 'manutencoes' && (
+        <ManutencoesCard
+          manutencoes={manutencoes.data}
+          carregando={manutencoes.isLoading}
           itens={itens.data?.items ?? []}
-          canManage={canManage}
-          onNew={() => setModal('manutencao')}
-          onDone={invalidate}
+          podeGerenciar={podeGerenciar}
+          onNew={() => setModalAberto('manutencao')}
+          onDone={atualizarDadosPatrimonio}
         />
       )}
-      {tab === 'conferencias' && (
-        <Conferencias
-          query={conferencias}
-          canManage={canManage}
-          onNew={() => setModal('conferencia')}
-          onDone={invalidate}
+      {abaAtiva === 'conferencias' && (
+        <ConferenciasCard
+          conferencias={conferencias.data}
+          carregando={conferencias.isLoading}
+          podeGerenciar={podeGerenciar}
+          onNew={() => setModalAberto('conferencia')}
+          onDone={atualizarDadosPatrimonio}
         />
       )}
-      {modal === 'categoria' && (
+      {modalAberto === 'categoria' && (
         <NovaCategoriaModal
-          onClose={() => setModal(null)}
+          onClose={() => setModalAberto(null)}
           onSave={async (nome) => {
             await patrimonioApi.criarCategoria({ nome, ativa: true })
-            await client.invalidateQueries({
+            await clienteDeConsultas.invalidateQueries({
               queryKey: ['atletica', activeVinculo?.atleticaId, 'patrimonio-categorias'],
             })
           }}
         />
       )}
-      {modal === 'item' && (
-        <ItemModal
-          item={edit}
-          onClose={() => setModal(null)}
-          onDone={async () => {
-            setModal(null)
-            await invalidate()
-          }}
-        />
+      {modalAberto === 'item' && (
+        <ItemModal item={itemEmEdicao} onClose={() => setModalAberto(null)} onDone={fecharModalEAAtualizarDados} />
       )}
-      {modal === 'emprestimo' && (
+      {modalAberto === 'emprestimo' && (
         <EmprestimoModal
           itens={itens.data?.items ?? []}
-          onClose={() => setModal(null)}
-          onDone={async () => {
-            setModal(null)
-            await invalidate()
-          }}
+          onClose={() => setModalAberto(null)}
+          onDone={fecharModalEAAtualizarDados}
         />
       )}
-      {modal === 'manutencao' && (
+      {modalAberto === 'manutencao' && (
         <ManutencaoModal
           itens={itens.data?.items ?? []}
-          onClose={() => setModal(null)}
-          onDone={async () => {
-            setModal(null)
-            await invalidate()
-          }}
+          onClose={() => setModalAberto(null)}
+          onDone={fecharModalEAAtualizarDados}
         />
       )}
-      {modal === 'conferencia' && (
-        <ConferenciaModal
-          onClose={() => setModal(null)}
-          onDone={async () => {
-            setModal(null)
-            await invalidate()
-          }}
-        />
+      {modalAberto === 'conferencia' && (
+        <ConferenciaModal onClose={() => setModalAberto(null)} onDone={fecharModalEAAtualizarDados} />
       )}
     </>
   )
 }
-function Metric({ label, value }: { label: string; value: string }) {
+
+function useResumoPatrimonio(atleticaId: number | undefined, habilitada: boolean) {
+  return useQuery({
+    queryKey: queryKeys.scoped(atleticaId, 'patrimonio-resumo'),
+    queryFn: ({ signal }) => patrimonioApi.resumo(signal),
+    enabled: habilitada,
+  })
+}
+
+function useCategoriasPatrimonio(atleticaId: number | undefined, habilitada: boolean) {
+  return useQuery({
+    queryKey: queryKeys.scoped(atleticaId, 'patrimonio-categorias'),
+    queryFn: ({ signal }) => patrimonioApi.categorias(signal),
+    enabled: habilitada,
+  })
+}
+
+function useItensPatrimonio(
+  atleticaId: number | undefined,
+  filtros: FiltrosPatrimonio,
+  paginaAtual: number,
+  habilitada: boolean,
+) {
+  return useQuery({
+    queryKey: queryKeys.scoped(atleticaId, 'patrimonio-itens', { ...filtros, page: paginaAtual }),
+    queryFn: ({ signal }) => patrimonioApi.itens({ ...filtros, page: paginaAtual, size: 12, sort: 'nome,asc' }, signal),
+    enabled: habilitada,
+  })
+}
+
+function useEmprestimosPatrimonio(atleticaId: number | undefined, habilitada: boolean, abaAtiva: AbaPatrimonio) {
+  return useQuery({
+    queryKey: queryKeys.scoped(atleticaId, 'patrimonio-emprestimos'),
+    queryFn: ({ signal }) => patrimonioApi.emprestimos(signal),
+    enabled: habilitada && abaAtiva === 'emprestimos',
+  })
+}
+
+function useManutencoesPatrimonio(atleticaId: number | undefined, habilitada: boolean, abaAtiva: AbaPatrimonio) {
+  return useQuery({
+    queryKey: queryKeys.scoped(atleticaId, 'patrimonio-manutencoes'),
+    queryFn: ({ signal }) => patrimonioApi.manutencoes(signal),
+    enabled: habilitada && abaAtiva === 'manutencoes',
+  })
+}
+
+function useConferenciasPatrimonio(atleticaId: number | undefined, habilitada: boolean, abaAtiva: AbaPatrimonio) {
+  return useQuery({
+    queryKey: queryKeys.scoped(atleticaId, 'patrimonio-conferencias'),
+    queryFn: ({ signal }) => patrimonioApi.conferencias(signal),
+    enabled: habilitada && abaAtiva === 'conferencias',
+  })
+}
+
+function CabecalhoPatrimonio({
+  podeGerenciar,
+  perfilAcesso,
+  onAbrirModal,
+  onNovoItem,
+}: {
+  podeGerenciar: boolean
+  perfilAcesso: string | undefined
+  onAbrirModal: (modal: ModalPatrimonio) => void
+  onNovoItem: () => void
+}) {
+  return (
+    <div className="page-title">
+      <div>
+        <p className="eyebrow">Controle institucional</p>
+        <h1>Patrimônio</h1>
+      </div>
+      {podeGerenciar && (
+        <div>
+          {perfilAcesso === 'ADMINISTRADOR' && (
+            <Button variant="secondary" onClick={() => onAbrirModal('categoria')}>
+              Nova categoria
+            </Button>
+          )}
+          <Button icon="assignment" onClick={() => onAbrirModal('conferencia')}>
+            Nova conferência
+          </Button>
+          <Button icon="add" onClick={onNovoItem}>
+            Novo item
+          </Button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ResumoPatrimonio({ resumo }: { resumo: ReturnType<typeof useResumoPatrimonio> }) {
+  if (resumo.isLoading) return <LoadingState />
+  if (resumo.isError) return <ErrorState message={errorFeedback(resumo.error)} />
+  if (!resumo.data) return null
+
+  return (
+    <section className="finance-summary patrimonio-summary">
+      <MetricaResumo label="Unidades disponíveis" value={String(resumo.data.quantidadeDisponivel)} />
+      <MetricaResumo label="Emprestadas" value={String(resumo.data.quantidadeEmprestada)} />
+      <MetricaResumo label="Em manutenção" value={String(resumo.data.quantidadeEmManutencao)} />
+      <MetricaResumo label="Valor estimado" value={formatMoney(resumo.data.valorEstimadoTotal)} />
+      <span className="summary-note">
+        {resumo.data.itensAtivos} cadastros ativos · {resumo.data.quantidadeTotal} unidades no total
+      </span>
+    </section>
+  )
+}
+
+function MetricaResumo({ label, value }: { label: string; value: string }) {
   return (
     <Card className="finance-metric">
       <span>{label}</span>
@@ -332,826 +284,124 @@ function Metric({ label, value }: { label: string; value: string }) {
     </Card>
   )
 }
-const situacaoLabel = (value: Situacao) => situacaoPatrimonioLabels[value]
-const situacaoTone = (value: Situacao) =>
-  value === 'DISPONIVEL' ? ('success' as const) : value === 'EMPRESTADO' ? ('warning' as const) : ('danger' as const)
-function ItemModal({ item, onClose, onDone }: { item: Item | null; onClose: () => void; onDone: () => Promise<void> }) {
-  const { activeVinculo } = useAuthSession()
-  const toast = useToast()
-  const categorias = useQuery({
-    queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'patrimonio-categorias'),
-    queryFn: ({ signal }) => patrimonioApi.categorias(signal),
-  })
-  const departamentos = useQuery({
-    queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'departamentos-patrimonio'),
-    queryFn: membrosApi.departamentos,
-  })
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<ItemValues>({
-    resolver: zodResolver(
-      itemSchema.superRefine((v, ctx) => {
-        if (item && Number(v.quantidadeTotal) < item.quantidadeTotal && !v.justificativaReducao.trim())
-          ctx.addIssue({
-            code: 'custom',
-            path: ['justificativaReducao'],
-            message: 'Informe a justificativa para a redução.',
-          })
-      }),
-    ),
-    defaultValues: {
-      nome: item?.nome ?? '',
-      descricao: item?.descricao ?? '',
-      categoriaId: String(item?.categoriaId ?? ''),
-      quantidadeTotal: String(item?.quantidadeTotal ?? ''),
-      conservacao: item?.conservacao ?? 'BOM',
-      localizacao: item?.localizacao ?? '',
-      departamentoResponsavelId: String(item?.departamentoResponsavelId ?? ''),
-      valorEstimadoUnitario: item?.valorEstimadoUnitario ?? '',
-      ativo: item?.ativo ?? true,
-      justificativaReducao: '',
-    },
-  })
-  const save = async (v: ItemValues) => {
-    try {
-      const body = {
-        ...v,
-        categoriaId: Number(v.categoriaId),
-        quantidadeTotal: Number(v.quantidadeTotal),
-        departamentoResponsavelId: Number(v.departamentoResponsavelId),
-        valorEstimadoUnitario: normalizeMoney(v.valorEstimadoUnitario)!,
-      }
-      if (item) await patrimonioApi.atualizarItem(item.id, { ...body, version: item.version })
-      else await patrimonioApi.criarItem(body)
-      toast.success(item ? 'Item atualizado.' : 'Item cadastrado.')
-      await onDone()
-    } catch (cause) {
-      toast.error(errorFeedback(cause))
-    }
-  }
-  return (
-    <Modal
-      open
-      title={item ? 'Editar item' : 'Novo item'}
-      onClose={onClose}
-      footer={
-        <>
-          <Button variant="secondary" disabled={isSubmitting} onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" form="form-item" loading={isSubmitting}>
-            Salvar
-          </Button>
-        </>
-      }
-    >
-      <form id="form-item" onSubmit={handleSubmit(save)} noValidate>
-        <div className="form-grid">
-          <Input label="Nome" maxLength={160} error={errors.nome?.message} {...register('nome')} />
-          <Input label="Descrição" maxLength={2000} error={errors.descricao?.message} {...register('descricao')} />
-          <Select label="Categoria" error={errors.categoriaId?.message} {...register('categoriaId')}>
-            <option value="">Selecione</option>
-            {categorias.data
-              ?.filter((c) => c.ativa)
-              .map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nome}
-                </option>
-              ))}
-          </Select>
-          <Input
-            label="Quantidade total"
-            type="number"
-            min="1"
-            error={errors.quantidadeTotal?.message}
-            {...register('quantidadeTotal')}
-          />
-          <Select label="Conservação" error={errors.conservacao?.message} {...register('conservacao')}>
-            <option value="OTIMO">Ótimo</option>
-            <option value="BOM">Bom</option>
-            <option value="REGULAR">Regular</option>
-            <option value="RUIM">Ruim</option>
-          </Select>
-          <Input label="Localização" maxLength={200} error={errors.localizacao?.message} {...register('localizacao')} />
-          <Select
-            label="Departamento responsável"
-            error={errors.departamentoResponsavelId?.message}
-            {...register('departamentoResponsavelId')}
-          >
-            <option value="">Selecione</option>
-            {departamentos.data
-              ?.filter((d) => d.situacao === 'ATIVO')
-              .map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.nome}
-                </option>
-              ))}
-          </Select>
-          <Input
-            label="Valor unitário (R$)"
-            inputMode="decimal"
-            error={errors.valorEstimadoUnitario?.message}
-            {...register('valorEstimadoUnitario')}
-          />
-          {item && (
-            <Input
-              label="Justificativa para redução"
-              maxLength={500}
-              hint="Necessária se a quantidade total for reduzida."
-              error={errors.justificativaReducao?.message}
-              {...register('justificativaReducao')}
-            />
-          )}
-        </div>
-      </form>
-    </Modal>
-  )
-}
-function Operacoes({
-  emprestimos,
+
+function ItensPatrimonioCard({
+  categorias,
+  filtros,
   itens,
-  canManage,
-  onNew,
-  onDone,
+  paginaAtual,
+  podeGerenciar,
+  onAlterarFiltro,
+  onEditarItem,
+  onAbrirModal,
+  onMudarPagina,
 }: {
-  emprestimos: ReturnType<typeof useQuery>
-  itens: Item[]
-  canManage: boolean
-  onNew: () => void
-  onDone: () => Promise<void>
+  categorias: ReturnType<typeof useCategoriasPatrimonio>['data']
+  filtros: FiltrosPatrimonio
+  itens: ReturnType<typeof useItensPatrimonio>
+  paginaAtual: number
+  podeGerenciar: boolean
+  onAlterarFiltro: (campo: keyof FiltrosPatrimonio, valor: string) => void
+  onEditarItem: (item: Item) => void
+  onAbrirModal: (modal: ModalPatrimonio) => void
+  onMudarPagina: (pagina: number) => void
 }) {
-  const timeZone = useAtleticaTimeZone()
-  const [selected, setSelected] = useState<number | null>(null)
-  const query = emprestimos as {
-    isLoading: boolean
-    data?: {
-      id: number
-      itemId: number
-      membroResponsavelId: number
-      quantidade: number
-      quantidadeDevolvida: number
-      saldoAberto: number
-      devolucaoPrevistaEm: string | null
-    }[]
-  }
-  if (query.isLoading) return <LoadingState />
   return (
-    <Card title="Empréstimos" action={canManage ? <Button onClick={onNew}>Nova retirada</Button> : undefined}>
-      {query.data?.length ? (
-        <Table
-          caption="Empréstimos de patrimônio"
-          columns={['Item', 'Responsável', 'Retirado', 'Devolvido', 'Previsto', 'Ação']}
+    <Card className="members-card">
+      <div className="filters patrimonio-filters">
+        <Input
+          label="Buscar por nome"
+          value={filtros.nome}
+          onChange={(evento) => onAlterarFiltro('nome', evento.target.value)}
+        />
+        <Select
+          label="Categoria"
+          value={filtros.categoriaId}
+          onChange={(evento) => onAlterarFiltro('categoriaId', evento.target.value)}
         >
-          {query.data.map((item) => (
-            <tr key={item.id}>
-              <td>{itens.find((i) => i.id === item.itemId)?.nome ?? `Item #${item.itemId}`}</td>
-              <td>Membro #{item.membroResponsavelId}</td>
-              <td>{item.quantidade}</td>
-              <td>
-                {item.quantidadeDevolvida} <small>saldo: {item.saldoAberto}</small>
-              </td>
-              <td>{item.devolucaoPrevistaEm ? formatDateTime(item.devolucaoPrevistaEm, timeZone) : '—'}</td>
-              <td>
-                {canManage && item.saldoAberto > 0 && (
-                  <Button variant="secondary" onClick={() => setSelected(item.id)}>
-                    Registrar devolução
-                  </Button>
-                )}
-              </td>
-            </tr>
+          <option value="">Todas</option>
+          {categorias?.map((categoria) => (
+            <option key={categoria.id} value={categoria.id}>
+              {categoria.nome}
+            </option>
           ))}
-        </Table>
-      ) : (
-        <EmptyState description="Nenhum empréstimo registrado." />
-      )}
-      {selected && (
-        <DevolucaoModal
-          emprestimoId={selected}
-          onClose={() => setSelected(null)}
-          onDone={async () => {
-            setSelected(null)
-            await onDone()
-          }}
-        />
-      )}
-    </Card>
-  )
-}
-function DevolucaoModal({
-  emprestimoId,
-  onClose,
-  onDone,
-}: {
-  emprestimoId: number
-  onClose: () => void
-  onDone: () => Promise<void>
-}) {
-  const toast = useToast()
-  const {
-    register,
-    control,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<DevolucaoValues>({
-    resolver: zodResolver(devolucaoSchema),
-    defaultValues: {
-      quantidade: '',
-      condicaoRetorno: 'BOM',
-      observacao: '',
-      enviarParaManutencao: false,
-      motivoManutencao: '',
-    },
-  })
-  const manutencao = useWatch({ control, name: 'enviarParaManutencao' })
-  const save = async (v: DevolucaoValues) => {
-    try {
-      await patrimonioApi.devolver(emprestimoId, {
-        ...v,
-        quantidade: Number(v.quantidade),
-        devolvidaEm: new Date().toISOString(),
-        previsaoConclusaoManutencao: undefined,
-      })
-      toast.success('Devolução registrada.')
-      await onDone()
-    } catch (cause) {
-      toast.error(errorFeedback(cause))
-    }
-  }
-  return (
-    <Modal
-      open
-      title="Registrar devolução"
-      onClose={onClose}
-      footer={
-        <>
-          <Button variant="secondary" disabled={isSubmitting} onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" form="form-devolucao" loading={isSubmitting}>
-            Confirmar devolução
-          </Button>
-        </>
-      }
-    >
-      <form id="form-devolucao" onSubmit={handleSubmit(save)} noValidate>
-        <div className="form-grid">
-          <Input
-            label="Quantidade"
-            type="number"
-            min="1"
-            error={errors.quantidade?.message}
-            {...register('quantidade')}
-          />
-          <Select label="Condição de retorno" error={errors.condicaoRetorno?.message} {...register('condicaoRetorno')}>
-            <option value="OTIMO">Ótimo</option>
-            <option value="BOM">Bom</option>
-            <option value="REGULAR">Regular</option>
-            <option value="RUIM">Ruim</option>
-          </Select>
-          <Input label="Observação" maxLength={1000} error={errors.observacao?.message} {...register('observacao')} />
-          <label className="check-field">
-            <input type="checkbox" {...register('enviarParaManutencao')} /> Enviar à manutenção
-          </label>
-          {manutencao && (
-            <Input
-              label="Motivo da manutenção"
-              maxLength={1000}
-              error={errors.motivoManutencao?.message}
-              {...register('motivoManutencao')}
-            />
-          )}
-        </div>
-      </form>
-    </Modal>
-  )
-}
-function Manutencoes({
-  query,
-  itens,
-  canManage,
-  onNew,
-  onDone,
-}: {
-  query: ReturnType<typeof useQuery>
-  itens: Item[]
-  canManage: boolean
-  onNew: () => void
-  onDone: () => Promise<void>
-}) {
-  const toast = useToast()
-  const data = (
-    query as {
-      isLoading: boolean
-      data?: {
-        id: number
-        itemId: number
-        quantidade: number
-        motivo: string
-        concluidaEm: string | null
-        version: number
-      }[]
-    }
-  ).data
-  const loading = (query as { isLoading: boolean }).isLoading
-  const concluir = async (id: number, version: number) => {
-    const resultado = window.prompt('Resultado da manutenção:')
-    if (!resultado) return
-    try {
-      await patrimonioApi.concluirManutencao(id, { resultado, version })
-      toast.success('Manutenção concluída.')
-      await onDone()
-    } catch (cause) {
-      toast.error(errorFeedback(cause))
-    }
-  }
-  if (loading) return <LoadingState />
-  return (
-    <Card title="Manutenções" action={canManage ? <Button onClick={onNew}>Enviar à manutenção</Button> : undefined}>
-      {data?.length ? (
-        <Table caption="Manutenções" columns={['Item', 'Quantidade', 'Motivo', 'Situação', 'Ação']}>
-          {data.map((item) => (
-            <tr key={item.id}>
-              <td>{itens.find((i) => i.id === item.itemId)?.nome ?? `Item #${item.itemId}`}</td>
-              <td>{item.quantidade}</td>
-              <td>{item.motivo}</td>
-              <td>
-                <Badge tone={item.concluidaEm ? 'success' : 'warning'}>
-                  {item.concluidaEm ? 'Concluída' : 'Em manutenção'}
-                </Badge>
-              </td>
-              <td>
-                {canManage && !item.concluidaEm && (
-                  <Button variant="secondary" onClick={() => void concluir(item.id, item.version)}>
-                    Concluir
-                  </Button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </Table>
-      ) : (
-        <EmptyState description="Nenhuma manutenção registrada." />
-      )}
-    </Card>
-  )
-}
-function EmprestimoModal({
-  itens,
-  onClose,
-  onDone,
-}: {
-  itens: Item[]
-  onClose: () => void
-  onDone: () => Promise<void>
-}) {
-  const { activeVinculo } = useAuthSession()
-  const toast = useToast()
-  const membros = useQuery({
-    queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'membros-ativos-patrimonio'),
-    queryFn: ({ signal }) => membrosApi.list({ page: 0, size: 100, status: 'ATIVO' }, signal),
-  })
-  const {
-    register,
-    control,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<EmprestimoValues>({
-    resolver: zodResolver(emprestimoSchema),
-    defaultValues: { itemId: '', membroResponsavelId: '', quantidade: '', devolucaoPrevistaEm: '', observacao: '' },
-  })
-  const selectedId = useWatch({ control, name: 'itemId' })
-  const selected = itens.find((i) => i.id === Number(selectedId))
-  const save = async (v: EmprestimoValues) => {
-    try {
-      await patrimonioApi.emprestar({
-        ...v,
-        itemId: Number(v.itemId),
-        membroResponsavelId: Number(v.membroResponsavelId),
-        quantidade: Number(v.quantidade),
-        devolucaoPrevistaEm: v.devolucaoPrevistaEm
-          ? new Date(`${v.devolucaoPrevistaEm}T12:00:00`).toISOString()
-          : undefined,
-      })
-      toast.success('Retirada registrada.')
-      await onDone()
-    } catch (cause) {
-      toast.error(errorFeedback(cause))
-    }
-  }
-  return (
-    <Modal
-      open
-      title="Nova retirada"
-      onClose={onClose}
-      footer={
-        <>
-          <Button variant="secondary" disabled={isSubmitting} onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" form="form-emprestimo" loading={isSubmitting}>
-            Registrar retirada
-          </Button>
-        </>
-      }
-    >
-      <form id="form-emprestimo" onSubmit={handleSubmit(save)} noValidate>
-        <div className="form-grid">
-          <Select label="Item" error={errors.itemId?.message} {...register('itemId')}>
-            <option value="">Selecione</option>
-            {itens.map((i) => (
-              <option key={i.id} value={i.id}>
-                {i.nome} ({i.quantidadeDisponivel} disponíveis)
-              </option>
-            ))}
-          </Select>
-          {selected && (
-            <p className="form-note">
-              Disponibilidade atual retornada pela API: {selected.quantidadeDisponivel} unidades.
-            </p>
-          )}
-          <Select label="Responsável" error={errors.membroResponsavelId?.message} {...register('membroResponsavelId')}>
-            <option value="">Selecione</option>
-            {membros.data?.items.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.nome}
-              </option>
-            ))}
-          </Select>
-          <Input
-            label="Quantidade"
-            type="number"
-            min="1"
-            error={errors.quantidade?.message}
-            {...register('quantidade')}
-          />
-          <Input
-            label="Devolução prevista"
-            type="date"
-            error={errors.devolucaoPrevistaEm?.message}
-            {...register('devolucaoPrevistaEm')}
-          />
-          <Input label="Observação" maxLength={1000} error={errors.observacao?.message} {...register('observacao')} />
-        </div>
-      </form>
-    </Modal>
-  )
-}
-function ManutencaoModal({
-  itens,
-  onClose,
-  onDone,
-}: {
-  itens: Item[]
-  onClose: () => void
-  onDone: () => Promise<void>
-}) {
-  const toast = useToast()
-  const {
-    register,
-    control,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<ManutencaoValues>({
-    resolver: zodResolver(manutencaoSchema),
-    defaultValues: { itemId: '', quantidade: '', motivo: '', previsaoConclusaoEm: '' },
-  })
-  const selectedId = useWatch({ control, name: 'itemId' })
-  const selected = itens.find((i) => i.id === Number(selectedId))
-  const save = async (v: ManutencaoValues) => {
-    try {
-      await patrimonioApi.criarManutencao({
-        ...v,
-        itemId: Number(v.itemId),
-        quantidade: Number(v.quantidade),
-        previsaoConclusaoEm: v.previsaoConclusaoEm
-          ? new Date(`${v.previsaoConclusaoEm}T12:00:00`).toISOString()
-          : undefined,
-      })
-      toast.success('Manutenção iniciada.')
-      await onDone()
-    } catch (cause) {
-      toast.error(errorFeedback(cause))
-    }
-  }
-  return (
-    <Modal
-      open
-      title="Enviar para manutenção"
-      onClose={onClose}
-      footer={
-        <>
-          <Button variant="secondary" disabled={isSubmitting} onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" form="form-manutencao" loading={isSubmitting}>
-            Iniciar manutenção
-          </Button>
-        </>
-      }
-    >
-      <form id="form-manutencao" onSubmit={handleSubmit(save)} noValidate>
-        <div className="form-grid">
-          <Select label="Item" error={errors.itemId?.message} {...register('itemId')}>
-            <option value="">Selecione</option>
-            {itens.map((i) => (
-              <option key={i.id} value={i.id}>
-                {i.nome} ({i.quantidadeDisponivel} disponíveis)
-              </option>
-            ))}
-          </Select>
-          {selected && (
-            <p className="form-note">
-              Disponibilidade retornada pelo servidor: {selected.quantidadeDisponivel} unidades.
-            </p>
-          )}
-          <Input
-            label="Quantidade"
-            type="number"
-            min="1"
-            error={errors.quantidade?.message}
-            {...register('quantidade')}
-          />
-          <Input label="Motivo" maxLength={1000} error={errors.motivo?.message} {...register('motivo')} />
-          <Input
-            label="Previsão de conclusão"
-            type="date"
-            error={errors.previsaoConclusaoEm?.message}
-            {...register('previsaoConclusaoEm')}
-          />
-        </div>
-      </form>
-    </Modal>
-  )
-}
-function Conferencias({
-  query,
-  canManage,
-  onNew,
-  onDone,
-}: {
-  query: ReturnType<typeof useQuery>
-  canManage: boolean
-  onNew: () => void
-  onDone: () => Promise<void>
-}) {
-  const timeZone = useAtleticaTimeZone()
-  const data = (query as { isLoading: boolean; data?: Conferencia[] }).data
-  const loading = (query as { isLoading: boolean }).isLoading
-  const [detail, setDetail] = useState<Conferencia | null>(null)
-  if (loading) return <LoadingState />
-  return (
-    <Card
-      title="Conferências de inventário"
-      action={canManage ? <Button onClick={onNew}>Abrir campanha</Button> : undefined}
-    >
-      {data?.length ? (
-        <Table caption="Campanhas de inventário" columns={['Campanha', 'Início', 'Situação', 'Ação']}>
-          {data.map((item) => (
-            <tr key={item.id}>
-              <td>{item.nome}</td>
-              <td>{formatDateTime(item.iniciadaEm, timeZone)}</td>
-              <td>
-                <Badge tone={item.status === 'ENCERRADA' ? 'success' : 'warning'}>
-                  {statusConferenciaLabels[item.status]}
-                </Badge>
-              </td>
-              <td>
-                <Button variant="secondary" onClick={() => setDetail(item)}>
-                  Ver campanha
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </Table>
-      ) : (
-        <EmptyState description="Nenhuma campanha de conferência aberta." />
-      )}
-      {detail && (
-        <ConferenciaDetalhe
-          conferencia={detail}
-          canManage={canManage}
-          onClose={() => setDetail(null)}
-          onDone={onDone}
-        />
-      )}
-    </Card>
-  )
-}
-function ConferenciaModal({ onClose, onDone }: { onClose: () => void; onDone: () => Promise<void> }) {
-  const toast = useToast()
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<ConferenciaValues>({ resolver: zodResolver(conferenciaSchema), defaultValues: { nome: '' } })
-  const save = async (v: ConferenciaValues) => {
-    try {
-      await patrimonioApi.criarConferencia(v.nome)
-      toast.success('Campanha de inventário aberta.')
-      await onDone()
-    } catch (cause) {
-      toast.error(errorFeedback(cause))
-    }
-  }
-  return (
-    <Modal
-      open
-      title="Abrir conferência"
-      onClose={onClose}
-      footer={
-        <>
-          <Button variant="secondary" disabled={isSubmitting} onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" form="form-conferencia" loading={isSubmitting}>
-            Abrir campanha
-          </Button>
-        </>
-      }
-    >
-      <form id="form-conferencia" onSubmit={handleSubmit(save)} noValidate>
-        <Input
-          label="Nome da campanha"
-          maxLength={120}
-          hint="A campanha cria uma fotografia das quantidades esperadas."
-          error={errors.nome?.message}
-          {...register('nome')}
-        />
-      </form>
-    </Modal>
-  )
-}
-function ConferenciaDetalhe({
-  conferencia,
-  canManage,
-  onClose,
-  onDone,
-}: {
-  conferencia: Conferencia
-  canManage: boolean
-  onClose: () => void
-  onDone: () => Promise<void>
-}) {
-  const toast = useToast()
-  const client = useQueryClient()
-  const { activeVinculo } = useAuthSession()
-  const detail = useQuery({
-    queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'patrimonio-conferencia', conferencia.id),
-    queryFn: ({ signal }) => patrimonioApi.detalheConferencia(conferencia.id, signal),
-  })
-  const [selected, setSelected] = useState<{ id: number; itemId: number; expected: number; version: number } | null>(
-    null,
-  )
-  const refresh = async () => {
-    await client.invalidateQueries({ queryKey: ['atletica', activeVinculo?.atleticaId, 'patrimonio'] })
-    await onDone()
-  }
-  const closeCampaign = async () => {
-    try {
-      await patrimonioApi.encerrar(conferencia.id, conferencia.version)
-      toast.success('Conferência encerrada.')
-      await refresh()
-      onClose()
-    } catch (cause) {
-      toast.error(errorFeedback(cause))
-    }
-  }
-  return (
-    <Modal
-      open
-      title={`Conferência: ${conferencia.nome}`}
-      onClose={onClose}
-      footer={
-        <>
-          <Button variant="secondary" onClick={onClose}>
-            Fechar
-          </Button>
-          {canManage && conferencia.status === 'ABERTA' && (
-            <Button onClick={() => void closeCampaign()}>Encerrar campanha</Button>
-          )}
-        </>
-      }
-    >
-      {detail.isLoading ? (
+        </Select>
+        <Select
+          label="Conservação"
+          value={filtros.conservacao}
+          onChange={(evento) => onAlterarFiltro('conservacao', evento.target.value)}
+        >
+          <option value="">Todas</option>
+          <option value="OTIMO">Ótimo</option>
+          <option value="BOM">Bom</option>
+          <option value="REGULAR">Regular</option>
+          <option value="RUIM">Ruim</option>
+        </Select>
+        <Select
+          label="Situação operacional"
+          value={filtros.situacao}
+          onChange={(evento) => onAlterarFiltro('situacao', evento.target.value)}
+        >
+          <option value="">Todas</option>
+          <option value="DISPONIVEL">Disponível</option>
+          <option value="EMPRESTADO">Emprestado</option>
+          <option value="EM_MANUTENCAO">Em manutenção</option>
+        </Select>
+      </div>
+      {itens.isLoading ? (
         <LoadingState />
-      ) : detail.data ? (
-        <>
-          <p className="form-note">
-            Campanha utilizada: {detail.data.conferencia.nome}. Progresso: <b>{detail.data.progresso}%</b> (
-            {detail.data.unidadesVerificadasValidas} de {detail.data.unidadesEsperadas} unidades válidas).
-          </p>
-          <Table caption="Itens da conferência" columns={['Item', 'Esperada', 'Verificada', 'Divergência', 'Ação']}>
-            {detail.data.itens.map((item) => (
-              <tr key={item.id}>
-                <td>Item #{item.itemId}</td>
-                <td>{item.quantidadeEsperada}</td>
-                <td>{item.quantidadeVerificada ?? 'Pendente'}</td>
-                <td>{item.divergencia ?? '—'}</td>
-                <td>
-                  {canManage && conferencia.status === 'ABERTA' && (
-                    <Button
-                      variant="secondary"
-                      onClick={() =>
-                        setSelected({
-                          id: item.id,
-                          itemId: item.itemId,
-                          expected: item.quantidadeEsperada,
-                          version: item.version,
-                        })
-                      }
-                    >
-                      Conferir
+      ) : itens.isError ? (
+        <ErrorState message={errorFeedback(itens.error)} />
+      ) : itens.data?.items.length ? (
+        <Table
+          caption="Itens de patrimônio"
+          columns={['Item', 'Categoria', 'Quantidade', 'Conservação', 'Localização', 'Situação', 'Ações']}
+        >
+          {itens.data.items.map((item) => (
+            <tr key={item.id}>
+              <td>
+                <b>{item.nome}</b>
+                <small>{item.descricao ?? 'Sem descrição'}</small>
+              </td>
+              <td>{item.categoriaNome}</td>
+              <td>
+                {item.quantidadeDisponivel} disponível<small>{item.quantidadeTotal} total</small>
+              </td>
+              <td>{conservacaoLabels[item.conservacao]}</td>
+              <td>{item.localizacao}</td>
+              <td>
+                <Badge tone={tomSituacao(item.situacaoOperacional)}>
+                  {situacaoPatrimonioLabels[item.situacaoOperacional]}
+                </Badge>
+              </td>
+              <td>
+                {podeGerenciar && (
+                  <div className="row-actions">
+                    <Button variant="secondary" onClick={() => onEditarItem(item)}>
+                      Editar
                     </Button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </Table>
-        </>
+                    <Button variant="ghost" onClick={() => onAbrirModal('emprestimo')}>
+                      Retirar
+                    </Button>
+                    <Button variant="ghost" onClick={() => onAbrirModal('manutencao')}>
+                      Manutenção
+                    </Button>
+                  </div>
+                )}
+              </td>
+            </tr>
+          ))}
+        </Table>
       ) : (
-        <ErrorState />
+        <EmptyState description="Nenhum item corresponde aos filtros." />
       )}
-      {selected && (
-        <ConferirItemModal
-          conferenceId={conferencia.id}
-          item={selected}
-          onClose={() => setSelected(null)}
-          onDone={async () => {
-            setSelected(null)
-            await refresh()
-          }}
-        />
-      )}
-    </Modal>
+      {itens.data && <Pagination page={paginaAtual} totalPages={itens.data.totalPages} onPageChange={onMudarPagina} />}
+    </Card>
   )
 }
-function ConferirItemModal({
-  conferenceId,
-  item,
-  onClose,
-  onDone,
-}: {
-  conferenceId: number
-  item: { itemId: number; expected: number; version: number }
-  onClose: () => void
-  onDone: () => Promise<void>
-}) {
-  const toast = useToast()
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<ContagemValues>({
-    resolver: zodResolver(contagemSchema),
-    defaultValues: { quantidade: '', observacao: '' },
-  })
-  const save = async (v: ContagemValues) => {
-    try {
-      await patrimonioApi.conferir(conferenceId, item.itemId, {
-        quantidadeVerificada: Number(v.quantidade),
-        observacao: v.observacao,
-        version: item.version,
-      })
-      toast.success('Item conferido.')
-      await onDone()
-    } catch (cause) {
-      toast.error(errorFeedback(cause))
-    }
-  }
-  return (
-    <Modal
-      open
-      title={`Conferir item #${item.itemId}`}
-      onClose={onClose}
-      footer={
-        <>
-          <Button variant="secondary" disabled={isSubmitting} onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" form="form-contagem" loading={isSubmitting}>
-            Salvar contagem
-          </Button>
-        </>
-      }
-    >
-      <form id="form-contagem" onSubmit={handleSubmit(save)} noValidate>
-        <p className="form-note">Quantidade esperada na abertura: {item.expected}.</p>
-        <Input
-          label="Quantidade verificada"
-          type="number"
-          min="0"
-          error={errors.quantidade?.message}
-          {...register('quantidade')}
-        />
-        <Input
-          label="Observação da divergência"
-          maxLength={1000}
-          error={errors.observacao?.message}
-          {...register('observacao')}
-        />
-      </form>
-    </Modal>
-  )
+
+function tomSituacao(situacao: Situacao) {
+  if (situacao === 'DISPONIVEL') return 'success' as const
+  if (situacao === 'EMPRESTADO') return 'warning' as const
+  return 'danger' as const
 }
