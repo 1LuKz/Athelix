@@ -222,7 +222,7 @@ public class DashboardService {
         .sorted(
             Comparator.comparing(MovimentoOrdenado::data)
                 .reversed()
-                .thenComparing(MovimentoOrdenado::id, Comparator.reverseOrder())
+                .thenComparing(MovimentoOrdenado::movimentoId, Comparator.reverseOrder())
                 .thenComparing(movimento -> movimento.movimento().tipo()))
         .limit(10)
         .map(MovimentoOrdenado::movimento)
@@ -234,5 +234,5 @@ public class DashboardService {
     return FusoHorarioAtletica.hoje(atletica.getFusoHorario());
   }
 
-  private record MovimentoOrdenado(LocalDate data, Long id, Movimento movimento) {}
+  private record MovimentoOrdenado(LocalDate data, Long movimentoId, Movimento movimento) {}
 }

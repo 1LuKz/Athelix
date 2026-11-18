@@ -12,15 +12,15 @@ public record VersaoDocumentoResponse(
     String observacao,
     Long enviadoPorMembroId,
     Instant enviadoEm) {
-  public static VersaoDocumentoResponse from(VersaoDocumento v, String nomeArquivo) {
+  public static VersaoDocumentoResponse from(VersaoDocumento versaoDocumento, String nomeArquivo) {
     return new VersaoDocumentoResponse(
-        v.getId(),
-        v.getNumeroVersao(),
-        v.getArquivoId(),
+        versaoDocumento.getId(),
+        versaoDocumento.getNumeroVersao(),
+        versaoDocumento.getArquivoId(),
         nomeArquivo,
-        v.getGestaoId(),
-        v.getObservacao(),
-        v.getEnviadoPorMembroId(),
-        v.getEnviadoEm());
+        versaoDocumento.getGestaoId(),
+        versaoDocumento.getObservacao(),
+        versaoDocumento.getEnviadoPorMembroId(),
+        versaoDocumento.getEnviadoEm());
   }
 }

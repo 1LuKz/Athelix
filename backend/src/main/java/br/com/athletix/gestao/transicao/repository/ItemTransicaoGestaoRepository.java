@@ -5,7 +5,7 @@ import java.util.*;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ItemTransicaoGestaoRepository extends JpaRepository<ItemTransicaoGestao, Long> {
-  List<ItemTransicaoGestao> findAllByTransicao_IdOrderByMembroIdAsc(Long id);
+  List<ItemTransicaoGestao> findAllByTransicao_IdOrderByMembroIdAsc(Long transicaoId);
 
-  Optional<ItemTransicaoGestao> findByTransicao_IdAndMembroId(Long t, Long m);
+  Optional<ItemTransicaoGestao> findByTransicao_IdAndMembroId(Long transicaoId, Long membroId);
 }

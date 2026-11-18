@@ -57,26 +57,26 @@ public class Tarefa extends AuditableEntity implements AtleticaScoped {
   protected Tarefa() {}
 
   public Tarefa(
-      Atletica a,
-      Long g,
-      Evento e,
-      String t,
-      String d,
-      Membro r,
-      Departamento dep,
-      PrioridadeTarefa p,
+      Atletica atletica,
+      Long gestaoOrigemId,
+      Evento evento,
+      String titulo,
+      String descricao,
+      Membro responsavel,
+      Departamento departamento,
+      PrioridadeTarefa prioridade,
       LocalDate prazo,
-      Long criador) {
-    atletica = a;
-    gestaoOrigemId = g;
-    evento = e;
-    titulo = t;
-    descricao = d;
-    responsavel = r;
-    departamento = dep;
-    prioridade = p;
+      Long criadorMembroId) {
+    this.atletica = atletica;
+    this.gestaoOrigemId = gestaoOrigemId;
+    this.evento = evento;
+    this.titulo = titulo;
+    this.descricao = descricao;
+    this.responsavel = responsavel;
+    this.departamento = departamento;
+    this.prioridade = prioridade;
     this.prazo = prazo;
-    criadaPorMembroId = criador;
+    criadaPorMembroId = criadorMembroId;
     status = StatusTarefa.A_FAZER;
   }
 
@@ -129,18 +129,23 @@ public class Tarefa extends AuditableEntity implements AtleticaScoped {
   }
 
   public void atualizar(
-      String t, String d, Membro r, Departamento dep, PrioridadeTarefa p, LocalDate prazo) {
-    titulo = t;
-    descricao = d;
-    responsavel = r;
-    departamento = dep;
-    prioridade = p;
+      String titulo,
+      String descricao,
+      Membro responsavel,
+      Departamento departamento,
+      PrioridadeTarefa prioridade,
+      LocalDate prazo) {
+    this.titulo = titulo;
+    this.descricao = descricao;
+    this.responsavel = responsavel;
+    this.departamento = departamento;
+    this.prioridade = prioridade;
     this.prazo = prazo;
   }
 
-  public void status(StatusTarefa s) {
-    status = s;
-    concluidaEm = s == StatusTarefa.CONCLUIDO ? Instant.now() : null;
+  public void status(StatusTarefa status) {
+    this.status = status;
+    concluidaEm = status == StatusTarefa.CONCLUIDO ? Instant.now() : null;
   }
 
   public Evento getEvento() {

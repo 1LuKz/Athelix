@@ -62,41 +62,56 @@ public class DocumentoService {
       Long gestaoId,
       boolean incluirArquivados,
       Membro membro) {
-    Specification<Documento> spec =
-        (root, query, cb) -> cb.equal(root.get("atletica").get("id"), resolver.atleticaIdAtual());
-    if (!incluirArquivados) spec = spec.and((root, q, cb) -> cb.isFalse(root.get("arquivado")));
-    if (categoria != null)
-      spec = spec.and((root, q, cb) -> cb.equal(root.get("categoria"), categoria));
+    Specification<Documento> especificacaoDocumentos =
+        (raizDocumento, consulta, criteriaBuilder) ->
+            criteriaBuilder.equal(
+                raizDocumento.get("atletica").get("id"), resolver.atleticaIdAtual());
+    if (!incluirArquivados) {
+      especificacaoDocumentos =
+          especificacaoDocumentos.and(
+              (raizDocumento, consulta, criteriaBuilder) ->
+                  criteriaBuilder.isFalse(raizDocumento.get("arquivado")));
+    }
+    if (categoria != null) {
+      especificacaoDocumentos =
+          especificacaoDocumentos.and(
+              (raizDocumento, consulta, criteriaBuilder) ->
+                  criteriaBuilder.equal(raizDocumento.get("categoria"), categoria));
+    }
     if (gestaoId != null) {
       validarGestao(gestaoId);
-      spec = spec.and((root, q, cb) -> cb.equal(root.get("gestaoOrigemId"), gestaoId));
+      especificacaoDocumentos =
+          especificacaoDocumentos.and(
+              (raizDocumento, consulta, criteriaBuilder) ->
+                  criteriaBuilder.equal(raizDocumento.get("gestaoOrigemId"), gestaoId));
     }
     String termo = NomeNormalizado.optionalDisplayValue(busca);
     List<DocumentoResponse> resposta =
         documentos
             .findAll(
-                spec,
+                especificacaoDocumentos,
                 org.springframework.data.domain.Sort.by(
                     org.springframework.data.domain.Sort.Direction.DESC, "updatedAt"))
             .stream()
-            .filter(d -> podeLer(d, membro))
+            .filter(documento -> podeLer(documento, membro))
             .map(this::resposta)
             .sorted(
                 Comparator.comparing(
-                        (DocumentoResponse d) ->
-                            d.versaoAtual() == null
-                                ? d.atualizadaEm()
-                                : d.versaoAtual().enviadoEm())
+                        (DocumentoResponse documentoResposta) ->
+                            documentoResposta.versaoAtual() == null
+                                ? documentoResposta.atualizadaEm()
+                                : documentoResposta.versaoAtual().enviadoEm())
                     .reversed())
             .toList();
     if (termo == null) return resposta;
     String normalizado = termo.toLowerCase(Locale.ROOT);
     return resposta.stream()
         .filter(
-            d ->
-                d.titulo().toLowerCase(Locale.ROOT).contains(normalizado)
-                    || (d.versaoAtual() != null
-                        && d.versaoAtual()
+            documentoResposta ->
+                documentoResposta.titulo().toLowerCase(Locale.ROOT).contains(normalizado)
+                    || (documentoResposta.versaoAtual() != null
+                        && documentoResposta
+                            .versaoAtual()
                             .nomeArquivo()
                             .toLowerCase(Locale.ROOT)
                             .contains(normalizado)))
@@ -104,10 +119,10 @@ public class DocumentoService {
   }
 
   @Transactional(readOnly = true)
-  public DocumentoResponse obter(Long id, Membro membro) {
-    Documento d = buscar(id);
-    exigirLeitura(d, membro);
-    return resposta(d);
+  public DocumentoResponse obter(Long documentoId, Membro membro) {
+    Documento documento = buscar(documentoId);
+    exigirLeitura(documento, membro);
+    return resposta(documento);
   }
 
   @Transactional
@@ -122,7 +137,7 @@ public class DocumentoService {
         campos.gestaoOrigemId() == null
             ? gestoes
                 .findByAtletica_IdAndStatus(atleticaId, StatusGestao.ATIVA)
-                .map(x -> x.getId())
+                .map(gestaoAtiva -> gestaoAtiva.getId())
                 .orElse(null)
             : validarGestao(campos.gestaoOrigemId());
     Atletica atletica = resolver.requireByIdAndAtleticaId(atleticaId, atleticas::findByIdAndId);
@@ -146,9 +161,10 @@ public class DocumentoService {
   }
 
   @Transactional
-  public DocumentoResponse atualizar(Long id, DocumentoUpdateRequest request, Membro membro) {
+  public DocumentoResponse atualizar(
+      Long documentoId, DocumentoUpdateRequest request, Membro membro) {
     exigirPublicacao(membro);
-    Documento documento = buscarTravado(id);
+    Documento documento = buscarTravado(documentoId);
     if (!documento.getVersion().equals(request.version()))
       throw new br.com.athletix.shared.exception.ConcurrentModificationException();
     Long gestaoId =
@@ -163,15 +179,15 @@ public class DocumentoService {
     auditoria.registrar(
         request.arquivado() ? "DOCUMENTO_ARQUIVADO" : "DOCUMENTO_ATUALIZADO",
         "DOCUMENTO",
-        id,
+        documentoId,
         "Metadados do documento atualizados.");
     return resposta(documento);
   }
 
   @Transactional(readOnly = true)
   public List<VersaoDocumentoResponse> listarVersoes(Long documentoId, Membro membro) {
-    Documento d = buscar(documentoId);
-    exigirLeitura(d, membro);
+    Documento documento = buscar(documentoId);
+    exigirLeitura(documento, membro);
     return versoes
         .findAllByDocumento_IdAndAtletica_IdOrderByNumeroVersaoDesc(
             documentoId, resolver.atleticaIdAtual())
@@ -184,16 +200,18 @@ public class DocumentoService {
   public VersaoDocumentoResponse novaVersao(
       Long documentoId, VersaoDocumentoCreateFields campos, MultipartFile arquivo, Membro membro) {
     exigirPublicacao(membro);
-    Documento d = buscarTravado(documentoId);
+    Documento documento = buscarTravado(documentoId);
     Long gestaoId =
-        campos.gestaoId() == null ? d.getGestaoOrigemId() : validarGestao(campos.gestaoId());
+        campos.gestaoId() == null
+            ? documento.getGestaoOrigemId()
+            : validarGestao(campos.gestaoId());
     Atletica atletica =
         resolver.requireByIdAndAtleticaId(resolver.atleticaIdAtual(), atleticas::findByIdAndId);
     VersaoDocumento versao =
         salvarVersao(
             atletica,
-            d,
-            versoes.maiorNumeroVersao(d.getId(), atletica.getId()) + 1,
+            documento,
+            versoes.maiorNumeroVersao(documento.getId(), atletica.getId()) + 1,
             arquivo,
             gestaoId,
             campos.observacao(),
@@ -208,49 +226,49 @@ public class DocumentoService {
 
   @Transactional(readOnly = true)
   public Long arquivoDaVersao(Long documentoId, Long versaoId, Membro membro) {
-    Documento d = buscar(documentoId);
-    exigirLeitura(d, membro);
+    Documento documento = buscar(documentoId);
+    exigirLeitura(documento, membro);
     return versoes
         .findByIdAndDocumento_IdAndAtletica_Id(versaoId, documentoId, resolver.atleticaIdAtual())
         .orElseThrow(ResourceNotFoundException::new)
         .getArquivoId();
   }
 
-  public boolean podeLer(Documento d, Membro m) {
-    return d.getVisibilidade() == VisibilidadeDocumento.MEMBROS
-        || m.getPerfilAcesso() == PerfilAcesso.ADMINISTRADOR
-        || m.getPerfilAcesso() == PerfilAcesso.FINANCEIRO
-        || m.getPerfilAcesso() == PerfilAcesso.GESTOR;
+  public boolean podeLer(Documento documento, Membro membro) {
+    return documento.getVisibilidade() == VisibilidadeDocumento.MEMBROS
+        || membro.getPerfilAcesso() == PerfilAcesso.ADMINISTRADOR
+        || membro.getPerfilAcesso() == PerfilAcesso.FINANCEIRO
+        || membro.getPerfilAcesso() == PerfilAcesso.GESTOR;
   }
 
-  private void exigirLeitura(Documento d, Membro m) {
-    if (!podeLer(d, m))
+  private void exigirLeitura(Documento documento, Membro membro) {
+    if (!podeLer(documento, membro))
       throw new AccessDeniedException("Sem permissão para consultar este documento.");
   }
 
-  private void exigirPublicacao(Membro m) {
-    if (m.getPerfilAcesso() == PerfilAcesso.ADMINISTRADOR) return;
-    if (m.getPerfilAcesso() == PerfilAcesso.GESTOR
-        && m.getDepartamento().getResponsavelMembroId() != null
-        && m.getDepartamento().getResponsavelMembroId().equals(m.getId())) return;
+  private void exigirPublicacao(Membro membro) {
+    if (membro.getPerfilAcesso() == PerfilAcesso.ADMINISTRADOR) return;
+    if (membro.getPerfilAcesso() == PerfilAcesso.GESTOR
+        && membro.getDepartamento().getResponsavelMembroId() != null
+        && membro.getDepartamento().getResponsavelMembroId().equals(membro.getId())) return;
     throw new AccessDeniedException("Sem permissão para publicar documentos.");
   }
 
-  private Documento buscar(Long id) {
+  private Documento buscar(Long documentoId) {
     return documentos
-        .findByIdAndAtletica_Id(id, resolver.atleticaIdAtual())
+        .findByIdAndAtletica_Id(documentoId, resolver.atleticaIdAtual())
         .orElseThrow(ResourceNotFoundException::new);
   }
 
-  private Documento buscarTravado(Long id) {
+  private Documento buscarTravado(Long documentoId) {
     return documentos
-        .findByIdAndAtletica_IdForUpdate(id, resolver.atleticaIdAtual())
+        .findByIdAndAtletica_IdForUpdate(documentoId, resolver.atleticaIdAtual())
         .orElseThrow(ResourceNotFoundException::new);
   }
 
-  private Long validarGestao(Long id) {
+  private Long validarGestao(Long gestaoId) {
     return gestoes
-        .findByIdAndAtletica_Id(id, resolver.atleticaIdAtual())
+        .findByIdAndAtletica_Id(gestaoId, resolver.atleticaIdAtual())
         .orElseThrow(ResourceNotFoundException::new)
         .getId();
   }
@@ -262,7 +280,7 @@ public class DocumentoService {
 
   private VersaoDocumento salvarVersao(
       Atletica atletica,
-      Documento d,
+      Documento documento,
       int numero,
       MultipartFile arquivo,
       Long gestaoId,
@@ -272,7 +290,7 @@ public class DocumentoService {
     return versoes.save(
         new VersaoDocumento(
             atletica,
-            d,
+            documento,
             numero,
             arquivoId,
             gestaoId,
@@ -281,22 +299,23 @@ public class DocumentoService {
             Instant.now()));
   }
 
-  private DocumentoResponse resposta(Documento d) {
+  private DocumentoResponse resposta(Documento documento) {
     return DocumentoResponse.from(
-        d,
+        documento,
         versoes
             .findTopByDocumento_IdAndAtletica_IdOrderByNumeroVersaoDesc(
-                d.getId(), resolver.atleticaIdAtual())
+                documento.getId(), resolver.atleticaIdAtual())
             .map(this::versaoResposta)
             .orElse(null));
   }
 
-  private VersaoDocumentoResponse versaoResposta(VersaoDocumento v) {
+  private VersaoDocumentoResponse versaoResposta(VersaoDocumento versaoDocumento) {
     String nome =
         arquivosMetadata
-            .findMetadataByIdAndAtleticaId(v.getArquivoId(), resolver.atleticaIdAtual())
+            .findMetadataByIdAndAtleticaId(
+                versaoDocumento.getArquivoId(), resolver.atleticaIdAtual())
             .map(ArquivoMetadata::nomeOriginal)
             .orElse(null);
-    return VersaoDocumentoResponse.from(v, nome);
+    return VersaoDocumentoResponse.from(versaoDocumento, nome);
   }
 }

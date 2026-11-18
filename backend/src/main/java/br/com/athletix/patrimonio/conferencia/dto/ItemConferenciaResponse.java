@@ -13,16 +13,16 @@ public record ItemConferenciaResponse(
     Long conferidaPorMembroId,
     Instant conferidaEm,
     Long version) {
-  public static ItemConferenciaResponse from(ItemConferencia i) {
+  public static ItemConferenciaResponse from(ItemConferencia itemConferencia) {
     return new ItemConferenciaResponse(
-        i.getId(),
-        i.getItemId(),
-        i.getQuantidadeEsperada(),
-        i.getQuantidadeVerificada(),
-        i.getDivergencia(),
-        i.getObservacao(),
-        i.getConferidaPorMembroId(),
-        i.getConferidaEm(),
-        i.getVersion());
+        itemConferencia.getId(),
+        itemConferencia.getItemId(),
+        itemConferencia.getQuantidadeEsperada(),
+        itemConferencia.getQuantidadeVerificada(),
+        itemConferencia.getDivergencia(),
+        itemConferencia.getObservacao(),
+        itemConferencia.getConferidaPorMembroId(),
+        itemConferencia.getConferidaEm(),
+        itemConferencia.getVersion());
   }
 }

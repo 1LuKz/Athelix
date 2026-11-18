@@ -34,12 +34,13 @@ public class ConferenciaInventario extends AuditableEntity implements AtleticaSc
 
   protected ConferenciaInventario() {}
 
-  public ConferenciaInventario(Atletica a, Long g, String n, Instant i, Long c) {
-    atletica = a;
-    gestaoId = g;
-    nome = n;
-    iniciadaEm = i;
-    criadaPorMembroId = c;
+  public ConferenciaInventario(
+      Atletica atletica, Long gestaoId, String nome, Instant iniciadaEm, Long criadaPorMembroId) {
+    this.atletica = atletica;
+    this.gestaoId = gestaoId;
+    this.nome = nome;
+    this.iniciadaEm = iniciadaEm;
+    this.criadaPorMembroId = criadaPorMembroId;
     status = StatusConferenciaInventario.ABERTA;
   }
 

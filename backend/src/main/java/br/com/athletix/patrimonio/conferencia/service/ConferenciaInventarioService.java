@@ -32,27 +32,27 @@ public class ConferenciaInventarioService {
   private final AtividadeUsuarioService auditoria;
 
   public ConferenciaInventarioService(
-      ConferenciaInventarioRepository c,
-      ItemConferenciaRepository ic,
-      ItemPatrimonioRepository i,
-      AtleticaRepository a,
-      GestaoRepository g,
-      AtleticaResourceResolver r,
-      PatrimonioAutorizacaoService h,
-      AtividadeUsuarioService u) {
-    conferencias = c;
-    itensConferencia = ic;
-    itens = i;
-    atleticas = a;
-    gestoes = g;
-    resolver = r;
-    auth = h;
-    auditoria = u;
+      ConferenciaInventarioRepository conferencias,
+      ItemConferenciaRepository itensConferencia,
+      ItemPatrimonioRepository itens,
+      AtleticaRepository atleticas,
+      GestaoRepository gestoes,
+      AtleticaResourceResolver resolver,
+      PatrimonioAutorizacaoService auth,
+      AtividadeUsuarioService auditoria) {
+    this.conferencias = conferencias;
+    this.itensConferencia = itensConferencia;
+    this.itens = itens;
+    this.atleticas = atleticas;
+    this.gestoes = gestoes;
+    this.resolver = resolver;
+    this.auth = auth;
+    this.auditoria = auditoria;
   }
 
   @Transactional(readOnly = true)
-  public List<ConferenciaResponse> listar(Membro m) {
-    auth.exigirConsulta(m);
+  public List<ConferenciaResponse> listar(Membro membro) {
+    auth.exigirConsulta(membro);
     return conferencias
         .findAllByAtletica_IdOrderByIniciadaEmDesc(resolver.atleticaIdAtual())
         .stream()
@@ -61,115 +61,128 @@ public class ConferenciaInventarioService {
   }
 
   @Transactional
-  public ConferenciaResponse criar(ConferenciaCreateRequest r, Membro m) {
-    auth.exigirAdministracao(m);
-    Long a = resolver.atleticaIdAtual();
-    Atletica at = resolver.requireByIdAndAtleticaId(a, atleticas::findByIdAndId);
-    ConferenciaInventario c =
+  public ConferenciaResponse criar(ConferenciaCreateRequest requisicao, Membro membro) {
+    auth.exigirAdministracao(membro);
+    Long atleticaId = resolver.atleticaIdAtual();
+    Atletica atletica = resolver.requireByIdAndAtleticaId(atleticaId, atleticas::findByIdAndId);
+    ConferenciaInventario conferencia =
         conferencias.save(
             new ConferenciaInventario(
-                at,
+                atletica,
                 gestoes
-                    .findByAtletica_IdAndStatus(a, StatusGestao.ATIVA)
-                    .map(x -> x.getId())
+                    .findByAtletica_IdAndStatus(atleticaId, StatusGestao.ATIVA)
+                    .map(gestaoAtiva -> gestaoAtiva.getId())
                     .orElse(null),
-                NomeNormalizado.displayValue(r.nome()),
+                NomeNormalizado.displayValue(requisicao.nome()),
                 Instant.now(),
-                m.getId()));
-    for (ItemPatrimonio i :
+                membro.getId()));
+    for (ItemPatrimonio itemPatrimonio :
         itens.findAll(
-            (root, q, cb) ->
-                cb.and(cb.equal(root.get("atletica").get("id"), a), cb.isTrue(root.get("ativo")))))
-      itensConferencia.save(new ItemConferencia(c, i.getId(), i.getQuantidadeTotal()));
+            (raizItem, consulta, criteriaBuilder) ->
+                criteriaBuilder.and(
+                    criteriaBuilder.equal(raizItem.get("atletica").get("id"), atleticaId),
+                    criteriaBuilder.isTrue(raizItem.get("ativo"))))) {
+      itensConferencia.save(
+          new ItemConferencia(
+              conferencia, itemPatrimonio.getId(), itemPatrimonio.getQuantidadeTotal()));
+    }
     auditoria.registrar(
         "CONFERENCIA_INVENTARIO_ABERTA",
         "CONFERENCIA_INVENTARIO",
-        c.getId(),
+        conferencia.getId(),
         "Conferência de inventário aberta.");
-    return ConferenciaResponse.from(c);
+    return ConferenciaResponse.from(conferencia);
   }
 
   @Transactional(readOnly = true)
-  public ConferenciaDetalheResponse detalhe(Long id, Membro m) {
-    auth.exigirConsulta(m);
-    ConferenciaInventario c = buscar(id);
-    return detalheDe(c);
+  public ConferenciaDetalheResponse detalhe(Long conferenciaId, Membro membro) {
+    auth.exigirConsulta(membro);
+    ConferenciaInventario conferencia = buscar(conferenciaId);
+    return detalheDe(conferencia);
   }
 
   @Transactional
   public ItemConferenciaResponse conferir(
-      Long id, Long itemId, ItemConferenciaUpdateRequest r, Membro m) {
-    auth.exigirAdministracao(m);
-    ConferenciaInventario c = travada(id);
-    if (c.getStatus() != StatusConferenciaInventario.ABERTA)
+      Long conferenciaId, Long itemId, ItemConferenciaUpdateRequest requisicao, Membro membro) {
+    auth.exigirAdministracao(membro);
+    ConferenciaInventario conferencia = travada(conferenciaId);
+    if (conferencia.getStatus() != StatusConferenciaInventario.ABERTA)
       throw new BusinessRuleException("A conferência está encerrada.");
-    ItemConferencia i =
+    ItemConferencia itemConferencia =
         itensConferencia
-            .findByConferencia_IdAndItemId(id, itemId)
+            .findByConferencia_IdAndItemId(conferenciaId, itemId)
             .orElseThrow(ResourceNotFoundException::new);
-    if (!i.getVersion().equals(r.version()))
+    if (!itemConferencia.getVersion().equals(requisicao.version()))
       throw new br.com.athletix.shared.exception.ConcurrentModificationException();
-    if (r.quantidadeVerificada() != i.getQuantidadeEsperada()
-        && NomeNormalizado.optionalDisplayValue(r.observacao()) == null)
+    if (requisicao.quantidadeVerificada() != itemConferencia.getQuantidadeEsperada()
+        && NomeNormalizado.optionalDisplayValue(requisicao.observacao()) == null)
       throw new BusinessRuleException("Registre a divergência na observação.");
-    i.conferir(
-        r.quantidadeVerificada(), NomeNormalizado.optionalDisplayValue(r.observacao()), m.getId());
+    itemConferencia.conferir(
+        requisicao.quantidadeVerificada(),
+        NomeNormalizado.optionalDisplayValue(requisicao.observacao()),
+        membro.getId());
     auditoria.registrar(
         "ITEM_INVENTARIO_CONFERIDO",
         "ITEM_CONFERENCIA",
-        i.getId(),
+        itemConferencia.getId(),
         "Item de inventário conferido.");
-    return ItemConferenciaResponse.from(i);
+    return ItemConferenciaResponse.from(itemConferencia);
   }
 
   @Transactional
-  public ConferenciaDetalheResponse encerrar(Long id, ConferenciaEncerramentoRequest r, Membro m) {
-    auth.exigirAdministracao(m);
-    ConferenciaInventario c = travada(id);
-    if (!c.getVersion().equals(r.version()))
+  public ConferenciaDetalheResponse encerrar(
+      Long conferenciaId, ConferenciaEncerramentoRequest requisicao, Membro membro) {
+    auth.exigirAdministracao(membro);
+    ConferenciaInventario conferencia = travada(conferenciaId);
+    if (!conferencia.getVersion().equals(requisicao.version()))
       throw new br.com.athletix.shared.exception.ConcurrentModificationException();
-    if (c.getStatus() != StatusConferenciaInventario.ABERTA)
+    if (conferencia.getStatus() != StatusConferenciaInventario.ABERTA)
       throw new BusinessRuleException("A conferência já está encerrada.");
-    c.encerrar();
+    conferencia.encerrar();
     auditoria.registrar(
         "CONFERENCIA_INVENTARIO_ENCERRADA",
         "CONFERENCIA_INVENTARIO",
-        id,
+        conferenciaId,
         "Conferência de inventário encerrada sem ajuste automático de patrimônio.");
-    return detalheDe(c);
+    return detalheDe(conferencia);
   }
 
-  private ConferenciaInventario buscar(Long id) {
+  private ConferenciaInventario buscar(Long conferenciaId) {
     return conferencias
-        .findByIdAndAtletica_Id(id, resolver.atleticaIdAtual())
+        .findByIdAndAtletica_Id(conferenciaId, resolver.atleticaIdAtual())
         .orElseThrow(ResourceNotFoundException::new);
   }
 
-  private ConferenciaInventario travada(Long id) {
+  private ConferenciaInventario travada(Long conferenciaId) {
     return conferencias
-        .findByIdAndAtletica_IdForUpdate(id, resolver.atleticaIdAtual())
+        .findByIdAndAtletica_IdForUpdate(conferenciaId, resolver.atleticaIdAtual())
         .orElseThrow(ResourceNotFoundException::new);
   }
 
-  private ConferenciaDetalheResponse detalheDe(ConferenciaInventario c) {
-    List<ItemConferenciaResponse> lista =
-        itensConferencia.findAllByConferencia_IdOrderByItemIdAsc(c.getId()).stream()
+  private ConferenciaDetalheResponse detalheDe(ConferenciaInventario conferencia) {
+    List<ItemConferenciaResponse> itensDaConferencia =
+        itensConferencia.findAllByConferencia_IdOrderByItemIdAsc(conferencia.getId()).stream()
             .map(ItemConferenciaResponse::from)
             .toList();
-    long esperado = lista.stream().mapToLong(ItemConferenciaResponse::quantidadeEsperada).sum();
-    long validas =
-        lista.stream()
+    long unidadesEsperadas =
+        itensDaConferencia.stream().mapToLong(ItemConferenciaResponse::quantidadeEsperada).sum();
+    long unidadesVerificadasValidas =
+        itensDaConferencia.stream()
             .mapToLong(
-                i ->
-                    i.quantidadeVerificada() == null
+                itemConferencia ->
+                    itemConferencia.quantidadeVerificada() == null
                         ? 0
-                        : Math.min(i.quantidadeVerificada(), i.quantidadeEsperada()))
+                        : Math.min(
+                            itemConferencia.quantidadeVerificada(),
+                            itemConferencia.quantidadeEsperada()))
             .sum();
     return new ConferenciaDetalheResponse(
-        ConferenciaResponse.from(c),
-        esperado,
-        validas,
-        esperado == 0 ? 0 : (int) Math.round(validas * 100.0 / esperado),
-        lista);
+        ConferenciaResponse.from(conferencia),
+        unidadesEsperadas,
+        unidadesVerificadasValidas,
+        unidadesEsperadas == 0
+            ? 0
+            : (int) Math.round(unidadesVerificadasValidas * 100.0 / unidadesEsperadas),
+        itensDaConferencia);
   }
 }

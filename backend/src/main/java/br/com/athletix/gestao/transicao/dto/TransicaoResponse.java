@@ -23,27 +23,28 @@ public record TransicaoResponse(
       boolean continuaAtivo,
       Long substituiResponsavelMembroId) {}
 
-  public static TransicaoResponse from(TransicaoGestao t, List<ItemTransicaoGestao> xs) {
+  public static TransicaoResponse from(
+      TransicaoGestao transicao, List<ItemTransicaoGestao> itensTransicao) {
     return new TransicaoResponse(
-        t.getId(),
-        t.getGestaoOrigemId(),
-        t.getGestaoDestinoId(),
-        t.getStatus(),
-        t.getPreparadaPorMembroId(),
-        t.getConcluidaPorMembroId(),
-        t.getConcluidaEm(),
-        t.getVersion(),
-        xs.stream()
+        transicao.getId(),
+        transicao.getGestaoOrigemId(),
+        transicao.getGestaoDestinoId(),
+        transicao.getStatus(),
+        transicao.getPreparadaPorMembroId(),
+        transicao.getConcluidaPorMembroId(),
+        transicao.getConcluidaEm(),
+        transicao.getVersion(),
+        itensTransicao.stream()
             .map(
-                x ->
+                itemTransicao ->
                     new Item(
-                        x.getMembroId(),
-                        x.getCargoAtualId(),
-                        x.getDepartamentoAtualId(),
-                        x.getCargoDestinoId(),
-                        x.getDepartamentoDestinoId(),
-                        x.isContinuaAtivo(),
-                        x.getSubstituiResponsavelMembroId()))
+                        itemTransicao.getMembroId(),
+                        itemTransicao.getCargoAtualId(),
+                        itemTransicao.getDepartamentoAtualId(),
+                        itemTransicao.getCargoDestinoId(),
+                        itemTransicao.getDepartamentoDestinoId(),
+                        itemTransicao.isContinuaAtivo(),
+                        itemTransicao.getSubstituiResponsavelMembroId()))
             .toList());
   }
 }

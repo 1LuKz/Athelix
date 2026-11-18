@@ -36,15 +36,22 @@ public class ItemTransicaoGestao extends AuditableEntity {
   protected ItemTransicaoGestao() {}
 
   public ItemTransicaoGestao(
-      TransicaoGestao t, Long m, Long ca, Long da, Long cd, Long dd, boolean c, Long s) {
-    transicao = t;
-    membroId = m;
-    cargoAtualId = ca;
-    departamentoAtualId = da;
-    cargoDestinoId = cd;
-    departamentoDestinoId = dd;
-    continuaAtivo = c;
-    substituiResponsavelMembroId = s;
+      TransicaoGestao transicao,
+      Long membroId,
+      Long cargoAtualId,
+      Long departamentoAtualId,
+      Long cargoDestinoId,
+      Long departamentoDestinoId,
+      boolean continuaAtivo,
+      Long substituiResponsavelMembroId) {
+    this.transicao = transicao;
+    this.membroId = membroId;
+    this.cargoAtualId = cargoAtualId;
+    this.departamentoAtualId = departamentoAtualId;
+    this.cargoDestinoId = cargoDestinoId;
+    this.departamentoDestinoId = departamentoDestinoId;
+    this.continuaAtivo = continuaAtivo;
+    this.substituiResponsavelMembroId = substituiResponsavelMembroId;
   }
 
   public Long getMembroId() {
@@ -75,10 +82,14 @@ public class ItemTransicaoGestao extends AuditableEntity {
     return substituiResponsavelMembroId;
   }
 
-  public void atualizar(Long c, Long d, boolean a, Long s) {
-    cargoDestinoId = c;
-    departamentoDestinoId = d;
-    continuaAtivo = a;
-    substituiResponsavelMembroId = s;
+  public void atualizar(
+      Long cargoDestinoId,
+      Long departamentoDestinoId,
+      boolean continuaAtivo,
+      Long substituiResponsavelMembroId) {
+    this.cargoDestinoId = cargoDestinoId;
+    this.departamentoDestinoId = departamentoDestinoId;
+    this.continuaAtivo = continuaAtivo;
+    this.substituiResponsavelMembroId = substituiResponsavelMembroId;
   }
 }

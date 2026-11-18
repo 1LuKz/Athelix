@@ -14,23 +14,25 @@ public class DashboardController {
   private final DashboardService service;
   private final AutorizacaoAtualService auth;
 
-  public DashboardController(DashboardService s, AutorizacaoAtualService a) {
-    service = s;
-    auth = a;
+  public DashboardController(
+      DashboardService service, AutorizacaoAtualService autorizacaoAtualService) {
+    this.service = service;
+    this.auth = autorizacaoAtualService;
   }
 
-  private br.com.athletix.membro.entity.Membro m(Authentication a, HttpServletRequest r) {
-    return auth.membroAtual(a, r);
+  private br.com.athletix.membro.entity.Membro membroAtual(
+      Authentication authentication, HttpServletRequest request) {
+    return auth.membroAtual(authentication, request);
   }
 
   @GetMapping("/resumo")
-  public Resumo resumo(Authentication a, HttpServletRequest r) {
-    return service.resumo(m(a, r));
+  public Resumo resumo(Authentication authentication, HttpServletRequest request) {
+    return service.resumo(membroAtual(authentication, request));
   }
 
   @GetMapping("/financeiro")
-  public Financeiro financeiro(Authentication a, HttpServletRequest r) {
-    return service.financeiro(m(a, r));
+  public Financeiro financeiro(Authentication authentication, HttpServletRequest request) {
+    return service.financeiro(membroAtual(authentication, request));
   }
 
   @GetMapping("/departamentos")
@@ -44,12 +46,12 @@ public class DashboardController {
   }
 
   @GetMapping("/tarefas-pendentes")
-  public List<Tarefa> tarefas(Authentication a, HttpServletRequest r) {
-    return service.pendentes(m(a, r));
+  public List<Tarefa> tarefas(Authentication authentication, HttpServletRequest request) {
+    return service.pendentes(membroAtual(authentication, request));
   }
 
   @GetMapping("/ultimas-movimentacoes")
-  public List<Movimento> movimentacoes(Authentication a, HttpServletRequest r) {
-    return service.movimentacoes(m(a, r));
+  public List<Movimento> movimentacoes(Authentication authentication, HttpServletRequest request) {
+    return service.movimentacoes(membroAtual(authentication, request));
   }
 }

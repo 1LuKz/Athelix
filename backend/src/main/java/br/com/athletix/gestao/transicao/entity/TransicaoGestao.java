@@ -34,11 +34,12 @@ public class TransicaoGestao extends AuditableEntity implements AtleticaScoped {
 
   protected TransicaoGestao() {}
 
-  public TransicaoGestao(Atletica a, Long o, Long d, Long p) {
-    atletica = a;
-    gestaoOrigemId = o;
-    gestaoDestinoId = d;
-    preparadaPorMembroId = p;
+  public TransicaoGestao(
+      Atletica atletica, Long gestaoOrigemId, Long gestaoDestinoId, Long preparadaPorMembroId) {
+    this.atletica = atletica;
+    this.gestaoOrigemId = gestaoOrigemId;
+    this.gestaoDestinoId = gestaoDestinoId;
+    this.preparadaPorMembroId = preparadaPorMembroId;
   }
 
   @Override

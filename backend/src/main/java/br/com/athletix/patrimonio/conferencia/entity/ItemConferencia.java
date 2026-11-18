@@ -35,10 +35,10 @@ public class ItemConferencia extends AuditableEntity {
 
   protected ItemConferencia() {}
 
-  public ItemConferencia(ConferenciaInventario c, Long i, int q) {
-    conferencia = c;
-    itemId = i;
-    quantidadeEsperada = q;
+  public ItemConferencia(ConferenciaInventario conferencia, Long itemId, int quantidadeEsperada) {
+    this.conferencia = conferencia;
+    this.itemId = itemId;
+    this.quantidadeEsperada = quantidadeEsperada;
   }
 
   public Long getItemId() {
@@ -69,11 +69,11 @@ public class ItemConferencia extends AuditableEntity {
     return conferidaEm;
   }
 
-  public void conferir(int q, String o, Long m) {
-    quantidadeVerificada = q;
-    divergencia = q - quantidadeEsperada;
-    observacao = o;
-    conferidaPorMembroId = m;
+  public void conferir(int quantidadeVerificada, String observacao, Long membroConferenteId) {
+    this.quantidadeVerificada = quantidadeVerificada;
+    divergencia = quantidadeVerificada - quantidadeEsperada;
+    this.observacao = observacao;
+    conferidaPorMembroId = membroConferenteId;
     conferidaEm = Instant.now();
   }
 }

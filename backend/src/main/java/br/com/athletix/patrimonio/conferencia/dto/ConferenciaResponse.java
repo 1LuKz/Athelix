@@ -13,16 +13,16 @@ public record ConferenciaResponse(
     StatusConferenciaInventario status,
     Long criadaPorMembroId,
     Long version) {
-  public static ConferenciaResponse from(ConferenciaInventario c) {
+  public static ConferenciaResponse from(ConferenciaInventario conferencia) {
     return new ConferenciaResponse(
-        c.getId(),
-        c.getAtleticaId(),
-        c.getGestaoId(),
-        c.getNome(),
-        c.getIniciadaEm(),
-        c.getEncerradaEm(),
-        c.getStatus(),
-        c.getCriadaPorMembroId(),
-        c.getVersion());
+        conferencia.getId(),
+        conferencia.getAtleticaId(),
+        conferencia.getGestaoId(),
+        conferencia.getNome(),
+        conferencia.getIniciadaEm(),
+        conferencia.getEncerradaEm(),
+        conferencia.getStatus(),
+        conferencia.getCriadaPorMembroId(),
+        conferencia.getVersion());
   }
 }

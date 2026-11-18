@@ -15,18 +15,18 @@ public record DocumentoResponse(
     Instant atualizadaEm,
     Long version,
     VersaoDocumentoResponse versaoAtual) {
-  public static DocumentoResponse from(Documento d, VersaoDocumentoResponse atual) {
+  public static DocumentoResponse from(Documento documento, VersaoDocumentoResponse versaoAtual) {
     return new DocumentoResponse(
-        d.getId(),
-        d.getTitulo(),
-        d.getCategoria(),
-        d.getDescricao(),
-        d.getVisibilidade(),
-        d.getGestaoOrigemId(),
-        d.isArquivado(),
-        d.getCreatedAt(),
-        d.getUpdatedAt(),
-        d.getVersion(),
-        atual);
+        documento.getId(),
+        documento.getTitulo(),
+        documento.getCategoria(),
+        documento.getDescricao(),
+        documento.getVisibilidade(),
+        documento.getGestaoOrigemId(),
+        documento.isArquivado(),
+        documento.getCreatedAt(),
+        documento.getUpdatedAt(),
+        documento.getVersion(),
+        versaoAtual);
   }
 }

@@ -36,9 +36,10 @@ public class DocumentoController {
       @RequestParam(required = false) CategoriaDocumento categoria,
       @RequestParam(required = false) Long gestaoId,
       @RequestParam(defaultValue = "false") boolean incluirArquivados,
-      Authentication a,
-      HttpServletRequest r) {
-    return service.listar(busca, categoria, gestaoId, incluirArquivados, auth.membroAtual(a, r));
+      Authentication authentication,
+      HttpServletRequest request) {
+    return service.listar(
+        busca, categoria, gestaoId, incluirArquivados, auth.membroAtual(authentication, request));
   }
 
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -50,59 +51,67 @@ public class DocumentoController {
       @RequestParam(required = false) Long gestaoOrigemId,
       @RequestParam(required = false) String observacao,
       @RequestParam("arquivo") MultipartFile arquivo,
-      Authentication a,
-      HttpServletRequest r) {
+      Authentication authentication,
+      HttpServletRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(
             service.criar(
                 new DocumentoCreateFields(
                     titulo, categoria, descricao, visibilidade, gestaoOrigemId, observacao),
                 arquivo,
-                auth.membroAtual(a, r)));
+                auth.membroAtual(authentication, request)));
   }
 
   @GetMapping("/{id}")
-  public DocumentoResponse obter(@PathVariable Long id, Authentication a, HttpServletRequest r) {
-    return service.obter(id, auth.membroAtual(a, r));
+  public DocumentoResponse obter(
+      @PathVariable("id") Long documentoId,
+      Authentication authentication,
+      HttpServletRequest request) {
+    return service.obter(documentoId, auth.membroAtual(authentication, request));
   }
 
   @PutMapping("/{id}")
   public DocumentoResponse atualizar(
-      @PathVariable Long id,
+      @PathVariable("id") Long documentoId,
       @Valid @RequestBody DocumentoUpdateRequest corpo,
-      Authentication a,
-      HttpServletRequest r) {
-    return service.atualizar(id, corpo, auth.membroAtual(a, r));
+      Authentication authentication,
+      HttpServletRequest request) {
+    return service.atualizar(documentoId, corpo, auth.membroAtual(authentication, request));
   }
 
   @GetMapping("/{id}/versoes")
   public List<VersaoDocumentoResponse> listarVersoes(
-      @PathVariable Long id, Authentication a, HttpServletRequest r) {
-    return service.listarVersoes(id, auth.membroAtual(a, r));
+      @PathVariable("id") Long documentoId,
+      Authentication authentication,
+      HttpServletRequest request) {
+    return service.listarVersoes(documentoId, auth.membroAtual(authentication, request));
   }
 
   @PostMapping(value = "/{id}/versoes", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<VersaoDocumentoResponse> novaVersao(
-      @PathVariable Long id,
+      @PathVariable("id") Long documentoId,
       @RequestParam("arquivo") MultipartFile arquivo,
       @RequestParam(required = false) Long gestaoId,
       @RequestParam(required = false) String observacao,
-      Authentication a,
-      HttpServletRequest r) {
+      Authentication authentication,
+      HttpServletRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(
             service.novaVersao(
-                id,
+                documentoId,
                 new VersaoDocumentoCreateFields(gestaoId, observacao),
                 arquivo,
-                auth.membroAtual(a, r)));
+                auth.membroAtual(authentication, request)));
   }
 
   @GetMapping("/{id}/versoes/{versaoId}/conteudo")
   public ResponseEntity<byte[]> conteudo(
-      @PathVariable Long id, @PathVariable Long versaoId, Authentication a, HttpServletRequest r) {
-    var membro = auth.membroAtual(a, r);
-    var arquivo = leitura.abrir(service.arquivoDaVersao(id, versaoId, membro), membro);
+      @PathVariable("id") Long documentoId,
+      @PathVariable Long versaoId,
+      Authentication authentication,
+      HttpServletRequest request) {
+    var membro = auth.membroAtual(authentication, request);
+    var arquivo = leitura.abrir(service.arquivoDaVersao(documentoId, versaoId, membro), membro);
     return ResponseEntity.ok()
         .contentType(MediaType.parseMediaType(arquivo.metadata().mimeType()))
         .contentLength(arquivo.conteudo().length)

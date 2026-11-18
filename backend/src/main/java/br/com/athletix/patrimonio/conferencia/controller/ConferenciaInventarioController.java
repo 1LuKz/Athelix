@@ -39,26 +39,28 @@ public class ConferenciaInventarioController {
 
   @GetMapping("/{id}")
   public ConferenciaDetalheResponse detalhe(
-      @PathVariable Long id, Authentication authentication, HttpServletRequest request) {
-    return service.detalhe(id, auth.membroAtual(authentication, request));
+      @PathVariable("id") Long conferenciaId,
+      Authentication authentication,
+      HttpServletRequest request) {
+    return service.detalhe(conferenciaId, auth.membroAtual(authentication, request));
   }
 
   @PutMapping("/{id}/itens/{itemId}")
   public ItemConferenciaResponse conferir(
-      @PathVariable Long id,
+      @PathVariable("id") Long conferenciaId,
       @PathVariable Long itemId,
       @Valid @RequestBody ItemConferenciaUpdateRequest body,
       Authentication authentication,
       HttpServletRequest request) {
-    return service.conferir(id, itemId, body, auth.membroAtual(authentication, request));
+    return service.conferir(conferenciaId, itemId, body, auth.membroAtual(authentication, request));
   }
 
   @PatchMapping("/{id}/encerrar")
   public ConferenciaDetalheResponse encerrar(
-      @PathVariable Long id,
+      @PathVariable("id") Long conferenciaId,
       @Valid @RequestBody ConferenciaEncerramentoRequest body,
       Authentication authentication,
       HttpServletRequest request) {
-    return service.encerrar(id, body, auth.membroAtual(authentication, request));
+    return service.encerrar(conferenciaId, body, auth.membroAtual(authentication, request));
   }
 }
