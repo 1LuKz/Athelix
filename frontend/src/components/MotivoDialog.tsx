@@ -40,7 +40,7 @@ export function MotivoDialog({
         </>
       }
     >
-      <form id="form-motivo" onSubmit={handleSubmit((v) => onConfirm(v.motivo))} noValidate>
+      <form id="form-motivo" onSubmit={handleSubmit((valores) => onConfirm(valores.motivo))} noValidate>
         <Textarea
           label="Motivo"
           maxLength={500}

@@ -94,7 +94,7 @@ public class LancamentoFinanceiroService {
                 atletica,
                 gestoes
                     .findByAtletica_IdAndStatus(atleticaId, StatusGestao.ATIVA)
-                    .map(g -> g.getId())
+                    .map(gestao -> gestao.getId())
                     .orElse(null),
                 evento,
                 request.tipo(),

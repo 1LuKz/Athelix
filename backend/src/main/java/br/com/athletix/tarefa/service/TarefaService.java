@@ -78,7 +78,7 @@ public class TarefaService {
     Long gestaoId =
         gestoes
             .findByAtletica_IdAndStatus(atleticaId, StatusGestao.ATIVA)
-            .map(g -> g.getId())
+            .map(gestao -> gestao.getId())
             .orElse(null);
     Tarefa t =
         tarefas.save(
@@ -122,7 +122,7 @@ public class TarefaService {
     LocalDate hoje = hoje();
     return PageResponse.from(
         tarefas.findAll(especificacao(f, responsavelId, hoje), pageable),
-        t -> TarefaResponse.from(t, hoje));
+        tarefa -> TarefaResponse.from(tarefa, hoje));
   }
 
   @Transactional
@@ -188,7 +188,7 @@ public class TarefaService {
         tarefas.findAllByEvento_IdAndAtletica_IdOrderByPrazoAscIdAsc(
             eventoId, resolver.atleticaIdAtual());
     if (!autorizacao.veTodas(membro)) {
-      lista = lista.stream().filter(t -> autorizacao.ehResponsavel(membro, t)).toList();
+      lista = lista.stream().filter(tarefa -> autorizacao.ehResponsavel(membro, tarefa)).toList();
     }
     return ChecklistEventoResponse.from(eventoId, lista, hoje());
   }
@@ -227,7 +227,7 @@ public class TarefaService {
     Long id = resolver.atleticaIdAtual();
     return atleticas
         .findByIdAndId(id, id)
-        .map(a -> FusoHorarioAtletica.hoje(a.getFusoHorario()))
+        .map(atletica -> FusoHorarioAtletica.hoje(atletica.getFusoHorario()))
         .orElseGet(() -> FusoHorarioAtletica.hoje(null));
   }
 

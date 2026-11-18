@@ -185,16 +185,16 @@ function AtividadeModal({
       ordem: String(atividade?.ordem ?? 0),
     },
   })
-  const save = async (v: AtividadeValues) => {
+  const save = async (valores: AtividadeValues) => {
     onSaveStart()
     try {
       const body = {
-        titulo: v.titulo,
-        descricao: v.descricao || undefined,
-        inicio: new Date(v.inicio).toISOString(),
-        fim: v.fim ? new Date(v.fim).toISOString() : undefined,
-        status: v.status,
-        ordem: Number(v.ordem),
+        titulo: valores.titulo,
+        descricao: valores.descricao || undefined,
+        inicio: new Date(valores.inicio).toISOString(),
+        fim: valores.fim ? new Date(valores.fim).toISOString() : undefined,
+        status: valores.status,
+        ordem: Number(valores.ordem),
         ...(atividade ? { version: atividade.version } : {}),
       }
       if (atividade) await detalheEventoApi.atualizarAtividade(eventoId, atividade.id, body)

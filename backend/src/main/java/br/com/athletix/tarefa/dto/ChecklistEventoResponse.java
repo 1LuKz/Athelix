@@ -23,7 +23,8 @@ public record ChecklistEventoResponse(
   public static ChecklistEventoResponse from(Long eventoId, List<Tarefa> tarefas, LocalDate hoje) {
     int total = tarefas.size();
     int concluidas =
-        (int) tarefas.stream().filter(t -> t.getStatus() == StatusTarefa.CONCLUIDO).count();
+        (int)
+            tarefas.stream().filter(tarefa -> tarefa.getStatus() == StatusTarefa.CONCLUIDO).count();
     int progresso = total == 0 ? 0 : (int) Math.round(concluidas * 100.0 / total);
     String mensagem =
         total == 0
@@ -32,17 +33,17 @@ public record ChecklistEventoResponse(
     List<Item> itens =
         tarefas.stream()
             .map(
-                t ->
+                tarefa ->
                     new Item(
-                        t.getId(),
-                        t.getTitulo(),
-                        t.getStatus(),
-                        t.getStatus() == StatusTarefa.CONCLUIDO,
-                        t.atrasada(hoje),
-                        t.getPrioridade(),
-                        t.getPrazo(),
-                        t.getResponsavelMembroId(),
-                        t.getVersion()))
+                        tarefa.getId(),
+                        tarefa.getTitulo(),
+                        tarefa.getStatus(),
+                        tarefa.getStatus() == StatusTarefa.CONCLUIDO,
+                        tarefa.atrasada(hoje),
+                        tarefa.getPrioridade(),
+                        tarefa.getPrazo(),
+                        tarefa.getResponsavelMembroId(),
+                        tarefa.getVersion()))
             .toList();
     return new ChecklistEventoResponse(eventoId, total, concluidas, progresso, mensagem, itens);
   }

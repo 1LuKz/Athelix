@@ -39,7 +39,7 @@ public class SessaoAtleticaService {
     Long selecionado =
         membros.stream()
             .map(Membro::getId)
-            .filter(id -> id.equals(membroSelecionadoId))
+            .filter(identificadorMembro -> identificadorMembro.equals(membroSelecionadoId))
             .findFirst()
             .orElse(null);
     if (selecionado == null && membros.size() == 1) {

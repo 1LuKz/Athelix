@@ -33,7 +33,7 @@ export function CorrecaoParticipacaoModal({
         </>
       }
     >
-      <form id="form-correcao" onSubmit={handleSubmit((v) => onSave(v.motivo))} noValidate>
+      <form id="form-correcao" onSubmit={handleSubmit((valores) => onSave(valores.motivo))} noValidate>
         <Input
           label="Motivo da correção"
           maxLength={500}

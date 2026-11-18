@@ -16,7 +16,7 @@ export function DadosPessoaisTab({
   onDone: () => Promise<void>
 }) {
   const toast = useToast()
-  const [v, setV] = useState({
+  const [valores, setValores] = useState({
     nome: perfil.nome,
     telefone: perfil.telefone ?? '',
     curso: perfil.curso,
@@ -24,12 +24,14 @@ export function DadosPessoaisTab({
   })
   const [saving, setSaving] = useState(false)
   const save = async () => {
-    if (!v.nome || !v.curso || !v.periodoCurso) return toast.error('Preencha nome, curso e período.')
+    if (!valores.nome || !valores.curso || !valores.periodoCurso) {
+      return toast.error('Preencha nome, curso e período.')
+    }
     setSaving(true)
     try {
       await perfilApi.atualizar({
-        ...v,
-        periodoCurso: Number(v.periodoCurso),
+        ...valores,
+        periodoCurso: Number(valores.periodoCurso),
         usuarioVersion: perfil.usuarioVersion,
         membroVersion: perfil.membroVersion,
       })
@@ -45,22 +47,34 @@ export function DadosPessoaisTab({
     <div className="profile-grid">
       <Card title="Dados pessoais">
         <div className="form-grid">
-          <Input label="Nome" value={v.nome} onChange={(e) => setV({ ...v, nome: e.target.value })} />
+          <Input
+            label="Nome"
+            value={valores.nome}
+            onChange={(event) => setValores({ ...valores, nome: event.target.value })}
+          />
           <Input
             label="E-mail institucional"
             value={perfil.email}
             disabled
             hint="O e-mail não é editável nesta versão."
           />
-          <Input label="Telefone" value={v.telefone} onChange={(e) => setV({ ...v, telefone: e.target.value })} />
-          <Input label="Curso" value={v.curso} onChange={(e) => setV({ ...v, curso: e.target.value })} />
+          <Input
+            label="Telefone"
+            value={valores.telefone}
+            onChange={(event) => setValores({ ...valores, telefone: event.target.value })}
+          />
+          <Input
+            label="Curso"
+            value={valores.curso}
+            onChange={(event) => setValores({ ...valores, curso: event.target.value })}
+          />
           <Input
             label="Período"
             type="number"
             min="1"
             max="30"
-            value={v.periodoCurso}
-            onChange={(e) => setV({ ...v, periodoCurso: e.target.value })}
+            value={valores.periodoCurso}
+            onChange={(event) => setValores({ ...valores, periodoCurso: event.target.value })}
           />
         </div>
         <Button loading={saving} onClick={() => void save()}>

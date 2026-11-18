@@ -21,7 +21,7 @@ export const devolucaoSchema = z
     enviarParaManutencao: z.boolean(),
     motivoManutencao: optionalText(1000),
   })
-  .refine((v) => !v.enviarParaManutencao || !!v.motivoManutencao.trim(), {
+  .refine((valores) => !valores.enviarParaManutencao || !!valores.motivoManutencao.trim(), {
     path: ['motivoManutencao'],
     message: 'Informe o motivo da manutenção.',
   })

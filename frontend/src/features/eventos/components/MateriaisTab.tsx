@@ -125,14 +125,14 @@ function UploadModal({ eventoId, onClose, onSaved }: { eventoId: string; onClose
     defaultValues: { titulo: '', descricao: '', tipo: 'OUTRO' },
   })
   const tipo = useWatch({ control, name: 'tipo' })
-  const save = async (v: MaterialValues) => {
+  const save = async (valores: MaterialValues) => {
     try {
       const form = new FormData()
-      const file = v.arquivo[0]
+      const file = valores.arquivo[0]
       form.append('arquivo', file)
-      form.append('titulo', v.titulo || file.name)
-      if (v.descricao.trim()) form.append('descricao', v.descricao)
-      form.append('tipoMaterial', v.tipo)
+      form.append('titulo', valores.titulo || file.name)
+      if (valores.descricao.trim()) form.append('descricao', valores.descricao)
+      form.append('tipoMaterial', valores.tipo)
       await detalheEventoApi.upload(eventoId, form)
       success('Material enviado.')
       onSaved()

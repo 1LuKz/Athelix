@@ -28,13 +28,13 @@ public class PatrimonioDisponibilidadeService {
         emprestimos.findAllByItem_IdAndAtletica_Id(itemId, atleticaId)) {
       int devolvida =
           devolucoes.findAllByEmprestimo_Id(emprestimo.getId()).stream()
-              .mapToInt(d -> d.getQuantidade())
+              .mapToInt(devolucao -> devolucao.getQuantidade())
               .sum();
       emprestada += emprestimo.getQuantidade() - devolvida;
     }
     int manutencao =
         manutencoes.findAllByItem_IdAndAtletica_IdAndConcluidaEmIsNull(itemId, atleticaId).stream()
-            .mapToInt(m -> m.getQuantidade())
+            .mapToInt(registroManutencao -> registroManutencao.getQuantidade())
             .sum();
     return new Disponibilidade(emprestada, manutencao, quantidadeTotal - emprestada - manutencao);
   }

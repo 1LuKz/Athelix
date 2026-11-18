@@ -14,7 +14,7 @@ public final class FusoHorarioAtletica {
   public static ZoneId zona(String fusoHorario) {
     try {
       return fusoHorario == null || fusoHorario.isBlank() ? PADRAO : ZoneId.of(fusoHorario.trim());
-    } catch (DateTimeException e) {
+    } catch (DateTimeException excecao) {
       return PADRAO;
     }
   }

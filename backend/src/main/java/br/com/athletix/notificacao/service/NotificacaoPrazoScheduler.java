@@ -33,9 +33,9 @@ public class NotificacaoPrazoScheduler {
         if (criadas > 0) {
           log.info("Atlética {}: {} aviso(s) de prazo gerado(s).", atletica.getId(), criadas);
         }
-      } catch (RuntimeException e) {
+      } catch (RuntimeException excecao) {
         // uma atlética com erro não impede as demais; a próxima execução tenta de novo
-        log.error("Falha ao gerar avisos de prazo da atlética {}.", atletica.getId(), e);
+        log.error("Falha ao gerar avisos de prazo da atlética {}.", atletica.getId(), excecao);
       }
     }
   }

@@ -27,10 +27,16 @@ export function ParticipacaoModal({
     defaultValues: { tipo: 'INTERNO', membroId: '', nome: '', email: '' },
   })
   const tipo = useWatch({ control, name: 'tipo' })
-  const save = async (v: ParticipacaoValues) => {
+  const save = async (valores: ParticipacaoValues) => {
     try {
-      if (v.tipo === 'INTERNO') await detalheEventoApi.criarParticipacao(eventoId, { membroId: Number(v.membroId) })
-      else await detalheEventoApi.criarParticipacao(eventoId, { nomeParticipante: v.nome, emailParticipante: v.email })
+      if (valores.tipo === 'INTERNO') {
+        await detalheEventoApi.criarParticipacao(eventoId, { membroId: Number(valores.membroId) })
+      } else {
+        await detalheEventoApi.criarParticipacao(eventoId, {
+          nomeParticipante: valores.nome,
+          emailParticipante: valores.email,
+        })
+      }
       success('Participante registrado.')
       onSaved()
     } catch (cause) {
@@ -61,9 +67,9 @@ export function ParticipacaoModal({
         {tipo === 'INTERNO' ? (
           <Select label="Membro ativo" error={errors.membroId?.message} {...register('membroId')}>
             <option value="">Selecione</option>
-            {members.data?.items.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.nome}
+            {members.data?.items.map((membro) => (
+              <option key={membro.id} value={membro.id}>
+                {membro.nome}
               </option>
             ))}
           </Select>

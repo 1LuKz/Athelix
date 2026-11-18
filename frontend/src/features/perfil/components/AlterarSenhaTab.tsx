@@ -5,16 +5,20 @@ import { perfilApi, type Perfil } from '../api'
 
 export function AlterarSenhaTab({ perfil }: { perfil: Perfil }) {
   const toast = useToast()
-  const [v, setV] = useState({ atual: '', nova: '', confirmacao: '' })
+  const [valores, setValores] = useState({ atual: '', nova: '', confirmacao: '' })
   const [saving, setSaving] = useState(false)
   const save = async () => {
-    if (!v.atual || !v.nova) return toast.error('Preencha a senha atual e a nova senha.')
-    if (v.nova !== v.confirmacao) return toast.error('A confirmação da nova senha não coincide.')
+    if (!valores.atual || !valores.nova) return toast.error('Preencha a senha atual e a nova senha.')
+    if (valores.nova !== valores.confirmacao) return toast.error('A confirmação da nova senha não coincide.')
     setSaving(true)
     try {
-      await perfilApi.senha({ senhaAtual: v.atual, novaSenha: v.nova, version: perfil.usuarioVersion })
+      await perfilApi.senha({
+        senhaAtual: valores.atual,
+        novaSenha: valores.nova,
+        version: perfil.usuarioVersion,
+      })
       toast.success('Senha atualizada. As outras sessões foram encerradas.')
-      setV({ atual: '', nova: '', confirmacao: '' })
+      setValores({ atual: '', nova: '', confirmacao: '' })
     } catch (cause) {
       toast.error(errorFeedback(cause))
     } finally {
@@ -29,22 +33,22 @@ export function AlterarSenhaTab({ perfil }: { perfil: Perfil }) {
           label="Senha atual"
           type="password"
           autoComplete="current-password"
-          value={v.atual}
-          onChange={(e) => setV({ ...v, atual: e.target.value })}
+          value={valores.atual}
+          onChange={(event) => setValores({ ...valores, atual: event.target.value })}
         />
         <Input
           label="Nova senha"
           type="password"
           autoComplete="new-password"
-          value={v.nova}
-          onChange={(e) => setV({ ...v, nova: e.target.value })}
+          value={valores.nova}
+          onChange={(event) => setValores({ ...valores, nova: event.target.value })}
         />
         <Input
           label="Confirmar nova senha"
           type="password"
           autoComplete="new-password"
-          value={v.confirmacao}
-          onChange={(e) => setV({ ...v, confirmacao: e.target.value })}
+          value={valores.confirmacao}
+          onChange={(event) => setValores({ ...valores, confirmacao: event.target.value })}
         />
       </div>
       <Button loading={saving} onClick={() => void save()}>

@@ -86,10 +86,10 @@ export function PrepararTransicao({
               <Select
                 label="Cargo destino"
                 value={item.cargoDestinoId}
-                onChange={(e) => updateItem(item.membroId, 'cargoDestinoId', Number(e.target.value))}
+                onChange={(event) => updateItem(item.membroId, 'cargoDestinoId', Number(event.target.value))}
               >
                 {cargos.data
-                  ?.filter((c) => c.ativo)
+                  ?.filter((cargo) => cargo.ativo)
                   .map((cargo) => (
                     <option key={cargo.id} value={cargo.id}>
                       {cargo.nome}
@@ -99,7 +99,7 @@ export function PrepararTransicao({
               <Select
                 label="Departamento destino"
                 value={item.departamentoDestinoId}
-                onChange={(e) => updateItem(item.membroId, 'departamentoDestinoId', Number(e.target.value))}
+                onChange={(event) => updateItem(item.membroId, 'departamentoDestinoId', Number(event.target.value))}
               >
                 {departamentos.data
                   ?.filter((department) => department.situacao === 'ATIVO')
@@ -113,7 +113,7 @@ export function PrepararTransicao({
                 <input
                   type="checkbox"
                   checked={item.continuaAtivo}
-                  onChange={(e) => updateItem(item.membroId, 'continuaAtivo', e.target.checked)}
+                  onChange={(event) => updateItem(item.membroId, 'continuaAtivo', event.target.checked)}
                 />{' '}
                 Permanece ativo
               </label>

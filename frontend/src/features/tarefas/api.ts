@@ -14,15 +14,15 @@ export type Tarefa = {
   version: number
 }
 export type TarefaPage = { items: Tarefa[]; page: number; size: number; totalItems: number; totalPages: number }
-const q = (v: Record<string, unknown>) =>
+const montarQueryString = (parametros: Record<string, unknown>) =>
   `?${new URLSearchParams(
-    Object.entries(v)
-      .filter(([, x]) => x !== undefined && x !== '')
-      .map(([k, x]) => [k, String(x)]),
+    Object.entries(parametros)
+      .filter(([, valor]) => valor !== undefined && valor !== '')
+      .map(([chave, valor]) => [chave, String(valor)]),
   ).toString()}`
 export const tarefasApi = {
   list: (filters: Record<string, unknown>, signal?: AbortSignal) =>
-    http<TarefaPage>(`/tarefas${q(filters)}`, { signal }),
+    http<TarefaPage>(`/tarefas${montarQueryString(filters)}`, { signal }),
   create: (body: Record<string, unknown>) => http<Tarefa>('/tarefas', { method: 'POST', body }),
   update: (
     id: number,

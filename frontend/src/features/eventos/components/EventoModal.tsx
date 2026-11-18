@@ -37,18 +37,18 @@ export function EventoModal({
       participantes: String(event?.participantesEsperados ?? ''),
     },
   })
-  const save = async (v: EventoValues) => {
+  const save = async (valores: EventoValues) => {
     try {
       const body = {
-        nome: v.nome,
-        descricao: v.descricao || undefined,
-        inicio: new Date(v.inicio).toISOString(),
-        fim: new Date(v.fim).toISOString(),
-        local: v.local,
-        cidade: v.cidade || undefined,
-        uf: v.uf.toUpperCase() || undefined,
-        orcamentoPrevisto: normalizeMoney(v.orcamento)!,
-        participantesEsperados: v.participantes ? Number(v.participantes) : undefined,
+        nome: valores.nome,
+        descricao: valores.descricao || undefined,
+        inicio: new Date(valores.inicio).toISOString(),
+        fim: new Date(valores.fim).toISOString(),
+        local: valores.local,
+        cidade: valores.cidade || undefined,
+        uf: valores.uf.toUpperCase() || undefined,
+        orcamentoPrevisto: normalizeMoney(valores.orcamento)!,
+        participantesEsperados: valores.participantes ? Number(valores.participantes) : undefined,
       }
       if (event) await eventosApi.update(event.id, { ...body, version: event.version })
       else await eventosApi.create(body)

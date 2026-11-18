@@ -117,7 +117,7 @@ public class ItemPatrimonioService {
                 atletica,
                 gestoes
                     .findByAtletica_IdAndStatus(atleticaId, StatusGestao.ATIVA)
-                    .map(g -> g.getId())
+                    .map(gestao -> gestao.getId())
                     .orElse(null),
                 NomeNormalizado.displayValue(request.nome()),
                 NomeNormalizado.optionalDisplayValue(request.descricao()),
