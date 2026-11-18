@@ -10,6 +10,7 @@ import { queryKeys } from '../../../lib/query'
 import { useAuthSession } from '../../auth/AuthSessionProvider'
 import { dashboardApi } from '../api'
 import { MetricaDashboard, SecaoDashboard } from '../components/DashboardCard'
+import { IndicadorVariacaoSaldo } from '../components/IndicadorVariacaoSaldo'
 export function DashboardPage() {
   const fusoHorario = useAtleticaTimeZone()
   const { activeVinculo, state } = useAuthSession()
@@ -79,11 +80,7 @@ export function DashboardPage() {
               label="Saldo atual"
               value={podeConsultarFinanceiro ? formatMoney(resumo.data.saldoAtual) : 'Não autorizado'}
               detail="Regime de caixa até hoje"
-              indicator={
-                resumo.data.variacaoSaldoPercentual === null
-                  ? 'Sem comparação'
-                  : `+${resumo.data.variacaoSaldoPercentual}%`
-              }
+              indicator={<IndicadorVariacaoSaldo variacaoSaldoPercentual={resumo.data.variacaoSaldoPercentual} />}
               to="/financeiro"
             />
             <MetricaDashboard

@@ -150,7 +150,7 @@ public class DashboardService {
     return new BigDecimal(saldoAtual)
         .subtract(saldoAnterior)
         .multiply(BigDecimal.valueOf(100))
-        .divide(saldoAnterior, 1, RoundingMode.HALF_UP)
+        .divide(saldoAnterior.abs(), 1, RoundingMode.HALF_UP)
         .toPlainString();
   }
 

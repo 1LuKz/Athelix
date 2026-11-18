@@ -35,3 +35,9 @@ test('valores monetários e enums têm rótulos em português', () => {
   assert.equal(labels.areaResponsabilidadeLabels.COORDENACAO_GERAL, 'Coordenação geral')
   assert.equal(labels.enumLabel(labels.situacaoDepartamentoLabels, 'EM_CONFIGURACAO'), 'Em configuração')
 })
+test('variações percentuais usam sinal e formatação brasileira', () => {
+  assert.equal(format.formatVariacaoPercentual(null), 'Sem comparação')
+  assert.equal(format.formatVariacaoPercentual('8.5'), '+8,5%')
+  assert.equal(format.formatVariacaoPercentual('-3.2'), '-3,2%')
+  assert.equal(format.formatVariacaoPercentual('0.0'), '0%')
+})

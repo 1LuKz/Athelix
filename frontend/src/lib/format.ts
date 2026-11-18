@@ -31,3 +31,14 @@ export function formatDateTime(value: string | null | undefined, timeZone?: stri
 export function formatMoney(value: string | number): string {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value))
 }
+
+export function formatVariacaoPercentual(valor: string | null): string {
+  if (valor === null) return 'Sem comparação'
+  const valorNumerico = Number(valor)
+  if (valorNumerico === 0) return '0%'
+  const valorFormatado = new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(valorNumerico)
+  return `${valorNumerico > 0 ? '+' : ''}${valorFormatado}%`
+}
