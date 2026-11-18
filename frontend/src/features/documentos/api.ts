@@ -24,16 +24,16 @@ export type Documento = {
   version: number
   versaoAtual: VersaoDocumento | null
 }
-const qs = (values: Record<string, string | number | boolean | undefined>) => {
-  const p = new URLSearchParams()
-  Object.entries(values).forEach(([key, value]) => {
-    if (value !== undefined && value !== '') p.set(key, String(value))
+const montarQueryString = (valores: Record<string, string | number | boolean | undefined>) => {
+  const parametros = new URLSearchParams()
+  Object.entries(valores).forEach(([chave, valor]) => {
+    if (valor !== undefined && valor !== '') parametros.set(chave, String(valor))
   })
-  return p.toString() ? `?${p}` : ''
+  return parametros.toString() ? `?${parametros}` : ''
 }
 export const documentosApi = {
   listar: (filters: Record<string, string | number | boolean | undefined>, signal?: AbortSignal) =>
-    http<Documento[]>(`/documentos${qs(filters)}`, { signal }),
+    http<Documento[]>(`/documentos${montarQueryString(filters)}`, { signal }),
   obter: (id: number) => http<Documento>(`/documentos/${id}`),
   versoes: (id: number, signal?: AbortSignal) => http<VersaoDocumento[]>(`/documentos/${id}/versoes`, { signal }),
   criar: (form: FormData) => http<Documento>('/documentos', { method: 'POST', body: form }),

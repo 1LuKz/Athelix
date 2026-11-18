@@ -43,3 +43,11 @@ export type SolicitacaoVinculo = {
   status: 'PENDENTE' | 'APROVADA' | 'REJEITADA'
   version: number
 }
+
+export type FiltrosMembros = {
+  busca: string
+  departamentoId: number | undefined
+  status: StatusMembro | undefined
+  page: number
+  size: number
+}
