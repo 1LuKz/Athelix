@@ -12,28 +12,40 @@ import org.springframework.data.jpa.repository.Query;
 public interface TarefaRepository
     extends JpaRepository<Tarefa, Long>, JpaSpecificationExecutor<Tarefa> {
 
+  interface TarefaPendenteDashboard {
+    Long getId();
+
+    String getTitulo();
+
+    LocalDate getPrazo();
+
+    br.com.athletix.tarefa.entity.StatusTarefa getStatus();
+  }
+
   Optional<Tarefa> findByIdAndAtletica_Id(Long id, Long atleticaId);
 
   List<Tarefa> findAllByEvento_IdAndAtletica_IdOrderByPrazoAscIdAsc(Long eventoId, Long atleticaId);
 
   @Query(
       """
-      select tarefa from Tarefa tarefa
+      select tarefa.id as id, tarefa.titulo as titulo, tarefa.prazo as prazo, tarefa.status as status
+      from Tarefa tarefa
       where tarefa.atletica.id = :atleticaId
         and tarefa.status <> br.com.athletix.tarefa.entity.StatusTarefa.CONCLUIDO
       order by case when tarefa.prazo is null then 1 else 0 end, tarefa.prazo asc, tarefa.id asc
       """)
-  List<Tarefa> findPendentesByAtleticaId(Long atleticaId, Pageable pageable);
+  List<TarefaPendenteDashboard> findPendentesByAtleticaId(Long atleticaId, Pageable pageable);
 
   @Query(
       """
-      select tarefa from Tarefa tarefa
+      select tarefa.id as id, tarefa.titulo as titulo, tarefa.prazo as prazo, tarefa.status as status
+      from Tarefa tarefa
       where tarefa.atletica.id = :atleticaId
         and tarefa.responsavel.id = :membroId
         and tarefa.status <> br.com.athletix.tarefa.entity.StatusTarefa.CONCLUIDO
       order by case when tarefa.prazo is null then 1 else 0 end, tarefa.prazo asc, tarefa.id asc
       """)
-  List<Tarefa> findPendentesByAtleticaIdAndResponsavelMembroId(
+  List<TarefaPendenteDashboard> findPendentesByAtleticaIdAndResponsavelMembroId(
       Long atleticaId, Long membroId, Pageable pageable);
 
   /** B15: abertas, com prazo até {@code limite} e responsável ATIVO, de uma única atlética. */

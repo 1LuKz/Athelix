@@ -16,6 +16,16 @@ import org.springframework.data.jpa.repository.Query;
 public interface EventoRepository
     extends JpaRepository<Evento, Long>, JpaSpecificationExecutor<Evento> {
 
+  interface ProximoEventoDashboard {
+    Long getId();
+
+    String getNome();
+
+    java.time.OffsetDateTime getInicio();
+
+    br.com.athletix.evento.entity.StatusEvento getStatus();
+  }
+
   @EntityGraph(attributePaths = "atletica")
   Optional<Evento> findByIdAndAtletica_Id(Long id, Long atleticaId);
 
@@ -32,6 +42,14 @@ public interface EventoRepository
   long countByAtletica_IdAndStatusIn(
       Long atleticaId, Collection<br.com.athletix.evento.entity.StatusEvento> statuses);
 
-  java.util.List<Evento> findAllByAtletica_IdAndStatusNotOrderByInicioAsc(
+  @Query(
+      """
+      select evento.id as id, evento.nome as nome, evento.inicio as inicio, evento.status as status
+      from Evento evento
+      where evento.atletica.id = :atleticaId
+        and evento.status <> :status
+      order by evento.inicio asc
+      """)
+  java.util.List<ProximoEventoDashboard> findProximosParaDashboard(
       Long atleticaId, br.com.athletix.evento.entity.StatusEvento status, Pageable pageable);
 }

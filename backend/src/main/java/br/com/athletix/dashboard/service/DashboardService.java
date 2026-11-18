@@ -33,8 +33,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -110,22 +108,20 @@ public class DashboardService {
   @Transactional(readOnly = true)
   public List<Departamento> departamentos() {
     Long atleticaId = resolver.atleticaIdAtual();
-    long totalAtivos = membros.countByAtletica_IdAndStatus(atleticaId, StatusMembro.ATIVO);
-    Map<Long, Long> ativosPorDepartamento =
-        membros
-            .countByAtleticaIdAndStatusGroupedByDepartamento(atleticaId, StatusMembro.ATIVO)
-            .stream()
-            .collect(
-                Collectors.toMap(
-                    MembroRepository.ContagemPorDepartamento::getDepartamentoId,
-                    MembroRepository.ContagemPorDepartamento::getQuantidade));
+    var resumoPorDepartamento = departamentos.findResumoDashboardByAtleticaId(atleticaId);
+    long totalAtivosComDepartamento =
+        resumoPorDepartamento.stream()
+            .mapToLong(DepartamentoRepository.ResumoDashboard::getMembrosAtivos)
+            .sum();
 
-    return departamentos.findAllByAtletica_IdOrderByNomeAsc(atleticaId).stream()
+    return resumoPorDepartamento.stream()
         .map(
             departamento -> {
-              long membrosAtivos = ativosPorDepartamento.getOrDefault(departamento.getId(), 0L);
+              long membrosAtivos = departamento.getMembrosAtivos();
               int participacao =
-                  totalAtivos == 0 ? 0 : (int) Math.round(membrosAtivos * 100.0 / totalAtivos);
+                  totalAtivosComDepartamento == 0
+                      ? 0
+                      : (int) Math.round(membrosAtivos * 100.0 / totalAtivosComDepartamento);
               return new Departamento(
                   departamento.getId(), departamento.getNome(), membrosAtivos, participacao);
             })
@@ -136,8 +132,7 @@ public class DashboardService {
   public List<Evento> proximos() {
     Long atleticaId = resolver.atleticaIdAtual();
     return eventos
-        .findAllByAtletica_IdAndStatusNotOrderByInicioAsc(
-            atleticaId, StatusEvento.CONCLUIDO, PageRequest.of(0, 10))
+        .findProximosParaDashboard(atleticaId, StatusEvento.CONCLUIDO, PageRequest.of(0, 10))
         .stream()
         .map(
             evento ->
@@ -152,7 +147,7 @@ public class DashboardService {
   @Transactional(readOnly = true)
   public List<Tarefa> pendentes(Membro membro) {
     Long atleticaId = resolver.atleticaIdAtual();
-    List<br.com.athletix.tarefa.entity.Tarefa> tarefasPendentes =
+    List<TarefaRepository.TarefaPendenteDashboard> tarefasPendentes =
         membro.getPerfilAcesso() == PerfilAcesso.MEMBRO
             ? tarefas.findPendentesByAtleticaIdAndResponsavelMembroId(
                 atleticaId, membro.getId(), PageRequest.of(0, 20))

@@ -23,13 +23,13 @@ import br.com.athletix.shared.exception.ConflictException;
 import br.com.athletix.shared.exception.ResourceNotFoundException;
 import br.com.athletix.shared.normalization.NomeNormalizado;
 import br.com.athletix.shared.tenancy.AtleticaResourceResolver;
+import br.com.athletix.shared.time.FusoHorarioAtletica;
 import br.com.athletix.usuario.dto.UsuarioConviteCreateRequest;
 import br.com.athletix.usuario.entity.Usuario;
 import br.com.athletix.usuario.repository.UsuarioRepository;
 import br.com.athletix.usuario.service.EmailNormalizado;
 import br.com.athletix.usuario.service.UsuarioService;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -142,7 +142,9 @@ public class MembroService {
                 request.periodoCurso(),
                 cargo,
                 departamento,
-                request.membroDesde() == null ? LocalDate.now() : request.membroDesde()));
+                request.membroDesde() == null
+                    ? FusoHorarioAtletica.hoje(atletica.getFusoHorario())
+                    : request.membroDesde()));
     atividadeService.registrar(
         "MEMBRO_CRIADO", "MEMBRO", membro.getId(), "Novo vínculo de membro criado.");
     return membro;
