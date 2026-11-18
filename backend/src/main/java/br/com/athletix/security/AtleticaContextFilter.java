@@ -45,50 +45,88 @@ public class AtleticaContextFilter extends OncePerRequestFilter {
   protected void doFilterInternal(
       HttpServletRequest request, HttpServletResponse response, FilterChain chain)
       throws ServletException, IOException {
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (!(authentication != null
-        && authentication.isAuthenticated()
-        && authentication.getPrincipal() instanceof AuthenticatedUserPrincipal principal)) {
+    AuthenticatedUserPrincipal principal = usuarioAutenticado();
+    if (principal == null) {
       chain.doFilter(request, response);
       return;
     }
     HttpSession session = request.getSession(false);
-    Long membroId =
-        session == null
-            ? null
-            : (Long)
-                session.getAttribute(SessaoAtleticaService.MEMBRO_SELECIONADO_SESSION_ATTRIBUTE);
+    Long membroId = membroSelecionado(session);
     if (membroId == null) {
-      errorWriter.write(
-          request,
-          response,
-          HttpStatus.FORBIDDEN,
-          ApiErrorCode.FORBIDDEN,
-          "Selecione uma atlética ativa para acessar este recurso.");
+      escreverErroSemAtleticaSelecionada(request, response);
       return;
     }
-    final Long atleticaId;
+    Long atleticaId;
     try {
-      atleticaId =
-          sessaoAtleticaService
-              .resolverSelecionado(principal.usuarioId(), membroId)
-              .getAtleticaId();
+      atleticaId = resolverAtleticaSelecionada(principal, membroId);
     } catch (AccessDeniedException exception) {
-      if (session != null) {
-        session.removeAttribute(SessaoAtleticaService.MEMBRO_SELECIONADO_SESSION_ATTRIBUTE);
-      }
-      errorWriter.write(
-          request,
-          response,
-          HttpStatus.FORBIDDEN,
-          ApiErrorCode.FORBIDDEN,
-          "O vínculo selecionado não está mais disponível.");
+      removerMembroSelecionado(session);
+      escreverErroVinculoIndisponivel(request, response);
       return;
     }
+    filtrarNoContextoAtletica(request, response, chain, principal, membroId, atleticaId);
+  }
+
+  private AuthenticatedUserPrincipal usuarioAutenticado() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication != null
+        && authentication.isAuthenticated()
+        && authentication.getPrincipal() instanceof AuthenticatedUserPrincipal principal) {
+      return principal;
+    }
+    return null;
+  }
+
+  private Long membroSelecionado(HttpSession session) {
+    return session == null
+        ? null
+        : (Long) session.getAttribute(SessaoAtleticaService.MEMBRO_SELECIONADO_SESSION_ATTRIBUTE);
+  }
+
+  private void escreverErroSemAtleticaSelecionada(
+      HttpServletRequest request, HttpServletResponse response) throws IOException {
+    errorWriter.write(
+        request,
+        response,
+        HttpStatus.FORBIDDEN,
+        ApiErrorCode.FORBIDDEN,
+        "Selecione uma atlética ativa para acessar este recurso.");
+  }
+
+  private Long resolverAtleticaSelecionada(AuthenticatedUserPrincipal principal, Long membroId) {
+    return sessaoAtleticaService
+        .resolverSelecionado(principal.usuarioId(), membroId)
+        .getAtleticaId();
+  }
+
+  private void filtrarNoContextoAtletica(
+      HttpServletRequest request,
+      HttpServletResponse response,
+      FilterChain chain,
+      AuthenticatedUserPrincipal principal,
+      Long membroId,
+      Long atleticaId)
+      throws ServletException, IOException {
     try (ContextoAtletica.Escopo ignored = contextoAtletica.abrir(atleticaId);
         ContextoAtividade.Escopo atividade =
             contextoAtividade.abrir(atleticaId, principal.usuarioId(), membroId)) {
       chain.doFilter(request, response);
     }
+  }
+
+  private void removerMembroSelecionado(HttpSession session) {
+    if (session != null) {
+      session.removeAttribute(SessaoAtleticaService.MEMBRO_SELECIONADO_SESSION_ATTRIBUTE);
+    }
+  }
+
+  private void escreverErroVinculoIndisponivel(
+      HttpServletRequest request, HttpServletResponse response) throws IOException {
+    errorWriter.write(
+        request,
+        response,
+        HttpStatus.FORBIDDEN,
+        ApiErrorCode.FORBIDDEN,
+        "O vínculo selecionado não está mais disponível.");
   }
 }

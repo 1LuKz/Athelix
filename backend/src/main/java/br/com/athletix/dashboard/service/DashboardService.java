@@ -14,6 +14,8 @@ import br.com.athletix.dashboard.dto.DashboardResponses.Tarefa;
 import br.com.athletix.departamento.repository.DepartamentoRepository;
 import br.com.athletix.evento.entity.StatusEvento;
 import br.com.athletix.evento.repository.EventoRepository;
+import br.com.athletix.financeiro.entity.EstornoFinanceiro;
+import br.com.athletix.financeiro.entity.LancamentoFinanceiro;
 import br.com.athletix.financeiro.entity.StatusLiquidacao;
 import br.com.athletix.financeiro.entity.TipoLancamentoFinanceiro;
 import br.com.athletix.financeiro.repository.EstornoFinanceiroRepository;
@@ -253,15 +255,17 @@ public class DashboardService {
     Long atleticaId = resolver.atleticaIdAtual();
     var limite = PageRequest.of(0, 10);
     List<MovimentoOrdenado> movimentos = new ArrayList<>();
+    adicionarLancamentos(movimentos, atleticaId, limite);
+    adicionarEstornos(movimentos, atleticaId, limite);
+    return ordenarMovimentos(movimentos);
+  }
 
+  private void adicionarLancamentos(
+      List<MovimentoOrdenado> movimentos, Long atleticaId, PageRequest limite) {
     for (var lancamento :
         lancamentos
             .findByAtletica_IdAndStatusLiquidacaoAndDataLiquidacaoIsNotNullOrderByDataLiquidacaoDescIdDesc(
                 atleticaId, StatusLiquidacao.LIQUIDADO, limite)) {
-      var valor =
-          lancamento.getTipo() == TipoLancamentoFinanceiro.DESPESA
-              ? lancamento.getValor().negate()
-              : lancamento.getValor();
       movimentos.add(
           new MovimentoOrdenado(
               lancamento.getDataLiquidacao(),
@@ -269,15 +273,20 @@ public class DashboardService {
               new Movimento(
                   lancamento.getTipo().name(),
                   lancamento.getDataLiquidacao(),
-                  MoneyValues.format(valor),
+                  MoneyValues.format(valorLancamento(lancamento)),
                   lancamento.getDescricao())));
     }
+  }
 
+  private BigDecimal valorLancamento(LancamentoFinanceiro lancamento) {
+    return lancamento.getTipo() == TipoLancamentoFinanceiro.DESPESA
+        ? lancamento.getValor().negate()
+        : lancamento.getValor();
+  }
+
+  private void adicionarEstornos(
+      List<MovimentoOrdenado> movimentos, Long atleticaId, PageRequest limite) {
     for (var estorno : estornos.findByAtletica_IdOrderByDataEstornoDescIdDesc(atleticaId, limite)) {
-      var valor =
-          estorno.getTipoLancamento() == TipoLancamentoFinanceiro.RECEITA
-              ? estorno.getValorLancamento().negate()
-              : estorno.getValorLancamento();
       movimentos.add(
           new MovimentoOrdenado(
               estorno.getDataEstorno(),
@@ -285,10 +294,18 @@ public class DashboardService {
               new Movimento(
                   "ESTORNO",
                   estorno.getDataEstorno(),
-                  MoneyValues.format(valor),
+                  MoneyValues.format(valorEstorno(estorno)),
                   "Estorno: " + estorno.getDescricaoLancamento())));
     }
+  }
 
+  private BigDecimal valorEstorno(EstornoFinanceiro estorno) {
+    return estorno.getTipoLancamento() == TipoLancamentoFinanceiro.RECEITA
+        ? estorno.getValorLancamento().negate()
+        : estorno.getValorLancamento();
+  }
+
+  private List<Movimento> ordenarMovimentos(List<MovimentoOrdenado> movimentos) {
     return movimentos.stream()
         .sorted(
             Comparator.comparing(MovimentoOrdenado::data)

@@ -62,47 +62,72 @@ public class DocumentoService {
       Long gestaoId,
       boolean incluirArquivados,
       Membro membro) {
-    Specification<Documento> especificacaoDocumentos =
-        (raizDocumento, consulta, criteriaBuilder) ->
-            criteriaBuilder.equal(
-                raizDocumento.get("atletica").get("id"), resolver.atleticaIdAtual());
+    Specification<Documento> especificacaoDocumentos = montarEspecificacaoBase();
+    especificacaoDocumentos = aplicarFiltroArquivados(especificacaoDocumentos, incluirArquivados);
+    especificacaoDocumentos = aplicarFiltroCategoria(especificacaoDocumentos, categoria);
+    especificacaoDocumentos = aplicarFiltroGestao(especificacaoDocumentos, gestaoId);
+    List<DocumentoResponse> resposta = listarDocumentosPermitidos(especificacaoDocumentos, membro);
+    return filtrarPorBusca(resposta, busca);
+  }
+
+  private Specification<Documento> montarEspecificacaoBase() {
+    return (raizDocumento, consulta, criteriaBuilder) ->
+        criteriaBuilder.equal(raizDocumento.get("atletica").get("id"), resolver.atleticaIdAtual());
+  }
+
+  private Specification<Documento> aplicarFiltroArquivados(
+      Specification<Documento> especificacaoDocumentos, boolean incluirArquivados) {
     if (!incluirArquivados) {
-      especificacaoDocumentos =
-          especificacaoDocumentos.and(
-              (raizDocumento, consulta, criteriaBuilder) ->
-                  criteriaBuilder.isFalse(raizDocumento.get("arquivado")));
+      return especificacaoDocumentos.and(
+          (raizDocumento, consulta, criteriaBuilder) ->
+              criteriaBuilder.isFalse(raizDocumento.get("arquivado")));
     }
+    return especificacaoDocumentos;
+  }
+
+  private Specification<Documento> aplicarFiltroCategoria(
+      Specification<Documento> especificacaoDocumentos, CategoriaDocumento categoria) {
     if (categoria != null) {
-      especificacaoDocumentos =
-          especificacaoDocumentos.and(
-              (raizDocumento, consulta, criteriaBuilder) ->
-                  criteriaBuilder.equal(raizDocumento.get("categoria"), categoria));
+      return especificacaoDocumentos.and(
+          (raizDocumento, consulta, criteriaBuilder) ->
+              criteriaBuilder.equal(raizDocumento.get("categoria"), categoria));
     }
+    return especificacaoDocumentos;
+  }
+
+  private Specification<Documento> aplicarFiltroGestao(
+      Specification<Documento> especificacaoDocumentos, Long gestaoId) {
     if (gestaoId != null) {
       validarGestao(gestaoId);
-      especificacaoDocumentos =
-          especificacaoDocumentos.and(
-              (raizDocumento, consulta, criteriaBuilder) ->
-                  criteriaBuilder.equal(raizDocumento.get("gestaoOrigemId"), gestaoId));
+      return especificacaoDocumentos.and(
+          (raizDocumento, consulta, criteriaBuilder) ->
+              criteriaBuilder.equal(raizDocumento.get("gestaoOrigemId"), gestaoId));
     }
+    return especificacaoDocumentos;
+  }
+
+  private List<DocumentoResponse> listarDocumentosPermitidos(
+      Specification<Documento> especificacaoDocumentos, Membro membro) {
+    return documentos
+        .findAll(
+            especificacaoDocumentos,
+            org.springframework.data.domain.Sort.by(
+                org.springframework.data.domain.Sort.Direction.DESC, "updatedAt"))
+        .stream()
+        .filter(documento -> podeLer(documento, membro))
+        .map(this::resposta)
+        .sorted(Comparator.comparing(this::dataAtualizacao).reversed())
+        .toList();
+  }
+
+  private java.time.Instant dataAtualizacao(DocumentoResponse documentoResposta) {
+    return documentoResposta.versaoAtual() == null
+        ? documentoResposta.atualizadaEm()
+        : documentoResposta.versaoAtual().enviadoEm();
+  }
+
+  private List<DocumentoResponse> filtrarPorBusca(List<DocumentoResponse> resposta, String busca) {
     String termo = NomeNormalizado.optionalDisplayValue(busca);
-    List<DocumentoResponse> resposta =
-        documentos
-            .findAll(
-                especificacaoDocumentos,
-                org.springframework.data.domain.Sort.by(
-                    org.springframework.data.domain.Sort.Direction.DESC, "updatedAt"))
-            .stream()
-            .filter(documento -> podeLer(documento, membro))
-            .map(this::resposta)
-            .sorted(
-                Comparator.comparing(
-                        (DocumentoResponse documentoResposta) ->
-                            documentoResposta.versaoAtual() == null
-                                ? documentoResposta.atualizadaEm()
-                                : documentoResposta.versaoAtual().enviadoEm())
-                    .reversed())
-            .toList();
     if (termo == null) return resposta;
     String normalizado = termo.toLowerCase(Locale.ROOT);
     return resposta.stream()

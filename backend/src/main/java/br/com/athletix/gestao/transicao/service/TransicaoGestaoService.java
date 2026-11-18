@@ -123,63 +123,80 @@ public class TransicaoGestaoService {
   public TransicaoResponse atualizar(
       Long transicaoId, TransicaoUpdateRequest requisicao, Membro autor) {
     TransicaoGestao transicao = buscarTravada(transicaoId);
+    validarAtualizacao(transicao, requisicao);
+    atualizarItensTransicao(transicao, transicaoId, requisicao.itens());
+    registrarAtualizacao(transicaoId);
+    return resposta(transicao);
+  }
+
+  private void validarAtualizacao(TransicaoGestao transicao, TransicaoUpdateRequest requisicao) {
     if (transicao.getStatus() != StatusTransicaoGestao.RASCUNHO) {
       throw new BusinessRuleException("A transição já foi concluída.");
     }
     if (!transicao.getVersion().equals(requisicao.version())) {
       throw new br.com.athletix.shared.exception.ConcurrentModificationException();
     }
+  }
+
+  private void atualizarItensTransicao(
+      TransicaoGestao transicao, Long transicaoId, List<ItemTransicaoRequest> itensRequisicao) {
     Set<Long> vistos = new HashSet<>();
-    for (ItemTransicaoRequest itemRequisicao : requisicao.itens()) {
+    for (ItemTransicaoRequest itemRequisicao : itensRequisicao) {
       if (!vistos.add(itemRequisicao.membroId())) {
         throw new BusinessRuleException("Um membro não pode aparecer duas vezes na transição.");
       }
-      Membro membro =
-          membros
-              .findByIdAndAtletica_Id(itemRequisicao.membroId(), resolver.atleticaIdAtual())
-              .orElseThrow(ResourceNotFoundException::new);
-      Cargo cargo =
-          cargos
-              .findByIdAndAtletica_Id(itemRequisicao.cargoDestinoId(), resolver.atleticaIdAtual())
-              .orElseThrow(ResourceNotFoundException::new);
-      Departamento departamento =
-          departamentos
-              .findByIdAndAtletica_Id(
-                  itemRequisicao.departamentoDestinoId(), resolver.atleticaIdAtual())
-              .orElseThrow(ResourceNotFoundException::new);
-      if (itemRequisicao.substituiResponsavelMembroId() != null) {
-        membros
-            .findByIdAndAtletica_Id(
-                itemRequisicao.substituiResponsavelMembroId(), resolver.atleticaIdAtual())
-            .orElseThrow(ResourceNotFoundException::new);
-      }
-      itens
-          .findByTransicao_IdAndMembroId(transicaoId, membro.getId())
-          .ifPresentOrElse(
-              itemTransicao ->
-                  itemTransicao.atualizar(
-                      cargo.getId(),
-                      departamento.getId(),
-                      itemRequisicao.continuaAtivo(),
-                      itemRequisicao.substituiResponsavelMembroId()),
-              () ->
-                  itens.save(
-                      new ItemTransicaoGestao(
-                          transicao,
-                          membro.getId(),
-                          membro.getCargoId(),
-                          membro.getDepartamentoId(),
-                          cargo.getId(),
-                          departamento.getId(),
-                          itemRequisicao.continuaAtivo(),
-                          itemRequisicao.substituiResponsavelMembroId())));
+      atualizarItemTransicao(transicao, transicaoId, itemRequisicao);
     }
+  }
+
+  private void atualizarItemTransicao(
+      TransicaoGestao transicao, Long transicaoId, ItemTransicaoRequest itemRequisicao) {
+    Membro membro = buscarMembro(itemRequisicao.membroId());
+    Cargo cargo = buscarCargo(itemRequisicao.cargoDestinoId());
+    Departamento departamento = buscarDepartamento(itemRequisicao.departamentoDestinoId());
+    validarResponsavelSubstituto(itemRequisicao.substituiResponsavelMembroId());
+    itens
+        .findByTransicao_IdAndMembroId(transicaoId, membro.getId())
+        .ifPresentOrElse(
+            itemTransicao ->
+                itemTransicao.atualizar(
+                    cargo.getId(),
+                    departamento.getId(),
+                    itemRequisicao.continuaAtivo(),
+                    itemRequisicao.substituiResponsavelMembroId()),
+            () -> salvarItemTransicao(transicao, membro, cargo, departamento, itemRequisicao));
+  }
+
+  private void salvarItemTransicao(
+      TransicaoGestao transicao,
+      Membro membro,
+      Cargo cargo,
+      Departamento departamento,
+      ItemTransicaoRequest itemRequisicao) {
+    itens.save(
+        new ItemTransicaoGestao(
+            transicao,
+            membro.getId(),
+            membro.getCargoId(),
+            membro.getDepartamentoId(),
+            cargo.getId(),
+            departamento.getId(),
+            itemRequisicao.continuaAtivo(),
+            itemRequisicao.substituiResponsavelMembroId()));
+  }
+
+  private void validarResponsavelSubstituto(Long membroId) {
+    if (membroId != null) {
+      buscarMembro(membroId);
+    }
+  }
+
+  private void registrarAtualizacao(Long transicaoId) {
     auditoria.registrar(
         "TRANSICAO_GESTAO_ATUALIZADA",
         "TRANSICAO_GESTAO",
         transicaoId,
         "Composição de destino atualizada.");
-    return resposta(transicao);
   }
 
   @Transactional(readOnly = true)
@@ -204,26 +221,45 @@ public class TransicaoGestaoService {
     Long atleticaId = resolver.atleticaIdAtual();
     atleticas.findByIdForUpdate(atleticaId).orElseThrow(ResourceNotFoundException::new);
     TransicaoGestao transicao = buscarTravada(transicaoId);
+    validarConclusao(transicao, version);
+    Gestao origem = buscarGestao(transicao.getGestaoOrigemId(), atleticaId);
+    Gestao destino = buscarGestao(transicao.getGestaoDestinoId(), atleticaId);
+    validarSituacaoDasGestoes(origem, destino);
+    List<ItemTransicaoGestao> itensTransicao =
+        itens.findAllByTransicao_IdOrderByMembroIdAsc(transicaoId);
+    validarAdministradorAtivo(itensTransicao, atleticaId);
+    Instant agora = Instant.now();
+    encerrarVinculosDaOrigem(origem, agora);
+    aplicarItensDaTransicao(itensTransicao, destino, atleticaId, agora);
+    concluirGestoes(transicao, origem, destino, autor, agora);
+    registrarConclusao(transicaoId);
+    return resposta(transicao);
+  }
+
+  private void validarConclusao(TransicaoGestao transicao, Long version) {
     if (!transicao.getVersion().equals(version)) {
       throw new br.com.athletix.shared.exception.ConcurrentModificationException();
     }
     if (transicao.getStatus() != StatusTransicaoGestao.RASCUNHO) {
       throw new BusinessRuleException("A transição já foi concluída.");
     }
-    Gestao origem =
-        gestoes
-            .findByIdAndAtletica_Id(transicao.getGestaoOrigemId(), atleticaId)
-            .orElseThrow(ResourceNotFoundException::new);
-    Gestao destino =
-        gestoes
-            .findByIdAndAtletica_Id(transicao.getGestaoDestinoId(), atleticaId)
-            .orElseThrow(ResourceNotFoundException::new);
+  }
+
+  private Gestao buscarGestao(Long gestaoId, Long atleticaId) {
+    return gestoes
+        .findByIdAndAtletica_Id(gestaoId, atleticaId)
+        .orElseThrow(ResourceNotFoundException::new);
+  }
+
+  private void validarSituacaoDasGestoes(Gestao origem, Gestao destino) {
     if (origem.getStatus() != StatusGestao.ATIVA || destino.getStatus() != StatusGestao.PLANEJADA) {
       throw new BusinessRuleException(
           "As gestões não estão em situação válida para a transferência.");
     }
-    List<ItemTransicaoGestao> itensTransicao =
-        itens.findAllByTransicao_IdOrderByMembroIdAsc(transicaoId);
+  }
+
+  private void validarAdministradorAtivo(
+      List<ItemTransicaoGestao> itensTransicao, Long atleticaId) {
     boolean possuiAdministrador =
         itensTransicao.stream()
             .anyMatch(
@@ -240,46 +276,99 @@ public class TransicaoGestaoService {
       throw new BusinessRuleException(
           "A composição de destino exige ao menos um administrador ativo.");
     }
-    Instant agora = Instant.now();
+  }
+
+  private void encerrarVinculosDaOrigem(Gestao origem, Instant agora) {
     vinculos
         .findAllByGestao_IdAndFimVigenciaIsNull(origem.getId())
         .forEach(vinculo -> vinculo.encerrar(agora));
+  }
+
+  private void aplicarItensDaTransicao(
+      List<ItemTransicaoGestao> itensTransicao, Gestao destino, Long atleticaId, Instant agora) {
     for (ItemTransicaoGestao itemTransicao : itensTransicao) {
-      Membro membro =
-          membros
-              .findByIdAndAtletica_Id(itemTransicao.getMembroId(), atleticaId)
-              .orElseThrow(ResourceNotFoundException::new);
-      Cargo cargo =
-          cargos
-              .findByIdAndAtletica_Id(itemTransicao.getCargoDestinoId(), atleticaId)
-              .orElseThrow(ResourceNotFoundException::new);
-      Departamento departamento =
-          departamentos
-              .findByIdAndAtletica_Id(itemTransicao.getDepartamentoDestinoId(), atleticaId)
-              .orElseThrow(ResourceNotFoundException::new);
-      boolean vinculoMudou =
-          !membro.getCargoId().equals(cargo.getId())
-              || !membro.getDepartamentoId().equals(departamento.getId())
-              || !itemTransicao.isContinuaAtivo();
-      if (itemTransicao.isContinuaAtivo()) {
-        membro.atualizarVinculo(membro.getCurso(), membro.getPeriodoCurso(), cargo, departamento);
-        vinculos.save(new VinculoGestao(membro, destino, cargo, departamento, agora));
-      } else if (membro.getStatus() == StatusMembro.ATIVO) {
-        membro.inativar();
-      }
-      if (vinculoMudou) {
-        sessoes.invalidarSessoesAnteriores(membro.getUsuarioId());
-      }
+      aplicarItemDaTransicao(itemTransicao, destino, atleticaId, agora);
     }
+  }
+
+  private void aplicarItemDaTransicao(
+      ItemTransicaoGestao itemTransicao, Gestao destino, Long atleticaId, Instant agora) {
+    Membro membro = buscarMembro(itemTransicao.getMembroId(), atleticaId);
+    Cargo cargo = buscarCargo(itemTransicao.getCargoDestinoId(), atleticaId);
+    Departamento departamento =
+        buscarDepartamento(itemTransicao.getDepartamentoDestinoId(), atleticaId);
+    boolean vinculoMudou =
+        !membro.getCargoId().equals(cargo.getId())
+            || !membro.getDepartamentoId().equals(departamento.getId())
+            || !itemTransicao.isContinuaAtivo();
+    aplicarVinculoDoMembro(itemTransicao, membro, cargo, departamento, destino, agora);
+    invalidarSessoesQuandoVinculoMudar(membro, vinculoMudou);
+  }
+
+  private void aplicarVinculoDoMembro(
+      ItemTransicaoGestao itemTransicao,
+      Membro membro,
+      Cargo cargo,
+      Departamento departamento,
+      Gestao destino,
+      Instant agora) {
+    if (itemTransicao.isContinuaAtivo()) {
+      membro.atualizarVinculo(membro.getCurso(), membro.getPeriodoCurso(), cargo, departamento);
+      vinculos.save(new VinculoGestao(membro, destino, cargo, departamento, agora));
+    } else if (membro.getStatus() == StatusMembro.ATIVO) {
+      membro.inativar();
+    }
+  }
+
+  private void invalidarSessoesQuandoVinculoMudar(Membro membro, boolean vinculoMudou) {
+    if (vinculoMudou) {
+      sessoes.invalidarSessoesAnteriores(membro.getUsuarioId());
+    }
+  }
+
+  private void concluirGestoes(
+      TransicaoGestao transicao, Gestao origem, Gestao destino, Membro autor, Instant agora) {
     origem.encerrar(agora);
     destino.ativar();
     transicao.concluir(autor.getId());
+  }
+
+  private void registrarConclusao(Long transicaoId) {
     auditoria.registrar(
         "TRANSICAO_GESTAO_CONCLUIDA",
         "TRANSICAO_GESTAO",
         transicaoId,
         "Gestão encerrada e sucessora ativada com continuidade preservada.");
-    return resposta(transicao);
+  }
+
+  private Membro buscarMembro(Long membroId) {
+    return buscarMembro(membroId, resolver.atleticaIdAtual());
+  }
+
+  private Membro buscarMembro(Long membroId, Long atleticaId) {
+    return membros
+        .findByIdAndAtletica_Id(membroId, atleticaId)
+        .orElseThrow(ResourceNotFoundException::new);
+  }
+
+  private Cargo buscarCargo(Long cargoId) {
+    return buscarCargo(cargoId, resolver.atleticaIdAtual());
+  }
+
+  private Cargo buscarCargo(Long cargoId, Long atleticaId) {
+    return cargos
+        .findByIdAndAtletica_Id(cargoId, atleticaId)
+        .orElseThrow(ResourceNotFoundException::new);
+  }
+
+  private Departamento buscarDepartamento(Long departamentoId) {
+    return buscarDepartamento(departamentoId, resolver.atleticaIdAtual());
+  }
+
+  private Departamento buscarDepartamento(Long departamentoId, Long atleticaId) {
+    return departamentos
+        .findByIdAndAtletica_Id(departamentoId, atleticaId)
+        .orElseThrow(ResourceNotFoundException::new);
   }
 
   private Map<String, Long> pendenciasIniciais() {

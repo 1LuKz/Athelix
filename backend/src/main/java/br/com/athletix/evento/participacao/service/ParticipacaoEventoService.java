@@ -105,19 +105,37 @@ public class ParticipacaoEventoService {
   public ParticipacaoEvento alterarStatus(
       Long eventoId, Long participacaoId, ParticipacaoEventoStatusUpdateRequest request) {
     eventoService.buscarDaAtleticaAtual(eventoId);
-    ParticipacaoEvento participacao =
-        participacaoRepository
-            .findByIdAndEvento_IdAndAtletica_Id(
-                participacaoId, eventoId, resourceResolver.atleticaIdAtual())
-            .orElseThrow(ResourceNotFoundException::new);
-    if (!participacao.getVersion().equals(request.version())) {
-      throw new ConcurrentModificationException();
-    }
+    ParticipacaoEvento participacao = buscarParticipacao(eventoId, participacaoId);
+    validarVersao(participacao, request);
     StatusParticipacaoEvento anterior = participacao.getStatus();
     if (anterior == request.status()) {
       throw new BusinessRuleException("A participação já está neste status.");
     }
     Instant agora = Instant.now();
+    aplicarTransicaoDeStatus(participacao, anterior, request, agora);
+    registrarAlteracaoDeStatus(participacao, anterior, request.status());
+    return participacao;
+  }
+
+  private ParticipacaoEvento buscarParticipacao(Long eventoId, Long participacaoId) {
+    return participacaoRepository
+        .findByIdAndEvento_IdAndAtletica_Id(
+            participacaoId, eventoId, resourceResolver.atleticaIdAtual())
+        .orElseThrow(ResourceNotFoundException::new);
+  }
+
+  private void validarVersao(
+      ParticipacaoEvento participacao, ParticipacaoEventoStatusUpdateRequest request) {
+    if (!participacao.getVersion().equals(request.version())) {
+      throw new ConcurrentModificationException();
+    }
+  }
+
+  private void aplicarTransicaoDeStatus(
+      ParticipacaoEvento participacao,
+      StatusParticipacaoEvento anterior,
+      ParticipacaoEventoStatusUpdateRequest request,
+      Instant agora) {
     if (request.status() == StatusParticipacaoEvento.CANCELADO) {
       participacao.cancelar();
     } else if (anterior == StatusParticipacaoEvento.INSCRITO
@@ -138,16 +156,24 @@ public class ParticipacaoEventoService {
           "PARTICIPACAO_EVENTO",
           participacao.getId(),
           resumirMotivo(motivo));
-      return participacao;
     } else {
       throw new BusinessRuleException("Transição de status inválida para esta participação.");
+    }
+  }
+
+  private void registrarAlteracaoDeStatus(
+      ParticipacaoEvento participacao,
+      StatusParticipacaoEvento anterior,
+      StatusParticipacaoEvento statusNovo) {
+    if (anterior == StatusParticipacaoEvento.PRESENTE
+        && statusNovo == StatusParticipacaoEvento.CONFIRMADO) {
+      return;
     }
     atividadeService.registrar(
         "STATUS_PARTICIPACAO_EVENTO_ATUALIZADO",
         "PARTICIPACAO_EVENTO",
         participacao.getId(),
-        "Status da participação alterado: " + anterior + " para " + request.status() + ".");
-    return participacao;
+        "Status da participação alterado: " + anterior + " para " + statusNovo + ".");
   }
 
   @Transactional(readOnly = true)

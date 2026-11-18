@@ -59,13 +59,17 @@ public class EventoFinanceiroResumoService {
     LocalDate referencia = dataReferencia == null ? hoje(evento) : dataReferencia;
     List<LancamentoFinanceiro> doEvento =
         lancamentos.findAllByAtletica_IdAndEvento_Id(evento.getAtleticaId(), eventoId);
-    Set<Long> ids = new HashSet<>();
-    for (LancamentoFinanceiro lancamento : doEvento) ids.add(lancamento.getId());
+    ValoresLancamentos valoresLancamentos = calcularValoresLancamentos(doEvento, referencia);
+    ValoresEstornos valoresEstornos = calcularValoresEstornos(evento, doEvento, referencia);
+    return montarResumo(eventoId, evento, referencia, valoresLancamentos, valoresEstornos);
+  }
 
+  private ValoresLancamentos calcularValoresLancamentos(
+      List<LancamentoFinanceiro> lancamentosDoEvento, LocalDate referencia) {
     BigDecimal despesasPagas = ZERO;
     BigDecimal receitasRecebidas = ZERO;
     BigDecimal despesasAbertas = ZERO;
-    for (LancamentoFinanceiro lancamento : doEvento) {
+    for (LancamentoFinanceiro lancamento : lancamentosDoEvento) {
       if (lancamento.getStatusLiquidacao() == StatusLiquidacao.LIQUIDADO
           && dataAte(lancamento.getDataLiquidacao(), referencia)) {
         if (lancamento.getTipo() == TipoLancamentoFinanceiro.DESPESA
@@ -82,11 +86,19 @@ public class EventoFinanceiroResumoService {
         despesasAbertas = despesasAbertas.add(lancamento.getValor());
       }
     }
+    return new ValoresLancamentos(despesasPagas, receitasRecebidas, despesasAbertas);
+  }
 
+  private ValoresEstornos calcularValoresEstornos(
+      Evento evento, List<LancamentoFinanceiro> lancamentosDoEvento, LocalDate referencia) {
+    Set<Long> idsLancamentos = new HashSet<>();
+    for (LancamentoFinanceiro lancamento : lancamentosDoEvento) {
+      idsLancamentos.add(lancamento.getId());
+    }
     BigDecimal estornosDespesa = ZERO;
     BigDecimal estornosReceita = ZERO;
     for (EstornoFinanceiro estorno : estornos.findAllByAtletica_Id(evento.getAtleticaId())) {
-      if (!ids.contains(estorno.getLancamentoId())
+      if (!idsLancamentos.contains(estorno.getLancamentoId())
           || !dataAte(estorno.getDataEstorno(), referencia)) continue;
       if (estorno.getTipoLancamento() == TipoLancamentoFinanceiro.DESPESA) {
         estornosDespesa = estornosDespesa.add(estorno.getValorLancamento());
@@ -94,32 +106,48 @@ public class EventoFinanceiroResumoService {
         estornosReceita = estornosReceita.add(estorno.getValorLancamento());
       }
     }
-    BigDecimal realizado = despesasPagas.subtract(estornosDespesa);
-    BigDecimal receitas = receitasRecebidas.subtract(estornosReceita);
+    return new ValoresEstornos(estornosDespesa, estornosReceita);
+  }
+
+  private EventoFinanceiroResumoResponse montarResumo(
+      Long eventoId,
+      Evento evento,
+      LocalDate referencia,
+      ValoresLancamentos valoresLancamentos,
+      ValoresEstornos valoresEstornos) {
+    BigDecimal realizado = valoresLancamentos.despesasPagas().subtract(valoresEstornos.despesas());
+    BigDecimal receitas =
+        valoresLancamentos.receitasRecebidas().subtract(valoresEstornos.receitas());
     BigDecimal previsto = evento.getOrcamentoPrevisto();
     BigDecimal saldo = previsto.subtract(realizado);
-    BigDecimal percentual =
-        previsto.signum() == 0
-            ? null
-            : realizado
-                .multiply(BigDecimal.valueOf(100))
-                .divide(previsto, 2, MoneyValues.ROUNDING_MODE);
-    SituacaoOrcamentoEvento situacao =
-        previsto.signum() == 0
-            ? SituacaoOrcamentoEvento.SEM_ORCAMENTO
-            : realizado.compareTo(previsto) > 0
-                ? SituacaoOrcamentoEvento.ESTOURADO
-                : SituacaoOrcamentoEvento.DENTRO_DO_ORCAMENTO;
     return new EventoFinanceiroResumoResponse(
         eventoId,
         referencia,
         MoneyValues.format(previsto),
         MoneyValues.format(realizado),
         MoneyValues.format(saldo),
-        percentual,
-        situacao,
+        calcularPercentualRealizado(realizado, previsto),
+        calcularSituacaoOrcamento(realizado, previsto),
         MoneyValues.format(receitas),
-        MoneyValues.format(despesasAbertas));
+        MoneyValues.format(valoresLancamentos.despesasAbertas()));
+  }
+
+  private BigDecimal calcularPercentualRealizado(BigDecimal realizado, BigDecimal previsto) {
+    return previsto.signum() == 0
+        ? null
+        : realizado
+            .multiply(BigDecimal.valueOf(100))
+            .divide(previsto, 2, MoneyValues.ROUNDING_MODE);
+  }
+
+  private SituacaoOrcamentoEvento calcularSituacaoOrcamento(
+      BigDecimal realizado, BigDecimal previsto) {
+    if (previsto.signum() == 0) {
+      return SituacaoOrcamentoEvento.SEM_ORCAMENTO;
+    }
+    return realizado.compareTo(previsto) > 0
+        ? SituacaoOrcamentoEvento.ESTOURADO
+        : SituacaoOrcamentoEvento.DENTRO_DO_ORCAMENTO;
   }
 
   private boolean dataAte(LocalDate data, LocalDate referencia) {
@@ -132,4 +160,9 @@ public class EventoFinanceiroResumoService {
         .map(atletica -> FusoHorarioAtletica.hoje(atletica.getFusoHorario()))
         .orElseGet(() -> FusoHorarioAtletica.hoje(evento.getFusoHorarioAtletica()));
   }
+
+  private record ValoresLancamentos(
+      BigDecimal despesasPagas, BigDecimal receitasRecebidas, BigDecimal despesasAbertas) {}
+
+  private record ValoresEstornos(BigDecimal despesas, BigDecimal receitas) {}
 }
