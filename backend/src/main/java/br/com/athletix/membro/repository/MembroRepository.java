@@ -2,6 +2,7 @@ package br.com.athletix.membro.repository;
 
 import br.com.athletix.membro.entity.Membro;
 import br.com.athletix.membro.entity.StatusMembro;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -39,6 +40,9 @@ public interface MembroRepository
       Long atleticaId, StatusMembro status, br.com.athletix.cargo.entity.PerfilAcesso perfilAcesso);
 
   long countByAtletica_IdAndStatus(Long atleticaId, StatusMembro status);
+
+  long countByAtletica_IdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+      Long atleticaId, Instant inicio, Instant fim);
 
   @Query(
       """

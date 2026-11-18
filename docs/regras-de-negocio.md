@@ -248,6 +248,11 @@ Criações retornam `201`, consultas e alterações bem-sucedidas retornam `200`
 - Cada item fotografado aceita quantidade verificada não negativa. Se ela divergir da quantidade esperada, a observação que identifica a divergência é obrigatória. A divergência é `verificada − esperada`; nenhuma contagem altera automaticamente o patrimônio.
 - O progresso é `unidades verificadas válidas / unidades esperadas na abertura × 100`, arredondado ao inteiro mais próximo. Quantidades acima do esperado não ampliam o numerador e, sem itens fotografados, o progresso é `0`.
 - A campanha pode ser encerrada uma única vez, com versão obrigatória, preservando a fotografia e as divergências. Depois de encerrada não aceita novas conferências. Abertura, conferência e encerramento são auditados.
+- O dashboard usa a conferência mais recente da atlética (aberta ou, se não houver aberta, a última encerrada) para o indicador de percentual conferido; sem campanha, o indicador não é comparável.
+
+## Variações do dashboard
+
+- Membros novos, eventos da semana e saldos usam o fuso horário da atlética. A variação de saldo compara o saldo atual com o fim do mês anterior, com uma casa decimal e arredondamento HALF_UP. Quando a base anterior é zero, a variação é ausente e a interface informa “sem comparação”.
 
 ## Biblioteca documental
 

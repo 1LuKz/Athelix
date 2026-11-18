@@ -3,11 +3,21 @@ package br.com.athletix.patrimonio.conferencia.repository;
 import br.com.athletix.patrimonio.conferencia.entity.ConferenciaInventario;
 import jakarta.persistence.LockModeType;
 import java.util.*;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 
 public interface ConferenciaInventarioRepository
     extends JpaRepository<ConferenciaInventario, Long> {
+  interface ProgressoDashboard {
+    Long getUnidadesEsperadas();
+
+    Long getUnidadesVerificadasValidas();
+  }
+
   List<ConferenciaInventario> findAllByAtletica_IdOrderByIniciadaEmDesc(Long atleticaId);
+
+  List<ConferenciaInventario> findAllByAtletica_IdOrderByIniciadaEmDesc(
+      Long atleticaId, Pageable pageable);
 
   Optional<ConferenciaInventario> findByIdAndAtletica_Id(Long conferenciaId, Long atleticaId);
 

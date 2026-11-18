@@ -3719,7 +3719,7 @@ components:
         saldo: {type: string, pattern: '^-?\\d+(\\.\\d+)?$'}
     DashboardResumo:
       type: object
-      required: [totalMembros, pendentes, ativos, inativos, eventosAtivos, saldoAtual, cadastrosPatrimonio, unidadesPatrimonio]
+      required: [totalMembros, pendentes, ativos, inativos, eventosAtivos, saldoAtual, cadastrosPatrimonio, unidadesPatrimonio, novosMembrosNoMes, eventosNaSemana]
       properties:
         totalMembros: {type: integer, format: int64, minimum: 0}
         pendentes: {type: integer, format: int64, minimum: 0}
@@ -3729,6 +3729,11 @@ components:
         saldoAtual: {type: string, pattern: '^-?\\d+(\\.\\d+)?$', example: '0.00'}
         cadastrosPatrimonio: {type: integer, format: int64, minimum: 0}
         unidadesPatrimonio: {type: integer, format: int64, minimum: 0}
+        novosMembrosNoMes: {type: integer, format: int64, minimum: 0}
+        eventosNaSemana: {type: integer, format: int64, minimum: 0}
+        variacaoSaldoPercentual: {type: string, pattern: '^-?\\d+(\\.\\d)?$', nullable: true}
+        percentualConferido: {type: integer, minimum: 0, maximum: 100, nullable: true}
+        nomeDaCampanhaConferida: {type: string, nullable: true}
     DashboardFinanceiro:
       type: object
       required: [resumo, seisMeses]

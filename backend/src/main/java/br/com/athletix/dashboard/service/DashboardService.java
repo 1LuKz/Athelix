@@ -22,13 +22,19 @@ import br.com.athletix.financeiro.service.FinanceiroConsultaService;
 import br.com.athletix.membro.entity.Membro;
 import br.com.athletix.membro.entity.StatusMembro;
 import br.com.athletix.membro.repository.MembroRepository;
+import br.com.athletix.patrimonio.conferencia.repository.ConferenciaInventarioRepository;
+import br.com.athletix.patrimonio.conferencia.repository.ItemConferenciaRepository;
 import br.com.athletix.patrimonio.repository.ItemPatrimonioRepository;
 import br.com.athletix.shared.money.MoneyValues;
 import br.com.athletix.shared.tenancy.AtleticaResourceResolver;
 import br.com.athletix.shared.time.FusoHorarioAtletica;
 import br.com.athletix.tarefa.repository.TarefaRepository;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -51,6 +57,8 @@ public class DashboardService {
   private final FinanceiroConsultaService financeiro;
   private final AtleticaResourceResolver resolver;
   private final AtleticaRepository atleticas;
+  private final ConferenciaInventarioRepository conferencias;
+  private final ItemConferenciaRepository itensConferencia;
 
   public DashboardService(
       MembroRepository membros,
@@ -63,7 +71,9 @@ public class DashboardService {
       LancamentoFinanceiroRepository lancamentos,
       EstornoFinanceiroRepository estornos,
       CapacidadeService capacidades,
-      AtleticaRepository atleticas) {
+      AtleticaRepository atleticas,
+      ConferenciaInventarioRepository conferencias,
+      ItemConferenciaRepository itensConferencia) {
     this.lancamentos = lancamentos;
     this.estornos = estornos;
     this.capacidades = capacidades;
@@ -75,6 +85,8 @@ public class DashboardService {
     this.financeiro = financeiro;
     this.resolver = resolver;
     this.atleticas = atleticas;
+    this.conferencias = conferencias;
+    this.itensConferencia = itensConferencia;
   }
 
   @Transactional(readOnly = true)
@@ -84,6 +96,8 @@ public class DashboardService {
     long ativos = membros.countByAtletica_IdAndStatus(atleticaId, StatusMembro.ATIVO);
     long inativos = membros.countByAtletica_IdAndStatus(atleticaId, StatusMembro.INATIVO);
     var resumoFinanceiro = financeiro.resumo(null, membro);
+    LocalDate hoje = hojeDaAtletica();
+    IndicadorConferencia indicadorConferencia = indicadorConferencia(atleticaId);
 
     return new Resumo(
         pendentes + ativos + inativos,
@@ -94,7 +108,69 @@ public class DashboardService {
             atleticaId, EnumSet.of(StatusEvento.INSCRICOES_ABERTAS, StatusEvento.EM_ANDAMENTO)),
         resumoFinanceiro.saldoDisponivel(),
         itens.countByAtletica_IdAndAtivoTrue(atleticaId),
-        itens.sumQuantidadeTotalByAtleticaIdAndAtivoTrue(atleticaId));
+        itens.sumQuantidadeTotalByAtleticaIdAndAtivoTrue(atleticaId),
+        novosMembrosNoMes(atleticaId, hoje),
+        eventosNaSemana(atleticaId, hoje),
+        variacaoSaldo(membro, hoje, resumoFinanceiro.saldoDisponivel()),
+        indicadorConferencia.percentual(),
+        indicadorConferencia.nomeCampanha());
+  }
+
+  private long novosMembrosNoMes(Long atleticaId, LocalDate hoje) {
+    ZoneId zona = zonaDaAtletica();
+    Instant inicio = hoje.withDayOfMonth(1).atStartOfDay(zona).toInstant();
+    Instant fim = hoje.plusMonths(1).withDayOfMonth(1).atStartOfDay(zona).toInstant();
+    return membros.countByAtletica_IdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+        atleticaId, inicio, fim);
+  }
+
+  private long eventosNaSemana(Long atleticaId, LocalDate hoje) {
+    ZoneId zona = zonaDaAtletica();
+    LocalDate inicioDaSemana = hoje.minusDays(hoje.getDayOfWeek().getValue() - 1L);
+    Instant inicio = inicioDaSemana.atStartOfDay(zona).toInstant();
+    Instant fim = inicioDaSemana.plusDays(7).atStartOfDay(zona).toInstant();
+    return eventos.countByAtletica_IdAndStatusInAndInicioGreaterThanEqualAndInicioLessThan(
+        atleticaId,
+        EnumSet.of(
+            StatusEvento.PLANEJADO, StatusEvento.INSCRICOES_ABERTAS, StatusEvento.EM_ANDAMENTO),
+        inicio,
+        fim);
+  }
+
+  private String variacaoSaldo(Membro membro, LocalDate hoje, String saldoAtual) {
+    if (!capacidades
+        .para(membro.getPerfilAcesso())
+        .contains(Capacidade.CONSULTAR_RESUMOS_FINANCEIROS)) {
+      return null;
+    }
+    BigDecimal saldoAnterior =
+        new BigDecimal(
+            financeiro.resumo(hoje.withDayOfMonth(1).minusDays(1), membro).saldoDisponivel());
+    if (saldoAnterior.signum() == 0) return null;
+    return new BigDecimal(saldoAtual)
+        .subtract(saldoAnterior)
+        .multiply(BigDecimal.valueOf(100))
+        .divide(saldoAnterior, 1, RoundingMode.HALF_UP)
+        .toPlainString();
+  }
+
+  private IndicadorConferencia indicadorConferencia(Long atleticaId) {
+    return conferencias
+        .findAllByAtletica_IdOrderByIniciadaEmDesc(atleticaId, PageRequest.of(0, 1))
+        .stream()
+        .findFirst()
+        .map(
+            conferencia -> {
+              var progresso = itensConferencia.calcularProgressoDashboard(conferencia.getId());
+              long esperado = progresso.getUnidadesEsperadas();
+              int percentual =
+                  esperado == 0
+                      ? 0
+                      : (int)
+                          Math.round(progresso.getUnidadesVerificadasValidas() * 100.0 / esperado);
+              return new IndicadorConferencia(percentual, conferencia.getNome());
+            })
+        .orElse(new IndicadorConferencia(null, null));
   }
 
   @Transactional(readOnly = true)
@@ -229,5 +305,12 @@ public class DashboardService {
     return FusoHorarioAtletica.hoje(atletica.getFusoHorario());
   }
 
+  private ZoneId zonaDaAtletica() {
+    Atletica atletica = atleticas.findById(resolver.atleticaIdAtual()).orElseThrow();
+    return FusoHorarioAtletica.zona(atletica.getFusoHorario());
+  }
+
   private record MovimentoOrdenado(LocalDate data, Long movimentoId, Movimento movimento) {}
+
+  private record IndicadorConferencia(Integer percentual, String nomeCampanha) {}
 }

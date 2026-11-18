@@ -17,7 +17,12 @@ public final class DashboardResponses {
       long eventosAtivos,
       String saldoAtual,
       long cadastrosPatrimonio,
-      long unidadesPatrimonio) {}
+      long unidadesPatrimonio,
+      long novosMembrosNoMes,
+      long eventosNaSemana,
+      String variacaoSaldoPercentual,
+      Integer percentualConferido,
+      String nomeDaCampanhaConferida) {}
 
   public record Financeiro(
       FinanceiroResumoResponse resumo, List<EvolucaoMensalResponse> seisMeses) {}

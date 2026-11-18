@@ -65,24 +65,36 @@ export function DashboardPage() {
               label="Membros ativos"
               value={String(resumo.data.ativos)}
               detail={`${resumo.data.pendentes} pendentes · ${resumo.data.inativos} inativos`}
+              indicator={`+${resumo.data.novosMembrosNoMes} este mês`}
               to="/membros?status=ATIVO"
             />
             <MetricaDashboard
               label="Eventos ativos"
               value={String(resumo.data.eventosAtivos)}
               detail="Inscrições abertas e em andamento"
+              indicator={`${resumo.data.eventosNaSemana} esta semana`}
               to="/eventos?grupoStatus=ATIVOS"
             />
             <MetricaDashboard
               label="Saldo atual"
               value={podeConsultarFinanceiro ? formatMoney(resumo.data.saldoAtual) : 'Não autorizado'}
               detail="Regime de caixa até hoje"
+              indicator={
+                resumo.data.variacaoSaldoPercentual === null
+                  ? 'Sem comparação'
+                  : `+${resumo.data.variacaoSaldoPercentual}%`
+              }
               to="/financeiro"
             />
             <MetricaDashboard
               label="Patrimônio"
               value={String(resumo.data.cadastrosPatrimonio)}
               detail={`${resumo.data.unidadesPatrimonio} unidades cadastradas`}
+              indicator={
+                resumo.data.percentualConferido === null
+                  ? 'Sem conferência'
+                  : `${resumo.data.percentualConferido}% conferido · ${resumo.data.nomeDaCampanhaConferida}`
+              }
               to="/patrimonio"
             />
           </section>

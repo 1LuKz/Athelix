@@ -7,11 +7,13 @@ export function MetricaDashboard({
   label,
   value,
   detail,
+  indicator,
   to,
 }: {
   label: string
   value: string
   detail: string
+  indicator: string
   to: string
 }) {
   return (
@@ -20,6 +22,7 @@ export function MetricaDashboard({
         <span>{label}</span>
         <strong>{value}</strong>
         <small>{detail}</small>
+        <small aria-label="Indicador de variação">↗ {indicator}</small>
       </Card>
     </Link>
   )

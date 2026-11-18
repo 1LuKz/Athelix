@@ -7,6 +7,11 @@ export type ResumoDashboard = {
   saldoAtual: string
   cadastrosPatrimonio: number
   unidadesPatrimonio: number
+  novosMembrosNoMes: number
+  eventosNaSemana: number
+  variacaoSaldoPercentual: string | null
+  percentualConferido: number | null
+  nomeDaCampanhaConferida: string | null
 }
 
 export type ResumoFinanceiroDashboard = {
