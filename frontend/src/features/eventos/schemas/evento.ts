@@ -3,7 +3,8 @@ import { optionalText, positiveMoney, requiredText } from '../../../lib/formSche
 const dateTime = z
   .string()
   .min(1, 'Informe a data e hora.')
-  .refine((value) => !Number.isNaN(Date.parse(value)), 'Informe uma data e hora válidas.')
+  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, 'Informe uma data e hora válidas.')
+  .pipe(z.iso.datetime({ local: true, precision: -1, error: 'Informe uma data e hora válidas.' }))
 export const eventoSchema = z
   .object({
     nome: requiredText('o nome', 160),
@@ -18,7 +19,7 @@ export const eventoSchema = z
       .string()
       .refine((value) => !value || /^\d+$/.test(value), 'Informe um número inteiro maior ou igual a zero.'),
   })
-  .refine((value) => !value.inicio || !value.fim || new Date(value.fim) >= new Date(value.inicio), {
+  .refine((valores) => !valores.inicio || !valores.fim || valores.fim >= valores.inicio, {
     path: ['fim'],
     message: 'O fim deve ser igual ou posterior ao início.',
   })

@@ -2,11 +2,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { useState } from 'react'
 import { normalizeMoney } from '../../../lib/formSchemas'
+import { deLocalInputValue, toOffsetDateTime } from '../../../lib/format'
 import { Button, Input, Modal, Textarea, useToast } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
 import { statusEventoLabels as labels } from '../../../lib/labels'
 import { eventosApi, type Evento, type StatusEvento } from '../api'
 import { eventoSchema, type EventoValues } from '../schemas/evento'
+import { useAtleticaTimeZone } from '../../auth/AuthSessionProvider'
 
 export function EventoModal({
   event,
@@ -17,6 +19,7 @@ export function EventoModal({
   onClose: () => void
   onSaved: () => void
 }) {
+  const fusoHorario = useAtleticaTimeZone() ?? 'America/Sao_Paulo'
   const { success, error } = useToast()
   const [statusSaving, setStatusSaving] = useState(false)
   const {
@@ -28,8 +31,8 @@ export function EventoModal({
     defaultValues: {
       nome: event?.nome ?? '',
       descricao: event?.descricao ?? '',
-      inicio: event ? localDate(event.inicio) : '',
-      fim: event ? localDate(event.fim) : '',
+      inicio: event ? deLocalInputValue(event.inicio, fusoHorario) : '',
+      fim: event ? deLocalInputValue(event.fim, fusoHorario) : '',
       local: event?.local ?? '',
       cidade: event?.cidade ?? '',
       uf: event?.uf ?? '',
@@ -42,8 +45,8 @@ export function EventoModal({
       const body = {
         nome: valores.nome,
         descricao: valores.descricao || undefined,
-        inicio: new Date(valores.inicio).toISOString(),
-        fim: new Date(valores.fim).toISOString(),
+        inicio: toOffsetDateTime(valores.inicio, fusoHorario),
+        fim: toOffsetDateTime(valores.fim, fusoHorario),
         local: valores.local,
         cidade: valores.cidade || undefined,
         uf: valores.uf.toUpperCase() || undefined,
@@ -122,9 +125,6 @@ export function EventoModal({
   )
 }
 
-function localDate(value: string) {
-  return new Date(value).toISOString().slice(0, 16)
-}
 function nextStatus(status: StatusEvento): StatusEvento | null {
   return status === 'PLANEJADO'
     ? 'INSCRICOES_ABERTAS'

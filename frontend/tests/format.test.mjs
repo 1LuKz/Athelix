@@ -49,3 +49,46 @@ test('datetime-local usa o fuso da atlética, não o fuso do navegador', () => {
   assert.equal(format.deLocalInputValue('2026-07-10T12:30:00Z', fusoDaAtletica), horarioLocal)
   assert.equal(format.toOffsetDateTime(horarioLocal, 'Asia/Tokyo'), '2026-07-10T09:30:00+09:00')
 })
+
+test('editar e salvar sem alterações preserva o instante em São Paulo, inclusive no horário de verão', () => {
+  const fusoDaAtletica = 'America/Sao_Paulo'
+  const cenarios = [
+    {
+      inicio: '2026-07-10T17:00:00.000Z',
+      fim: '2026-07-10T18:30:00.000Z',
+      inicioLocal: '2026-07-10T14:00',
+      fimLocal: '2026-07-10T15:30',
+      deslocamento: '-03:00',
+    },
+    {
+      inicio: '2018-12-10T16:00:00.000Z',
+      fim: '2018-12-10T17:30:00.000Z',
+      inicioLocal: '2018-12-10T14:00',
+      fimLocal: '2018-12-10T15:30',
+      deslocamento: '-02:00',
+    },
+    {
+      inicio: '2026-07-11T02:30:00.000Z',
+      fim: '2026-07-11T03:30:00.000Z',
+      inicioLocal: '2026-07-10T23:30',
+      fimLocal: '2026-07-11T00:30',
+      deslocamento: '-03:00',
+    },
+  ]
+
+  for (const cenario of cenarios) {
+    for (const campo of ['inicio', 'fim']) {
+      let instanteAtual = cenario[campo]
+
+      for (let i = 0; i < 3; i++) {
+        const valorLocal = format.deLocalInputValue(instanteAtual, fusoDaAtletica)
+        const valorEnviado = format.toOffsetDateTime(valorLocal, fusoDaAtletica)
+
+        assert.equal(valorLocal, cenario[`${campo}Local`])
+        assert.equal(valorEnviado, `${valorLocal}:00${cenario.deslocamento}`)
+        assert.equal(new Date(valorEnviado).toISOString(), cenario[campo])
+        instanteAtual = valorEnviado
+      }
+    }
+  }
+})

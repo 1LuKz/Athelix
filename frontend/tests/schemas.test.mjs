@@ -50,7 +50,7 @@ test('tarefa exige evento positivo e respeita limites', () => {
   assert.equal(tarefaSchema.safeParse({ ...v, titulo: 'x'.repeat(161) }).success, false)
 })
 test('evento valida ordem, campos obrigatórios e valor', () => {
-  const v = {
+  const valores = {
     nome: 'Evento',
     descricao: '',
     inicio: '2026-09-30T10:00',
@@ -61,10 +61,31 @@ test('evento valida ordem, campos obrigatórios e valor', () => {
     orcamento: '1.250,90',
     participantes: '',
   }
-  assert.equal(eventoSchema.safeParse(v).success, true)
-  assert.equal(eventoSchema.safeParse({ ...v, fim: '2026-09-30T09:00' }).success, false)
-  assert.equal(eventoSchema.safeParse({ ...v, nome: '' }).success, false)
-  assert.equal(eventoSchema.safeParse({ ...v, orcamento: '0' }).success, false)
+  assert.equal(eventoSchema.safeParse(valores).success, true)
+  assert.equal(eventoSchema.safeParse({ ...valores, fim: valores.inicio }).success, true)
+  assert.equal(eventoSchema.safeParse({ ...valores, fim: '2026-09-30T09:00' }).success, false)
+  assert.equal(eventoSchema.safeParse({ ...valores, fim: '2026-10-01T00:00' }).success, true)
+  assert.equal(eventoSchema.safeParse({ ...valores, nome: '' }).success, false)
+  assert.equal(eventoSchema.safeParse({ ...valores, orcamento: '0' }).success, false)
+  for (const inicio of ['invalido', '2026-02-30T10:00', '2026-09-30T10:00Z', '2026-09-30T10:00:00']) {
+    assert.equal(eventoSchema.safeParse({ ...valores, inicio }).success, false)
+  }
+})
+test('evento compara horários locais sem aplicar o horário de verão do processo', () => {
+  const valores = {
+    nome: 'Evento',
+    descricao: '',
+    inicio: '2026-03-08T02:45',
+    fim: '2026-03-08T03:15',
+    local: 'Sede',
+    cidade: '',
+    uf: '',
+    orcamento: '100',
+    participantes: '',
+  }
+
+  assert.equal(eventoSchema.safeParse(valores).success, true)
+  assert.equal(eventoSchema.safeParse({ ...valores, inicio: valores.fim, fim: valores.inicio }).success, false)
 })
 test('moeda mantém centavos em entradas brasileiras e decimais', () => {
   for (const value of ['R$ 1.250,90', '1250,90', '1250.90']) assert.equal(normalizeMoney(value), '1250.90')
