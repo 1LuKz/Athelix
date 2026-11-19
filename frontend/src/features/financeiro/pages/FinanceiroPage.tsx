@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ErrorState, LoadingState } from '../../../components/ui'
 import { NovaCategoriaModal } from '../../../components/NovaCategoriaModal'
 import { errorFeedback } from '../../../lib/errorFeedback'
-import { useAuthSession } from '../../auth/AuthSessionProvider'
+import { useAtleticaTimeZone, useAuthSession } from '../../auth/AuthSessionProvider'
 import { AbasFinanceiras } from '../components/AbasFinanceiras'
 import { AcaoLancamentoModal } from '../components/AcaoLancamentoModal'
 import { CabecalhoFinanceiro } from '../components/CabecalhoFinanceiro'
@@ -20,6 +20,7 @@ import { filtrosLancamentosIniciais, podeGerenciarFinanceiro, selecionarAbaFinan
 
 export function FinanceiroPage() {
   const { activeVinculo, state } = useAuthSession()
+  const fusoHorario = useAtleticaTimeZone() ?? 'America/Sao_Paulo'
   const [abaAtiva, setAbaAtiva] = useState('lancamentos')
   const [paginaAtual, setPaginaAtual] = useState(0)
   const [tipoNovoLancamento, setTipoNovoLancamento] = useState<TipoLancamento | null>(null)
@@ -29,9 +30,9 @@ export function FinanceiroPage() {
   const [acaoSelecionada, setAcaoSelecionada] = useState<AcaoLancamento | null>(null)
   const podeGerenciar = podeGerenciarFinanceiro(state?.capacidades ?? [])
   const abaSelecionada = selecionarAbaFinanceira(podeGerenciar, abaAtiva)
-  const consultas = useFinanceiroQueries({ filtros, paginaAtual, abaSelecionada, podeGerenciar })
+  const consultas = useFinanceiroQueries({ filtros, paginaAtual, abaSelecionada, podeGerenciar, fusoHorario })
   const invalidarConsultasFinanceiras = useInvalidarFinanceiroQueries()
-  const mutacaoLancamento = useLancamentoMutations(() => setAcaoSelecionada(null))
+  const mutacaoLancamento = useLancamentoMutations(() => setAcaoSelecionada(null), fusoHorario)
   const criarCategoria = useCriarCategoriaFinanceiraMutation()
   const exportarRelatorio = useExportarRelatorioFinanceiro(filtros)
   const alterarFiltro = (campo: keyof FiltrosLancamentosValores, valor: string) => {

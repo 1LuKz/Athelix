@@ -21,6 +21,19 @@ export function formatMonth(value: string): string {
   return match ? `${match[2]}/${match[1]}` : value
 }
 
+export function hojeNoFuso(fuso: string, agora: Date = new Date()): string {
+  const partes = extrairPartesDataHoraDoFuso(agora, fusoValido(fuso))
+  return `${partes.ano}-${partes.mes}-${partes.dia}`
+}
+
+export function mesComDeslocamentoNoFuso(deslocamento: number, fuso: string, agora: Date = new Date()): string {
+  const partes = extrairPartesDataHoraDoFuso(agora, fusoValido(fuso))
+  const totalDeMeses = Number(partes.ano) * 12 + Number(partes.mes) - 1 + deslocamento
+  const ano = Math.floor(totalDeMeses / 12)
+  const mes = totalDeMeses - ano * 12 + 1
+  return `${String(ano).padStart(4, '0')}-${String(mes).padStart(2, '0')}`
+}
+
 export function formatDateTime(value: string | null | undefined, timeZone?: string | null): string {
   if (!value) return '—'
   const instant = new Date(value)

@@ -10,6 +10,7 @@ type UseFinanceiroQueriesParams = {
   paginaAtual: number
   abaSelecionada: string
   podeGerenciar: boolean
+  fusoHorario: string
 }
 
 export function useFinanceiroQueries({
@@ -17,10 +18,13 @@ export function useFinanceiroQueries({
   paginaAtual,
   abaSelecionada,
   podeGerenciar,
+  fusoHorario,
 }: UseFinanceiroQueriesParams) {
   const { activeVinculo } = useAuthSession()
   const possuiVinculoAtivo = Boolean(activeVinculo)
   const atleticaId = activeVinculo?.atleticaId
+  const mesDe = mesComDeslocamento(-5, fusoHorario)
+  const mesAte = mesComDeslocamento(0, fusoHorario)
   const resumo = useQuery({
     queryKey: queryKeys.scoped(atleticaId, 'financeiro-resumo'),
     queryFn: ({ signal }) => financeiroApi.resumo(undefined, signal),
@@ -28,10 +32,10 @@ export function useFinanceiroQueries({
   })
   const evolucao = useQuery({
     queryKey: queryKeys.scoped(atleticaId, 'financeiro-evolucao', {
-      mesDe: mesComDeslocamento(-5),
-      mesAte: mesComDeslocamento(0),
+      mesDe,
+      mesAte,
     }),
-    queryFn: ({ signal }) => financeiroApi.evolucao(mesComDeslocamento(-5), mesComDeslocamento(0), signal),
+    queryFn: ({ signal }) => financeiroApi.evolucao(mesDe, mesAte, signal),
     enabled: possuiVinculoAtivo,
   })
   const categorias = useQuery({

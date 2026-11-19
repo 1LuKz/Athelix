@@ -1,6 +1,6 @@
 import type { EvolucaoMensal } from '../api'
 import type { FiltrosLancamentos } from '../types'
-import { formatMonth } from '../../../lib/format'
+import { formatMonth, hojeNoFuso, mesComDeslocamentoNoFuso } from '../../../lib/format'
 
 export const filtrosLancamentosIniciais: FiltrosLancamentos = {
   modoData: 'LIQUIDACAO',
@@ -11,13 +11,10 @@ export const filtrosLancamentosIniciais: FiltrosLancamentos = {
   situacao: '',
 }
 
-export const dataAtual = () => new Date().toISOString().slice(0, 10)
+export const dataAtual = (fusoHorario: string) => hojeNoFuso(fusoHorario)
 
-export const mesComDeslocamento = (deslocamento: number) => {
-  const data = new Date()
-  data.setMonth(data.getMonth() + deslocamento)
-  return data.toISOString().slice(0, 7)
-}
+export const mesComDeslocamento = (deslocamento: number, fusoHorario: string) =>
+  mesComDeslocamentoNoFuso(deslocamento, fusoHorario)
 
 export const podeGerenciarFinanceiro = (capacidades: string[]) => capacidades.includes('GERENCIAR_FINANCEIRO')
 

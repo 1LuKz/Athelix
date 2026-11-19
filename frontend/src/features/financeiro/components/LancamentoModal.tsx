@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { Button, Input, Modal, Select, useToast } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
 import { normalizeMoney } from '../../../lib/formSchemas'
+import { useAtleticaTimeZone } from '../../auth/AuthSessionProvider'
 import type { Lancamento, TipoLancamento } from '../api'
 import { financeiroApi } from '../api'
 import { useLancamentoFormQueries } from '../hooks/useLancamentoFormQueries'
@@ -17,6 +18,7 @@ type LancamentoModalProps = {
 }
 
 export function LancamentoModal({ tipo, lancamento, aoFechar, aoSalvar }: LancamentoModalProps) {
+  const fusoHorario = useAtleticaTimeZone() ?? 'America/Sao_Paulo'
   const toast = useToast()
   const { categorias, eventos } = useLancamentoFormQueries()
   const {
@@ -29,7 +31,7 @@ export function LancamentoModal({ tipo, lancamento, aoFechar, aoSalvar }: Lancam
       descricao: lancamento?.descricao ?? '',
       categoriaId: lancamento ? String(lancamento.categoriaId) : '',
       valor: lancamento?.valor ?? '',
-      dataCompetencia: lancamento?.dataCompetencia ?? dataAtual(),
+      dataCompetencia: lancamento?.dataCompetencia ?? dataAtual(fusoHorario),
       dataVencimento: lancamento?.dataVencimento ?? '',
       eventoId: lancamento?.eventoId ? String(lancamento.eventoId) : '',
     },

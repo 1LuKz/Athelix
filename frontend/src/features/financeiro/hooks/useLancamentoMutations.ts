@@ -10,7 +10,7 @@ type MutacaoAcaoLancamento = AcaoLancamento & {
   motivo: string
 }
 
-export function useLancamentoMutations(aoConcluir: () => void) {
+export function useLancamentoMutations(aoConcluir: () => void, fusoHorario: string) {
   const toast = useToast()
   const invalidarConsultasFinanceiras = useInvalidarFinanceiroQueries()
 
@@ -20,12 +20,12 @@ export function useLancamentoMutations(aoConcluir: () => void) {
         return financeiroApi.aprovar(item.id, kind, motivo, item.version)
       }
       if (kind === 'LIQUIDAR') {
-        return financeiroApi.liquidar(item.id, dataAtual(), item.version)
+        return financeiroApi.liquidar(item.id, dataAtual(fusoHorario), item.version)
       }
       if (kind === 'CANCELAR') {
         return financeiroApi.cancelar(item.id, motivo, item.version)
       }
-      return financeiroApi.estornar(item.id, dataAtual(), motivo)
+      return financeiroApi.estornar(item.id, dataAtual(fusoHorario), motivo)
     },
     onSuccess: async () => {
       toast.success('Operação financeira registrada.')

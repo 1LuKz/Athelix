@@ -20,6 +20,42 @@ test('datas civis não mudam conforme o fuso do navegador', () => {
   assert.equal(format.formatDate(null), '—')
   assert.equal(format.formatMonth('2026-09'), '09/2026')
 })
+test('hoje usa a data civil no fuso da atlética, inclusive após a virada do dia em UTC', () => {
+  const agora = new Date('2026-07-10T01:30:00Z')
+
+  assert.equal(format.hojeNoFuso('America/Sao_Paulo', agora), '2026-07-09')
+  assert.equal(format.hojeNoFuso('Asia/Tokyo', agora), '2026-07-10')
+  assert.equal(format.hojeNoFuso('fuso-invalido', agora), '2026-07-09')
+  assert.equal(agora.toISOString(), '2026-07-10T01:30:00.000Z')
+})
+test('deslocamento de mês preserva o calendário nos dias 29 a 31 e nas viradas de ano', () => {
+  const cenarios = [
+    ['2026-12-31T15:00:00Z', -1, '2026-11'],
+    ['2026-03-31T15:00:00Z', -1, '2026-02'],
+    ['2026-03-30T15:00:00Z', -1, '2026-02'],
+    ['2026-03-29T15:00:00Z', -1, '2026-02'],
+    ['2026-01-31T15:00:00Z', -5, '2025-08'],
+    ['2026-01-31T15:00:00Z', 0, '2026-01'],
+    ['2026-12-31T15:00:00Z', 1, '2027-01'],
+    ['2026-01-31T15:00:00Z', -17, '2024-08'],
+  ]
+
+  for (const [instante, deslocamento, mesEsperado] of cenarios) {
+    const agora = new Date(instante)
+
+    assert.equal(format.mesComDeslocamentoNoFuso(deslocamento, 'America/Sao_Paulo', agora), mesEsperado)
+    assert.equal(agora.getTime(), new Date(instante).getTime())
+  }
+})
+test('mês atual e início dos últimos seis meses respeitam a virada de mês no fuso da atlética', () => {
+  const agora = new Date('2026-08-01T01:00:00Z')
+
+  assert.equal(format.hojeNoFuso('America/Sao_Paulo', agora), '2026-07-31')
+  assert.equal(format.mesComDeslocamentoNoFuso(0, 'America/Sao_Paulo', agora), '2026-07')
+  assert.equal(format.mesComDeslocamentoNoFuso(-5, 'America/Sao_Paulo', agora), '2026-02')
+  assert.equal(format.mesComDeslocamentoNoFuso(0, 'Asia/Tokyo', agora), '2026-08')
+  assert.equal(format.mesComDeslocamentoNoFuso(0, 'fuso-invalido', agora), '2026-07')
+})
 test('instantes usam fuso informado ou São Paulo', () => {
   const value = '2026-09-30T01:00:00Z'
   assert.match(format.formatDateTime(value), /29\/09\/2026.*22:00/)

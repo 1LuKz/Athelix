@@ -1,13 +1,14 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useToast } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
+import { hojeNoFuso } from '../../../lib/format'
 import { useAuthSession } from '../../auth/AuthSessionProvider'
 import { membrosApi } from '../api'
 import type { CargoValues } from '../schemas/cargo'
 import type { MembroValues } from '../schemas/membro'
 import type { Cargo, Membro, SolicitacaoVinculo } from '../types'
 
-export function useMembrosMutations() {
+export function useMembrosMutations(fusoHorario: string) {
   const clienteDeConsultas = useQueryClient()
   const { activeVinculo } = useAuthSession()
   const toast = useToast()
@@ -52,7 +53,7 @@ export function useMembrosMutations() {
           nome: valores.nome.trim(),
           email: valores.email.trim(),
           telefone: valores.telefone || undefined,
-          membroDesde: new Date().toISOString().slice(0, 10),
+          membroDesde: hojeNoFuso(fusoHorario),
         })
       }
       toast.success(membro ? 'Membro atualizado.' : 'Membro cadastrado como pendente.')

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Button, ErrorState, Tabs } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
-import { useAuthSession } from '../../auth/AuthSessionProvider'
+import { useAtleticaTimeZone, useAuthSession } from '../../auth/AuthSessionProvider'
 import { BotaoExportarMembros } from '../components/BotaoExportarMembros'
 import { CargosEPerfis } from '../components/CargosEPerfis'
 import { InativarMembroDialog } from '../components/InativarMembroDialog'
@@ -15,6 +15,7 @@ import type { Membro, StatusMembro } from '../types'
 
 export function MembrosPage() {
   const { state } = useAuthSession()
+  const fusoHorario = useAtleticaTimeZone() ?? 'America/Sao_Paulo'
   const [buscaDigitada, setBuscaDigitada] = useState('')
   const [busca, setBusca] = useState('')
   const [departamentoId, setDepartamentoId] = useState<number | undefined>()
@@ -30,7 +31,7 @@ export function MembrosPage() {
     [busca, departamentoId, status, paginaAtual],
   )
   const consultas = useMembrosQueries({ filtros, administrador, podeConfigurarEstrutura, abaAtiva })
-  const mutacoes = useMembrosMutations()
+  const mutacoes = useMembrosMutations(fusoHorario)
   const exportarMembros = useExportarMembros(filtros)
 
   useEffect(() => {
