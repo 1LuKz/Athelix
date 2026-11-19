@@ -1,3 +1,4 @@
+import { TituloPagina } from '../../../components/TituloPagina'
 import { formatDate, formatDateTime, formatMoney, formatMonth } from '../../../lib/format'
 import { enumLabel, statusEventoLabels, statusTarefaLabels, tipoLancamentoLabels } from '../../../lib/labels'
 import { useAtleticaTimeZone } from '../../auth/AuthSessionProvider'
@@ -50,10 +51,10 @@ export function DashboardPage() {
   return (
     <>
       <div className="page-title">
-        <div>
-          <p className="eyebrow">Visão geral</p>
+        <TituloPagina>
           <h1>Dashboard</h1>
-        </div>
+          <p className="page-subtitle">Visão geral</p>
+        </TituloPagina>
       </div>
       {resumo.isLoading ? (
         <LoadingState />

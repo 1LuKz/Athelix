@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { Icon } from '../components/Icon'
 import { Logo } from '../components/Logo'
+import { ContextoTituloPagina } from '../components/TituloPagina'
 import { useAuthSession } from '../features/auth/AuthSessionProvider'
 import { useToast } from '../components/ui'
 import { PainelNotificacoes } from '../features/notificacoes/components/PainelNotificacoes'
@@ -20,7 +21,8 @@ const navigation = [
 export function AppLayout() {
   const [open, setOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
-  const { state, activeVinculo, logout } = useAuthSession()
+  const [destinoTituloPagina, setDestinoTituloPagina] = useState<HTMLDivElement | null>(null)
+  const { state, logout } = useAuthSession()
   const { error } = useToast()
   const initials =
     state?.usuario.nome
@@ -67,10 +69,7 @@ export function AppLayout() {
       </aside>
       <main className="content" id="main-content" tabIndex={-1}>
         <header className="app-header">
-          <div>
-            <p className="eyebrow">{activeVinculo?.atleticaNome ?? 'Atlética'}</p>
-            <strong>Visão geral</strong>
-          </div>
+          <div className="page-heading" ref={setDestinoTituloPagina} />
           <div className="header-actions">
             <button
               className="header-help"
@@ -91,7 +90,9 @@ export function AppLayout() {
             </button>
           </div>
         </header>
-        <Outlet />
+        <ContextoTituloPagina.Provider value={destinoTituloPagina}>
+          <Outlet />
+        </ContextoTituloPagina.Provider>
       </main>
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>

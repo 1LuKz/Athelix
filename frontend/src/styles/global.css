@@ -273,8 +273,21 @@ h2 {
 .app-header {
   align-items: center;
   display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
   justify-content: space-between;
   margin: -1rem 0 2.5rem;
+}
+.page-heading {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+.page-heading h1 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.page-heading > .badge {
+  margin-bottom: 0.45rem;
 }
 .eyebrow {
   color: var(--muted);
@@ -701,7 +714,7 @@ tr:last-child td {
     padding-top: 5.2rem;
   }
   .app-header {
-    align-items: flex-end;
+    align-items: center;
     gap: 1rem;
   }
   .user-menu > span:not(.avatar),
@@ -833,14 +846,16 @@ tr:last-child td {
   align-items: center;
   display: flex;
   gap: 1rem;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin-bottom: 1.3rem;
 }
-.page-title h1 {
-  margin: 0;
+.page-title:empty,
+.event-detail-head:empty {
+  display: none;
 }
-.page-title > div:last-child {
+.page-title > div {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.6rem;
 }
 .members-card {
@@ -1595,13 +1610,12 @@ h3 {
   width: 100%;
 }
 .app-header {
-  margin: 0 0 2.35rem;
-}
-.app-header > div:first-child strong {
-  font-size: 0.96rem;
+  margin: 0 0 1.5rem;
 }
 .header-actions {
+  flex-shrink: 0;
   gap: 0.7rem;
+  margin-left: auto;
 }
 .header-help,
 .notification-trigger,
@@ -1613,8 +1627,10 @@ h3 {
 .page-title {
   margin-bottom: 1.5rem;
 }
-.page-title h1 {
-  margin-top: 0.1rem;
+.page-subtitle {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  margin: 0.35rem 0 0;
 }
 .eyebrow {
   color: #7d8799;
@@ -1761,10 +1777,10 @@ tr:hover td {
   }
   .content {
     padding-inline: 1.15rem;
+    padding-top: 5.2rem;
   }
   .app-header {
     margin-bottom: 1.65rem;
-    padding-left: 3.5rem;
   }
   .header-actions {
     gap: 0.4rem;
@@ -1778,7 +1794,7 @@ tr:hover td {
   .card {
     padding: 1rem;
   }
-  .page-title > div:last-child {
+  .page-title > div {
     flex-wrap: wrap;
   }
 }
@@ -1786,15 +1802,8 @@ tr:hover td {
   align-items: flex-start;
   display: flex;
   gap: 1rem;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin: 1rem 0 1.4rem;
-}
-.event-detail-head h1 {
-  margin: 0.45rem 0;
-}
-.event-detail-head p {
-  color: var(--muted);
-  margin: 0;
 }
 .detail-grid {
   display: grid;

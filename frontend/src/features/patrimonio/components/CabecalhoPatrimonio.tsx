@@ -1,3 +1,4 @@
+import { TituloPagina } from '../../../components/TituloPagina'
 import { Button } from '../../../components/ui'
 import type { ModalPatrimonio } from '../types'
 
@@ -14,10 +15,10 @@ export function CabecalhoPatrimonio({
 }) {
   return (
     <div className="page-title">
-      <div>
-        <p className="eyebrow">Controle institucional</p>
+      <TituloPagina>
         <h1>Patrimônio</h1>
-      </div>
+        <p className="page-subtitle">Controle institucional</p>
+      </TituloPagina>
       {podeGerenciar && (
         <div>
           {perfilAcesso === 'ADMINISTRADOR' && (

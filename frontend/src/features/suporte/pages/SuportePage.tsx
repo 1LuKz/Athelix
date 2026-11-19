@@ -1,12 +1,13 @@
+import { TituloPagina } from '../../../components/TituloPagina'
 import { Card } from '../../../components/ui'
 export function SuportePage() {
   return (
     <>
       <div className="page-title">
-        <div>
-          <p className="eyebrow">Orientação</p>
+        <TituloPagina>
           <h1>Central de suporte</h1>
-        </div>
+          <p className="page-subtitle">Orientação</p>
+        </TituloPagina>
       </div>
       <section className="support-grid">
         <Card title="Primeiro acesso">

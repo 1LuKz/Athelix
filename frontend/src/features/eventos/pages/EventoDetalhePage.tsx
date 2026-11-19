@@ -1,3 +1,4 @@
+import { TituloPagina } from '../../../components/TituloPagina'
 import { formatDateTime } from '../../../lib/format'
 import { statusEventoLabels } from '../../../lib/labels'
 import { useAtleticaTimeZone } from '../../auth/AuthSessionProvider'
@@ -73,13 +74,13 @@ export function EventoDetalhePage() {
         ← Eventos
       </Link>
       <div className="event-detail-head">
-        <div>
+        <TituloPagina>
           <Badge>{statusEventoLabels[current.status]}</Badge>
           <h1>{current.nome}</h1>
-          <p>
+          <p className="page-subtitle">
             {current.local} · {formatDateTime(current.inicio, timeZone)}
           </p>
-        </div>
+        </TituloPagina>
         {podeGerenciar && (
           <Button icon="edit" onClick={() => setEditing(true)}>
             Editar evento

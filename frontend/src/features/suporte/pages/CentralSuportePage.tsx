@@ -17,8 +17,8 @@ export function CentralSuportePage({ onBack, configuracao }: Props) {
         ← Voltar
       </button>
       <header>
-        <p className="eyebrow">CENTRAL DE AJUDA</p>
         <h1>{configuracao?.titulo || 'Como podemos ajudar?'}</h1>
+        <p className="page-subtitle">Central de ajuda</p>
         <p>{configuracao?.instrucoes || 'Encontre orientações para as atividades da sua atlética.'}</p>
       </header>
       <label className="search">

@@ -1,3 +1,4 @@
+import { TituloPagina } from '../../../components/TituloPagina'
 import { useState } from 'react'
 import { Button, Card, ErrorState, LoadingState } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
@@ -38,10 +39,10 @@ export function DocumentosPage() {
   return (
     <>
       <div className="page-title">
-        <div>
-          <p className="eyebrow">Acervo institucional</p>
+        <TituloPagina>
           <h1>Documentos</h1>
-        </div>
+          <p className="page-subtitle">Acervo institucional</p>
+        </TituloPagina>
         {podePublicar && (
           <Button icon="upload_file" onClick={() => setUploadAberto(true)}>
             Enviar documento

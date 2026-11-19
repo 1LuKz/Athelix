@@ -1,3 +1,4 @@
+import { TituloPagina } from '../../../components/TituloPagina'
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button, ConfirmDialog, ErrorState, LoadingState, useToast } from '../../../components/ui'
@@ -44,10 +45,10 @@ export function DepartamentosPage() {
   return (
     <>
       <div className="page-title">
-        <div>
-          <p className="eyebrow">Estrutura organizacional</p>
+        <TituloPagina>
           <h1>Departamentos</h1>
-        </div>
+          <p className="page-subtitle">Estrutura organizacional</p>
+        </TituloPagina>
         {podeAdministrar && (
           <Button icon="add" onClick={() => setDepartamentoEmEdicao({} as Departamento)}>
             Novo departamento

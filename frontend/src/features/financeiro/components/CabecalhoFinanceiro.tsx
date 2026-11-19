@@ -1,3 +1,4 @@
+import { TituloPagina } from '../../../components/TituloPagina'
 import { Button } from '../../../components/ui'
 import type { TipoLancamento } from '../api'
 
@@ -16,10 +17,10 @@ export function CabecalhoFinanceiro({
 }: CabecalhoFinanceiroProps) {
   return (
     <div className="page-title">
-      <div>
-        <p className="eyebrow">Prestação de contas</p>
+      <TituloPagina>
         <h1>Financeiro</h1>
-      </div>
+        <p className="page-subtitle">Prestação de contas</p>
+      </TituloPagina>
       {podeGerenciar && (
         <div>
           <Button variant="secondary" onClick={aoNovaCategoria}>

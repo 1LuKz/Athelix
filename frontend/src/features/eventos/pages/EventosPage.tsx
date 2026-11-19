@@ -1,3 +1,4 @@
+import { TituloPagina } from '../../../components/TituloPagina'
 import { formatDateTime, formatMoney } from '../../../lib/format'
 import { statusEventoLabels as labels } from '../../../lib/labels'
 import { useAtleticaTimeZone } from '../../auth/AuthSessionProvider'
@@ -50,10 +51,10 @@ export function EventosPage() {
   return (
     <>
       <div className="page-title">
-        <div>
-          <p className="eyebrow">Agenda e organização</p>
+        <TituloPagina>
           <h1>Eventos</h1>
-        </div>
+          <p className="page-subtitle">Agenda e organização</p>
+        </TituloPagina>
         {admin && (
           <Button icon="add" onClick={() => setEdit({} as Evento)}>
             Novo evento

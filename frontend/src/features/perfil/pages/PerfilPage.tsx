@@ -1,3 +1,4 @@
+import { TituloPagina } from '../../../components/TituloPagina'
 import { useState } from 'react'
 import { ErrorState, LoadingState, Tabs } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
@@ -22,10 +23,10 @@ export function PerfilPage() {
   return (
     <>
       <div className="page-title">
-        <div>
-          <p className="eyebrow">Minha conta</p>
+        <TituloPagina>
           <h1>Perfil</h1>
-        </div>
+          <p className="page-subtitle">Minha conta</p>
+        </TituloPagina>
       </div>
       <Tabs
         active={abaAtiva}

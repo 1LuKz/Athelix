@@ -1,3 +1,4 @@
+import { TituloPagina } from '../../../components/TituloPagina'
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { MotivoDialog } from '../../../components/MotivoDialog'
@@ -55,10 +56,10 @@ export function TarefasPage() {
   return (
     <>
       <div className="page-title">
-        <div>
-          <p className="eyebrow">Execução do evento</p>
+        <TituloPagina>
           <h1>Tarefas</h1>
-        </div>
+          <p className="page-subtitle">Execução do evento</p>
+        </TituloPagina>
         <Button icon="add" onClick={() => setModalAberto(true)}>
           Nova tarefa
         </Button>

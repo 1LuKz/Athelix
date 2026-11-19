@@ -1,3 +1,4 @@
+import { TituloPagina } from '../../../components/TituloPagina'
 import { useEffect, useMemo, useState } from 'react'
 import { Button, ErrorState, Tabs } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
@@ -122,10 +123,10 @@ function CabecalhoMembros({
 }) {
   return (
     <div className="page-title">
-      <div>
-        <p className="eyebrow">Gestão de pessoas</p>
+      <TituloPagina>
         <h1>Membros</h1>
-      </div>
+        <p className="page-subtitle">Gestão de pessoas</p>
+      </TituloPagina>
       {administrador && (
         <div>
           <BotaoExportarMembros aoExportar={aoExportar} />

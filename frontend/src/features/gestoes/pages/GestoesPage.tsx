@@ -1,3 +1,4 @@
+import { TituloPagina } from '../../../components/TituloPagina'
 import { useState } from 'react'
 import { Button, Card, ConfirmDialog, useToast } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
@@ -44,10 +45,10 @@ export function GestoesPage() {
   return (
     <>
       <div className="page-title">
-        <div>
-          <p className="eyebrow">Continuidade institucional</p>
+        <TituloPagina>
           <h1>Gestões</h1>
-        </div>
+          <p className="page-subtitle">Continuidade institucional</p>
+        </TituloPagina>
         <Button icon="add" onClick={() => setNovaGestao(true)}>
           Planejar próxima gestão
         </Button>
