@@ -33,7 +33,6 @@ export function TabelaMembros({
           <tr key={membro.id}>
             <td>
               <strong>{membro.nome}</strong>
-              {membro.email && <small>{membro.email}</small>}
             </td>
             <td>{membro.curso}</td>
             <td>{membro.cargo}</td>
@@ -41,7 +40,7 @@ export function TabelaMembros({
             <td>
               <Badge tone={tomStatus[membro.status]}>{statusMembroLabels[membro.status]}</Badge>
             </td>
-            <td className="row-actions">
+            <td>
               {administrador && (
                 <AcoesMembro
                   membro={membro}
@@ -69,7 +68,7 @@ type AcoesMembroProps = {
 
 function AcoesMembro({ membro, aoEditarMembro, aoAprovarMembro, aoInativarMembro }: AcoesMembroProps) {
   return (
-    <>
+    <div className="row-actions member-actions">
       <Button variant="ghost" icon="edit" onClick={() => aoEditarMembro(membro)}>
         Editar
       </Button>
@@ -83,6 +82,6 @@ function AcoesMembro({ membro, aoEditarMembro, aoAprovarMembro, aoInativarMembro
           Inativar
         </Button>
       )}
-    </>
+    </div>
   )
 }

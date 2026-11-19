@@ -872,6 +872,11 @@ tr:last-child td {
   display: flex;
   gap: 0.25rem;
 }
+.row-actions.member-actions {
+  align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
 .row-actions .ui-button {
   font-size: 0.75rem;
   min-height: 2rem;
