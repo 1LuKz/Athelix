@@ -1079,7 +1079,7 @@ tr:last-child td {
   position: relative;
   width: 2.45rem;
 }
-.notification-trigger span {
+.notification-trigger .notification-count {
   background: var(--danger);
   border: 2px solid #fff;
   border-radius: 1rem;

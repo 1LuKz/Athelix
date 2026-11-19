@@ -41,7 +41,7 @@ export function PainelNotificacoes() {
         onClick={abrir}
       >
         <Icon name="notifications" />
-        {(resumo.data?.naoLidas ?? 0) > 0 && <span>{resumo.data?.naoLidas}</span>}
+        {(resumo.data?.naoLidas ?? 0) > 0 && <span className="notification-count">{resumo.data?.naoLidas}</span>}
       </button>
       {open && (
         <section className="notification-panel">
