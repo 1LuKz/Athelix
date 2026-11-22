@@ -35,6 +35,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -129,8 +130,8 @@ public class DashboardService {
   private long eventosNaSemana(Long atleticaId, LocalDate hoje) {
     ZoneId zona = zonaDaAtletica();
     LocalDate inicioDaSemana = hoje.minusDays(hoje.getDayOfWeek().getValue() - 1L);
-    Instant inicio = inicioDaSemana.atStartOfDay(zona).toInstant();
-    Instant fim = inicioDaSemana.plusDays(7).atStartOfDay(zona).toInstant();
+    OffsetDateTime inicio = inicioDaSemana.atStartOfDay(zona).toOffsetDateTime();
+    OffsetDateTime fim = inicioDaSemana.plusDays(7).atStartOfDay(zona).toOffsetDateTime();
     return eventos.countByAtletica_IdAndStatusInAndInicioGreaterThanEqualAndInicioLessThan(
         atleticaId,
         EnumSet.of(

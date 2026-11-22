@@ -18,6 +18,7 @@ import br.com.athletix.gestao.entity.VinculoGestao;
 import br.com.athletix.gestao.repository.GestaoRepository;
 import br.com.athletix.gestao.repository.VinculoGestaoRepository;
 import br.com.athletix.membro.entity.Membro;
+import br.com.athletix.shared.time.FusoHorarioAtletica;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -42,8 +43,9 @@ class GestoesDemoSeeder {
             new Gestao(
                 engenharia,
                 GESTAO_DE_DEMONSTRACAO,
-                LocalDate.now(),
-                LocalDate.now().plusYears(DURACAO_GESTAO_ANOS)));
+                FusoHorarioAtletica.hoje(engenharia.getFusoHorario()),
+                FusoHorarioAtletica.hoje(engenharia.getFusoHorario())
+                    .plusYears(DURACAO_GESTAO_ANOS)));
     gestaoInicial.ativar();
     gestaoRepository.save(gestaoInicial);
     return gestaoInicial;

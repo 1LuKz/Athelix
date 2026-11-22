@@ -1,7 +1,13 @@
 package br.com.athletix.config.demo;
 
 import br.com.athletix.cargo.entity.PerfilAcesso;
+import br.com.athletix.documento.entity.CategoriaDocumento;
+import br.com.athletix.evento.entity.StatusEvento;
 import br.com.athletix.financeiro.entity.TipoLancamentoFinanceiro;
+import br.com.athletix.patrimonio.entity.ConservacaoPatrimonio;
+import br.com.athletix.tarefa.entity.PrioridadeTarefa;
+import br.com.athletix.tarefa.entity.StatusTarefa;
+import java.util.List;
 
 /** Valores da carga de demonstração. Os deslocamentos são relativos à data de execução. */
 final class DemoData {
@@ -127,6 +133,163 @@ final class DemoData {
   static final String RODAPE_PDF = "\\n%%EOF";
   static final String APPLICATION_PDF = "application/pdf";
   static final String ALGORITMO_HASH_PDF = "SHA-256";
+  static final int DURACAO_ATIVIDADE_MINUTOS = 45;
+  static final int INTERVALO_ATIVIDADES_MINUTOS = 50;
+  static final int TOTAL_EXTERNOS_ANDAMENTO = 8;
+  static final int TOTAL_EXTERNOS_CONCLUIDO = 2;
+  static final String PARTICIPANTE_EXTERNO = "Participante sintético ";
+  static final String EMAIL_EXTERNO = "participante%d@exemplo.invalid";
+  static final String RECEPCAO_PARTICIPANTES = "Recepção dos participantes";
+  static final String ABERTURA_OFICIAL = "Abertura oficial";
+  static final String PARTIDAS_CLASSIFICATORIAS = "Partidas classificatórias";
+  static final String CERIMONIA_PREMIACAO = "Cerimônia de premiação";
+  static final String REUNIAO_PREPARATORIA = "Reunião preparatória";
+  static final String ARTE_EVENTO_PDF = "arte-evento.pdf";
+  static final String ARTE_EVENTO = "Arte de divulgação sintética";
+  static final String REGULAMENTO_EVENTO_PDF = "regulamento-evento.pdf";
+  static final int PRAZO_CHECKLIST_CONCLUIDO_DIAS = -3;
+  static final int PRAZO_AMANHA_DIAS = 1;
+  static final int PRAZO_HOJE_DIAS = 0;
+  static final int PRAZO_ATRASADO_DIAS = -1;
+  static final String ACOMPANHAR_ARBITRAGEM = "Acompanhar arbitragem";
+  static final String REVISAR_PLACARES = "Revisar placares parciais";
+  static final String ORGANIZAR_PREMIACAO = "Organizar premiação";
+  static final String VALIDAR_INSCRICOES = "Validar inscrições recebidas";
+  static final String REVISAR_ORCAMENTO = "Revisar orçamento do torneio";
+  static final List<String> CHECKLIST_CONCLUIDO =
+      List.of(
+          "Reservar espaço do evento",
+          "Obter autorização do campus",
+          "Definir modalidades",
+          "Preparar regulamento",
+          "Definir tabela de jogos",
+          "Contratar arbitragem",
+          "Confirmar equipe de apoio",
+          "Preparar credenciamento",
+          "Conferir uniformes",
+          "Separar equipamentos",
+          "Publicar arte de divulgação",
+          "Testar sonorização",
+          "Organizar hidratação",
+          "Preparar atendimento de apoio");
+  static final String ESTORNO_DEMONSTRATIVO = "Correção de receita sintética duplicada";
+  static final LancamentoDemo DESPESA_FUTURA =
+      new LancamentoDemo(TipoLancamentoFinanceiro.DESPESA, "Transporte futuro", "350.00", 0, 7);
+  static final LancamentoDemo RECEITA_ESTORNADA =
+      new LancamentoDemo(
+          TipoLancamentoFinanceiro.RECEITA, "Receita duplicada sintética", "75.00", 0, 0);
+  static final List<DocumentoDemo> DOCUMENTOS_DEMO =
+      List.of(
+          new DocumentoDemo(
+              "Estatuto demonstrativo", "estatuto", CategoriaDocumento.ESTATUTO, true),
+          new DocumentoDemo(
+              REGULAMENTO_DE_DEMONSTRACAO, "regimento", CategoriaDocumento.REGIMENTO, true),
+          new DocumentoDemo("Ata demonstrativa", "ata", CategoriaDocumento.ATA, false),
+          new DocumentoDemo(
+              "Contrato demonstrativo", "contrato", CategoriaDocumento.CONTRATO, false),
+          new DocumentoDemo(
+              "Guia de organização sintético", "guia", CategoriaDocumento.OUTRO, false));
+  static final List<ItemDemo> ITENS_DEMO =
+      List.of(
+          new ItemDemo(
+              BOLAS_OFICIAIS,
+              MATERIAL_ESPORTIVO,
+              QUANTIDADE_BOLAS,
+              ConservacaoPatrimonio.BOM,
+              VALOR_BOLA),
+          new ItemDemo(
+              COLETES,
+              MATERIAL_ESPORTIVO,
+              QUANTIDADE_COLETES,
+              ConservacaoPatrimonio.OTIMO,
+              VALOR_COLETE),
+          new ItemDemo(
+              CAIXA_DE_SOM,
+              ELETRONICOS,
+              QUANTIDADE_CAIXAS_DE_SOM,
+              ConservacaoPatrimonio.REGULAR,
+              VALOR_300_REAIS),
+          new ItemDemo(
+              "Redes de vôlei", MATERIAL_ESPORTIVO, 4, ConservacaoPatrimonio.BOM, "120.00"),
+          new ItemDemo(
+              "Cones de treinamento", MATERIAL_ESPORTIVO, 20, ConservacaoPatrimonio.OTIMO, "15.00"),
+          new ItemDemo("Cronômetros", ELETRONICOS, 3, ConservacaoPatrimonio.REGULAR, "60.00"),
+          new ItemDemo("Microfones", ELETRONICOS, 4, ConservacaoPatrimonio.BOM, "150.00"),
+          new ItemDemo("Placar eletrônico", ELETRONICOS, 1, ConservacaoPatrimonio.OTIMO, "900.00"));
+
+  static final List<TarefaDemo> TAREFAS_COMPLEMENTARES =
+      List.of(
+          new TarefaDemo(
+              StatusEvento.EM_ANDAMENTO,
+              ResponsavelDemo.ADMINISTRADOR,
+              ORGANIZAR_PREMIACAO,
+              StatusTarefa.A_FAZER,
+              PrioridadeTarefa.ALTA,
+              PRAZO_AMANHA_DIAS),
+          new TarefaDemo(
+              StatusEvento.EM_ANDAMENTO,
+              ResponsavelDemo.GESTORA,
+              CONFERIR_MATERIAIS,
+              StatusTarefa.A_FAZER,
+              PrioridadeTarefa.MEDIA,
+              PRAZO_RESERVA_DIAS),
+          new TarefaDemo(
+              StatusEvento.EM_ANDAMENTO,
+              ResponsavelDemo.ASSOCIADO,
+              ACOMPANHAR_ARBITRAGEM,
+              StatusTarefa.EM_ANDAMENTO,
+              PrioridadeTarefa.ALTA,
+              PRAZO_HOJE_DIAS),
+          new TarefaDemo(
+              StatusEvento.EM_ANDAMENTO,
+              ResponsavelDemo.TESOUREIRO,
+              REVISAR_PLACARES,
+              StatusTarefa.REVISAO,
+              PrioridadeTarefa.BAIXA,
+              PRAZO_ATRASADO_DIAS),
+          new TarefaDemo(
+              StatusEvento.PLANEJADO,
+              ResponsavelDemo.ADMINISTRADOR,
+              RESERVAR_QUADRA,
+              StatusTarefa.A_FAZER,
+              PrioridadeTarefa.ALTA,
+              PRAZO_AMANHA_DIAS),
+          new TarefaDemo(
+              StatusEvento.INSCRICOES_ABERTAS,
+              ResponsavelDemo.GESTORA,
+              VALIDAR_INSCRICOES,
+              StatusTarefa.EM_ANDAMENTO,
+              PrioridadeTarefa.MEDIA,
+              PRAZO_AMANHA_DIAS),
+          new TarefaDemo(
+              StatusEvento.PLANEJADO,
+              ResponsavelDemo.ADMINISTRADOR,
+              REVISAR_ORCAMENTO,
+              StatusTarefa.REVISAO,
+              PrioridadeTarefa.MEDIA,
+              PRAZO_ATRASADO_DIAS),
+          new TarefaDemo(
+              StatusEvento.CONCLUIDO,
+              ResponsavelDemo.ASSOCIADO,
+              PUBLICAR_RESULTADOS,
+              StatusTarefa.CONCLUIDO,
+              PrioridadeTarefa.BAIXA,
+              -PRAZO_RESULTADOS_DIAS));
+
+  enum ResponsavelDemo {
+    ADMINISTRADOR,
+    TESOUREIRO,
+    GESTORA,
+    ASSOCIADO
+  }
+
+  record TarefaDemo(
+      StatusEvento evento,
+      ResponsavelDemo responsavel,
+      String titulo,
+      StatusTarefa status,
+      PrioridadeTarefa prioridade,
+      int deslocamentoPrazo) {}
 
   static final CargoDemo PRESIDENCIA_DEMO =
       new CargoDemo(
@@ -170,6 +333,16 @@ final class DemoData {
       new LancamentoDemo(TipoLancamentoFinanceiro.DESPESA, "Conta vencida", "130.00", -20, -2);
 
   record CargoDemo(String nome, String descricao, PerfilAcesso perfil) {}
+
+  record DocumentoDemo(
+      String titulo, String nomeArquivo, CategoriaDocumento categoria, boolean duasVersoes) {}
+
+  record ItemDemo(
+      String nome,
+      String categoria,
+      int quantidade,
+      ConservacaoPatrimonio conservacao,
+      String valor) {}
 
   record ContaDemo(String nome, String email, String senha) {}
 

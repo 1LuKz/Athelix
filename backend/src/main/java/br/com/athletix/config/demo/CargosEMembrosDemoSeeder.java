@@ -11,6 +11,7 @@ import br.com.athletix.departamento.entity.Departamento;
 import br.com.athletix.membro.entity.Membro;
 import br.com.athletix.membro.repository.MembroRepository;
 import br.com.athletix.shared.normalization.NomeNormalizado;
+import br.com.athletix.shared.time.FusoHorarioAtletica;
 import br.com.athletix.usuario.entity.Usuario;
 import br.com.athletix.usuario.repository.UsuarioRepository;
 import java.time.LocalDate;
@@ -52,77 +53,36 @@ class CargosEMembrosDemoSeeder {
       Atletica atletica, Cargo cargo, Departamento diretoria, ContaDemo conta, Membro validador) {
     Usuario usuario = criarUsuario(conta);
     return ativarMembro(
-        atletica, usuario, ADMINISTRACAO, null, cargo, diretoria, LocalDate.now(), validador);
+        atletica,
+        usuario,
+        ADMINISTRACAO,
+        null,
+        cargo,
+        diretoria,
+        FusoHorarioAtletica.hoje(atletica.getFusoHorario()),
+        validador);
   }
 
   Membro criarAdministradorSaude(Atletica saude, Cargo adminSaude, Departamento diretoriaSaude) {
     Usuario usuario = criarUsuario(CONTA_SAUDE);
     return ativarMembro(
-        saude, usuario, SAUDE, PERIODO_SAUDE, adminSaude, diretoriaSaude, LocalDate.now(), null);
+        saude,
+        usuario,
+        SAUDE,
+        PERIODO_SAUDE,
+        adminSaude,
+        diretoriaSaude,
+        FusoHorarioAtletica.hoje(saude.getFusoHorario()),
+        null);
   }
 
-  MembrosExtras criarMembrosExtras(
-      Atletica engenharia,
-      Cargo gestor,
-      Cargo membro,
-      Departamento esportes,
-      Membro administradorMembro,
-      LocalDate hoje) {
-    Membro gestorMembro =
-        criarMembro(
-            engenharia,
-            gestor,
-            esportes,
-            CONTA_GESTORA,
-            administradorMembro,
-            hoje.minusMonths(TEMPO_GESTORA_MESES));
-    Membro membroAtivo =
-        criarMembro(
-            engenharia,
-            membro,
-            esportes,
-            CONTA_ASSOCIADO,
-            administradorMembro,
-            hoje.minusMonths(TEMPO_ASSOCIADO_MESES));
-    criarMembrosSemAcesso(engenharia, membro, esportes, administradorMembro, hoje);
-    return new MembrosExtras(gestorMembro, membroAtivo);
-  }
-
-  private void criarMembrosSemAcesso(
-      Atletica engenharia,
-      Cargo membro,
-      Departamento esportes,
-      Membro administradorMembro,
-      LocalDate hoje) {
-    Membro pendente =
-        new Membro(
-            engenharia,
-            criarUsuario(CONTA_PENDENTE),
-            ENGENHARIA,
-            PERIODO_PENDENTE,
-            membro,
-            esportes,
-            hoje);
-    membroRepository.save(pendente);
-    Membro inativo =
-        criarMembro(
-            engenharia,
-            membro,
-            esportes,
-            CONTA_INATIVO,
-            administradorMembro,
-            hoje.minusYears(TEMPO_INATIVO_ANOS));
-    inativo.inativar();
-    membroRepository.save(inativo);
-  }
-
-  private Usuario criarUsuario(ContaDemo conta) {
+  Usuario criarUsuario(ContaDemo conta) {
     Usuario usuario = new Usuario(conta.nome(), conta.email(), null);
     usuario.definirSenhaHash(passwordEncoder.encode(conta.senha()));
     return usuarioRepository.save(usuario);
   }
 
-  private Membro criarMembro(
+  Membro criarMembro(
       Atletica atletica,
       Cargo cargo,
       Departamento departamento,
@@ -147,6 +107,4 @@ class CargosEMembrosDemoSeeder {
     membro.ativar(validador);
     return membroRepository.save(membro);
   }
-
-  record MembrosExtras(Membro gestor, Membro associado) {}
 }

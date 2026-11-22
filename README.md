@@ -72,19 +72,52 @@ Quem recebe deve descompactar os arquivos e rodar `npm ci` na pasta `frontend` p
 
 O H2 usado no perfil `dev` é somente em memória. Os dados são perdidos quando o backend é encerrado e, na próxima inicialização, a base é recriada com a carga de demonstração sintética.
 
-As contas abaixo são criadas por `InitialAtleticasConfiguration`. As contas pendente e inativa existem para testar os fluxos de vínculo, mas não podem autenticar até que seu status permita acesso.
+A carga completa é ativada por `athletix.demo.completa=true` no perfil `dev` e inicializada por
+`DemoDataInitializer`. Para executar somente a carga mínima:
 
-| E-mail | Perfil | Status | Senha de demonstração |
-| --- | --- | --- | --- |
-| `admin@athletix.local` | Administrador | Ativo | `Athletix@2026` |
-| `financeiro@athletix.local` | Financeiro | Ativo | `Financeiro@2026` |
-| `gestor@athletix.local` | Gestor | Ativo | `Gestor@2026` |
-| `membro@athletix.local` | Membro | Ativo | `Membro@2026` |
-| `pendente@athletix.local` | Membro | Pendente | `Pendente@2026` |
-| `inativo@athletix.local` | Membro | Inativo | `Inativo@2026` |
-| `admin@saude.athletix.local` | Administrador | Ativo | `Saude@2026` |
+```bash
+cd backend
+./mvnw spring-boot:run -Dspring-boot.run.arguments=--athletix.demo.completa=false
+```
 
-As senhas são exclusivas da carga `dev` e são persistidas como hash. O cenário inclui duas atléticas, permitindo validar o isolamento de escopo; a segunda atlética foi reduzida intencionalmente.
+As contas pendente e inativa não podem autenticar enquanto o status não permitir acesso.
+
+| E-mail | Atlética | Perfil | Status | Senha | Carga |
+| --- | --- | --- | --- | --- | --- |
+| `admin@athletix.local` | Engenharia | Administrador | Ativo | `Athletix@2026` | Ambas |
+| `financeiro@athletix.local` | Engenharia | Financeiro | Ativo | `Financeiro@2026` | Ambas |
+| `gestor@athletix.local` | Engenharia | Gestor | Ativo | `Gestor@2026` | Completa |
+| `membro@athletix.local` | Engenharia | Membro | Ativo | `Membro@2026` | Completa |
+| `pendente@athletix.local` | Engenharia | Membro | Pendente | `Pendente@2026` | Completa |
+| `inativo@athletix.local` | Engenharia | Membro | Inativo | `Inativo@2026` | Completa |
+| `admin@saude.athletix.local` | Saúde | Administrador | Ativo | `Saude@2026` | Completa |
+
+As senhas são exclusivas de demonstração e persistidas como hash. As datas são relativas ao momento da carga,
+no fuso da atlética (`America/Sao_Paulo`). Arquivos e participantes externos são sintéticos.
+A primeira atlética concentra o cenário abaixo; Saúde mantém apenas acesso e estrutura para demonstrar isolamento.
+
+| Área | Dados da carga completa de Engenharia |
+| --- | --- |
+| Eventos | 4 eventos: planejado, inscrições abertas, em andamento e concluído |
+| Cronograma | 6 atividades; no evento em andamento: 2 concluídas, 1 em andamento e 1 agendada |
+| Responsáveis | 5 designações; coordenação geral, financeiro e comunicação no evento em andamento |
+| Participações | 12 no evento em andamento, internas e externas, nos 4 status; 2 presentes no concluído |
+| Materiais | 2 anexos sintéticos no evento em andamento: arte e regulamento em PDF |
+| Tarefas | 22: 3 a fazer, 2 em andamento, 2 em revisão e 15 concluídas; prioridades variadas |
+| Checklist | 14 de 18 tarefas concluídas no evento em andamento (78%); prazo hoje e tarefas atrasadas |
+| Documentos | 5 categorias: estatuto, regimento, ata, contrato e outros; 7 versões, 2 em dois documentos |
+| Patrimônio | 8 itens de 2 categorias, conservação e disponibilidade variadas |
+| Movimentações | 2 empréstimos: 1 aberto e 1 devolvido; 1 devolução e 1 manutenção aberta |
+| Inventário | 1 conferência aberta, com 8 itens e 2 contados; 1 divergência de quantidade |
+| Financeiro | 12 lançamentos em 6 meses, receitas recebidas e despesas aprovadas e pagas |
+| Contas e estorno | Despesa pendente, rejeitada, conta futura aprovada, conta vencida aprovada e 1 estorno |
+| Notificações | 5 avisos: 3 de prazo próximo e 2 de atraso; o administrador recebe 3 deles |
+| Perfil | 150 atividades auditadas pelos serviços: 137 do administrador e 13 do financeiro |
+| Gestões | 1 anterior encerrada e 1 atual ativa; nenhuma transição criada |
+
+O checklist usa as próprias tarefas: os 14 itens concluídos exigem mais que os 10 cards mínimos do quadro.
+As notificações disponíveis no modelo são prazo próximo e atraso; o terceiro aviso corresponde a outra tarefa.
+A carga mínima preserva as contagens e não inclui os dados operacionais da tabela.
 
 ## Configuração de e-mail
 

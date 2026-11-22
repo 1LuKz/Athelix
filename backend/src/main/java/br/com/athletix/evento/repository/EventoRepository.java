@@ -2,7 +2,7 @@ package br.com.athletix.evento.repository;
 
 import br.com.athletix.evento.entity.Evento;
 import jakarta.persistence.LockModeType;
-import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -46,8 +46,8 @@ public interface EventoRepository
   long countByAtletica_IdAndStatusInAndInicioGreaterThanEqualAndInicioLessThan(
       Long atleticaId,
       Collection<br.com.athletix.evento.entity.StatusEvento> statuses,
-      Instant inicio,
-      Instant fim);
+      OffsetDateTime inicio,
+      OffsetDateTime fim);
 
   @Query(
       """
