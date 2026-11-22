@@ -1,5 +1,7 @@
 import { type ReactNode, useEffect, useRef } from 'react'
 import { Icon } from '../Icon'
+import { createPortal } from 'react-dom'
+import { PaginasConteudo } from '../PaginasConteudo'
 
 const seletorElementosFocaveis = [
   'button:not([disabled])',
@@ -36,7 +38,7 @@ export function Modal({
       if (evento.key !== 'Tab') return
       const elementosFocaveis = Array.from(
         dialogo.current?.querySelectorAll<HTMLElement>(seletorElementosFocaveis) ?? [],
-      )
+      ).filter((elemento) => elemento.getClientRects().length > 0 && getComputedStyle(elemento).visibility !== 'hidden')
       if (!elementosFocaveis.length) {
         evento.preventDefault()
         return
@@ -67,7 +69,7 @@ export function Modal({
 
   if (!open) return null
 
-  return (
+  return createPortal(
     <div className="modal-backdrop" onMouseDown={onClose}>
       <div
         className="modal"
@@ -84,9 +86,14 @@ export function Modal({
             <Icon name="close" />
           </button>
         </header>
-        <div className="modal-body">{children}</div>
+        <div className="modal-body">
+          <PaginasConteudo rotulo={title} ajustarAltura>
+            {children}
+          </PaginasConteudo>
+        </div>
         {footer && <footer>{footer}</footer>}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

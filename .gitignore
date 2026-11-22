@@ -47,5 +47,6 @@ dist/
 target/
 *.tsbuildinfo
 __MACOSX/
+entrega/
 /frontend/vite.config.js
 /frontend/vite.config.d.ts

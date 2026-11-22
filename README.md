@@ -56,6 +56,18 @@ npx vite build
 
 Também é possível usar `npm run build`, que executa a verificação TypeScript e o build do Vite.
 
+## Como compactar o projeto para entrega
+
+Na raiz do projeto, com `bash` e `zip` instalados, execute:
+
+```bash
+./scripts/empacotar.sh
+```
+
+O script gera `frontend.zip`, `backend.zip` e `docs.zip` em `entrega/` e imprime seus tamanhos.
+Dependências, builds e metadados do macOS são excluídos. Evite o "Comprimir" do Finder, que cria entradas `__MACOSX`.
+Quem recebe deve descompactar os arquivos e rodar `npm ci` na pasta `frontend` para instalar as dependências.
+
 ## Dados locais e contas de demonstração
 
 O H2 usado no perfil `dev` é somente em memória. Os dados são perdidos quando o backend é encerrado e, na próxima inicialização, a base é recriada com a carga de demonstração sintética.

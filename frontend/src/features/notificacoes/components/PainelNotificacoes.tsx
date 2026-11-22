@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { Icon } from '../../../components/Icon'
+import { PaginasConteudo } from '../../../components/PaginasConteudo'
 import { EmptyState, LoadingState } from '../../../components/ui'
 import { useAuthSession } from '../../auth/AuthSessionProvider'
 import { notificacoesApi } from '../api'
@@ -51,31 +52,33 @@ export function PainelNotificacoes() {
               <Icon name="close" />
             </button>
           </header>
-          {lista.isLoading ? (
-            <LoadingState label="Carregando avisos..." />
-          ) : lista.data?.items.length ? (
-            <div>
-              {lista.data.items.map((item) => (
-                <article key={item.id} className={item.lidaEm ? 'read' : ''}>
-                  <Link to="/tarefas" onClick={() => void marcar(item.id)}>
-                    <BadgeIcon tipo={item.tipo} />
-                    <div>
-                      <strong>{item.titulo}</strong>
-                      <p>{item.mensagem}</p>
-                      <small>Prazo: {formatDate(item.dataReferencia)}</small>
-                    </div>
-                  </Link>
-                  {!item.lidaEm && (
-                    <button type="button" onClick={() => void marcar(item.id)}>
-                      Marcar como lida
-                    </button>
-                  )}
-                </article>
-              ))}
-            </div>
-          ) : (
-            <EmptyState title="Sem notificações" description="Você não possui avisos no momento." />
-          )}
+          <PaginasConteudo rotulo="Notificações">
+            {lista.isLoading ? (
+              <LoadingState label="Carregando avisos..." />
+            ) : lista.data?.items.length ? (
+              <div>
+                {lista.data.items.map((item) => (
+                  <article key={item.id} className={item.lidaEm ? 'read' : ''}>
+                    <Link to="/tarefas" onClick={() => void marcar(item.id)}>
+                      <BadgeIcon tipo={item.tipo} />
+                      <div>
+                        <strong>{item.titulo}</strong>
+                        <p>{item.mensagem}</p>
+                        <small>Prazo: {formatDate(item.dataReferencia)}</small>
+                      </div>
+                    </Link>
+                    {!item.lidaEm && (
+                      <button type="button" onClick={() => void marcar(item.id)}>
+                        Marcar como lida
+                      </button>
+                    )}
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <EmptyState title="Sem notificações" description="Você não possui avisos no momento." />
+            )}
+          </PaginasConteudo>
         </section>
       )}
     </div>

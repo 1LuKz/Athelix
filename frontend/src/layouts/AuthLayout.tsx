@@ -1,11 +1,16 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { Logo } from '../components/Logo'
+import brasaoAthletix from '../assets/brasao-athletix.png'
+import { PaginasConteudo } from '../components/PaginasConteudo'
 export function AuthLayout() {
+  const localizacao = useLocation()
   return (
     <main className="auth-layout">
       <div className="auth-panel">
         <Logo />
-        <Outlet />
+        <PaginasConteudo key={localizacao.pathname} rotulo="Acesso ao sistema" className="auth-pages">
+          <Outlet />
+        </PaginasConteudo>
       </div>
       <aside className="auth-aside">
         <span className="tagline">A gestão da sua Atlética, em um só lugar</span>
@@ -15,7 +20,7 @@ export function AuthLayout() {
           Vença.
         </h2>
         <p>Financeiro, eventos, equipes, patrimônio e documentos conectados em uma experiência simples.</p>
-        <div className="brand-orbit">A</div>
+        <img className="brand-orbit" src={brasaoAthletix} alt="" width={1254} height={1254} />
       </aside>
     </main>
   )

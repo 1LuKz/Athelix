@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Icon } from '../components/Icon'
+import { PaginasConteudo } from '../components/PaginasConteudo'
 
 export function PlaceholderPage({ title, publicPage = false }: { title: string; publicPage?: boolean }) {
   return (
@@ -13,19 +14,23 @@ export function PlaceholderPage({ title, publicPage = false }: { title: string; 
 export function NotFoundPage() {
   return (
     <section className="status-page">
-      <Icon name="search_off" />
-      <h1>Página não encontrada</h1>
-      <Link to="/login">Voltar ao início</Link>
+      <PaginasConteudo rotulo="Página não encontrada">
+        <Icon name="search_off" />
+        <h1>Página não encontrada</h1>
+        <Link to="/login">Voltar ao início</Link>
+      </PaginasConteudo>
     </section>
   )
 }
 export function AccessDeniedPage() {
   return (
     <section className="status-page">
-      <Icon name="gpp_bad" />
-      <h1>Acesso não autorizado</h1>
-      <p>Você não possui permissão para acessar este recurso.</p>
-      <Link to="/dashboard">Ir ao painel</Link>
+      <PaginasConteudo rotulo="Acesso não autorizado">
+        <Icon name="gpp_bad" />
+        <h1>Acesso não autorizado</h1>
+        <p>Você não possui permissão para acessar este recurso.</p>
+        <Link to="/dashboard">Ir ao painel</Link>
+      </PaginasConteudo>
     </section>
   )
 }

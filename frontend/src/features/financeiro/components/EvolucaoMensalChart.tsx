@@ -19,17 +19,19 @@ export function EvolucaoMensalChart({ dados, carregando }: EvolucaoMensalChartPr
       {carregando ? (
         <LoadingState />
       ) : (
-        <ResponsiveContainer width="100%" height={260}>
-          <BarChart data={dadosDoGrafico}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="mes" />
-            <YAxis tickFormatter={(valor) => `R$ ${valor}`} />
-            <Tooltip formatter={(valor) => formatMoney(String(valor ?? 0))} />
-            <Legend />
-            <Bar dataKey="Receitas" fill="#16805c" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="Despesas" fill="#c93843" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="compact-chart">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={dadosDoGrafico}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="mes" />
+              <YAxis tickFormatter={(valor) => `R$ ${valor}`} />
+              <Tooltip formatter={(valor) => formatMoney(String(valor ?? 0))} />
+              <Legend />
+              <Bar dataKey="Receitas" fill="#16805c" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Despesas" fill="#c93843" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       )}
     </Card>
   )

@@ -102,23 +102,25 @@ export function DashboardPage() {
         <SecaoDashboard title="Receitas e despesas" to="/financeiro" query={financeiro}>
           {financeiro.data && (
             <>
-              <ResponsiveContainer width="100%" height={230}>
-                <BarChart
-                  data={financeiro.data.seisMeses.map((item) => ({
-                    mes: formatMonth(item.mes),
-                    Receitas: Number(item.receitas),
-                    Despesas: Number(item.despesas),
-                  }))}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="mes" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => formatMoney(String(value ?? 0))} />
-                  <Legend />
-                  <Bar dataKey="Receitas" fill="#16805c" />
-                  <Bar dataKey="Despesas" fill="#c93843" />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="compact-chart">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={financeiro.data.seisMeses.map((item) => ({
+                      mes: formatMonth(item.mes),
+                      Receitas: Number(item.receitas),
+                      Despesas: Number(item.despesas),
+                    }))}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="mes" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => formatMoney(String(value ?? 0))} />
+                    <Legend />
+                    <Bar dataKey="Receitas" fill="#16805c" />
+                    <Bar dataKey="Despesas" fill="#c93843" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
               <Table
                 caption="Receitas e despesas dos últimos seis meses"
                 columns={['Mês', 'Receitas', 'Despesas', 'Saldo']}

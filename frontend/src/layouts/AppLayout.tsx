@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Icon } from '../components/Icon'
 import { Logo } from '../components/Logo'
 import { ContextoTituloPagina } from '../components/TituloPagina'
+import { PaginasConteudo } from '../components/PaginasConteudo'
 import { useAuthSession } from '../features/auth/AuthSessionProvider'
 import { useToast } from '../components/ui'
 import { PainelNotificacoes } from '../features/notificacoes/components/PainelNotificacoes'
@@ -19,6 +20,7 @@ const navigation = [
   ['gestoes', 'history', 'Gestões', 'CONCLUIR_TRANSFERENCIA_GESTAO'],
 ]
 export function AppLayout() {
+  const localizacao = useLocation()
   const [open, setOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
   const [destinoTituloPagina, setDestinoTituloPagina] = useState<HTMLDivElement | null>(null)
@@ -58,14 +60,16 @@ export function AppLayout() {
       </button>
       <aside className={`sidebar ${open ? 'open' : ''}`}>
         <Logo />
-        <nav aria-label="Navegação principal">
-          {navigation.filter(permitted).map(([to, icon, label]) => (
-            <NavLink key={to} to={`/${to}`} onClick={() => setOpen(false)}>
-              <Icon name={icon} />
-              {label}
-            </NavLink>
-          ))}
-        </nav>
+        <PaginasConteudo rotulo="Menu principal" className="sidebar-pages">
+          <nav aria-label="Navegação principal">
+            {navigation.filter(permitted).map(([to, icon, label]) => (
+              <NavLink key={to} to={`/${to}`} onClick={() => setOpen(false)}>
+                <Icon name={icon} />
+                {label}
+              </NavLink>
+            ))}
+          </nav>
+        </PaginasConteudo>
       </aside>
       <main className="content" id="main-content" tabIndex={-1}>
         <header className="app-header">
@@ -91,7 +95,9 @@ export function AppLayout() {
           </div>
         </header>
         <ContextoTituloPagina.Provider value={destinoTituloPagina}>
-          <Outlet />
+          <PaginasConteudo key={localizacao.pathname} rotulo="Conteúdo da tela" className="screen-pages">
+            <Outlet />
+          </PaginasConteudo>
         </ContextoTituloPagina.Provider>
       </main>
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} />

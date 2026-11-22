@@ -60,26 +60,15 @@ a {
 }
 .brand {
   align-items: center;
-  color: #20293a;
   display: inline-flex;
-  font-size: 1.3rem;
-  font-weight: 800;
-  gap: 0.65rem;
-  letter-spacing: -0.04em;
+  justify-content: center;
   text-decoration: none;
 }
 .brand-mark {
-  align-items: center;
-  background: #6c5df6;
-  border-radius: 0.8rem;
-  color: #fff;
-  display: inline-flex;
-  font-size: 1rem;
-  font-weight: 800;
-  height: 2.9rem;
-  justify-content: center;
-  letter-spacing: 0;
-  width: 2.9rem;
+  display: block;
+  height: auto;
+  object-fit: contain;
+  width: 6.5rem;
 }
 .auth-layout {
   display: grid;
@@ -142,17 +131,11 @@ h2 {
   max-width: 39rem;
 }
 .brand-orbit {
-  align-items: center;
-  background: #6c5df6;
-  border: 3px solid #a9a2ff;
-  border-radius: 50%;
-  display: flex;
-  font-size: clamp(6rem, 13vw, 12rem);
-  font-weight: 800;
-  height: min(34vw, 19rem);
-  justify-content: center;
-  margin-top: 2rem;
-  width: min(34vw, 19rem);
+  display: block;
+  height: auto;
+  margin: 2rem auto 0;
+  object-fit: contain;
+  width: min(100%, 19rem);
 }
 .private-layout {
   display: grid;
@@ -162,9 +145,6 @@ h2 {
 .sidebar {
   background: #202b3b;
   padding: 1.5rem;
-}
-.sidebar .brand {
-  color: white;
 }
 .sidebar nav {
   display: grid;
@@ -1528,18 +1508,6 @@ h2 {
 h3 {
   letter-spacing: -0.02em;
 }
-.brand {
-  font-size: 1.28rem;
-  font-weight: 850;
-  letter-spacing: -0.045em;
-}
-.brand-mark {
-  background: var(--primary);
-  border-radius: 0.75rem;
-  box-shadow: 0 7px 15px rgb(109 93 252 / 0.2);
-  height: 2.85rem;
-  width: 2.85rem;
-}
 .auth-layout {
   background: #fff;
 }
@@ -1571,11 +1539,6 @@ h3 {
   background: var(--primary);
   box-shadow: 0 5px 12px rgb(109 93 252 / 0.28);
 }
-.brand-orbit {
-  background: var(--primary);
-  border-color: #aaa3ff;
-  box-shadow: none;
-}
 .private-layout {
   grid-template-columns: 16.25rem minmax(0, 1fr);
 }
@@ -1584,7 +1547,10 @@ h3 {
   padding: 1.5rem 1rem;
 }
 .sidebar .brand {
-  margin: 0 0.5rem;
+  width: 100%;
+}
+.sidebar .brand-mark {
+  width: 8rem;
 }
 .sidebar nav {
   gap: 0.2rem;
