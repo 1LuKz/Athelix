@@ -20,7 +20,7 @@ export function AuthLayout() {
           Vença.
         </h2>
         <p>Financeiro, eventos, equipes, patrimônio e documentos conectados em uma experiência simples.</p>
-        <img className="brand-orbit" src={brasaoAthletix} alt="" width={1254} height={1254} />
+        <img className="brand-orbit" src={brasaoAthletix} alt="" width={256} height={256} loading="eager" />
       </aside>
     </main>
   )
