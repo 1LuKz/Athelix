@@ -60,10 +60,7 @@ export function ParticipantesTab({
           <>
             {participantes.items.map((item) => (
               <tr key={item.id}>
-                <td>
-                  {item.nomeParticipante}
-                  {item.membroId && <small>Membro interno</small>}
-                </td>
+                <td>{item.nomeParticipante}</td>
                 <td>{item.emailParticipante ?? '—'}</td>
                 <td>
                   <Badge
@@ -80,36 +77,40 @@ export function ParticipantesTab({
                           variant="ghost"
                           loading={loadingId === item.id}
                           onClick={() => void changeStatus(item.id, 'CONFIRMADO', item.version)}
-                        >
-                          Confirmar
-                        </Button>
+                          icon="check_circle"
+                          iconOnly
+                          aria-label="Confirmar participante"
+                        />
                       )}
                       {item.status === 'CONFIRMADO' && (
                         <Button
                           variant="ghost"
                           loading={loadingId === item.id}
                           onClick={() => void changeStatus(item.id, 'PRESENTE', item.version)}
-                        >
-                          Marcar presença
-                        </Button>
+                          icon="how_to_reg"
+                          iconOnly
+                          aria-label="Marcar presença"
+                        />
                       )}
                       {item.status === 'PRESENTE' && (
                         <Button
                           variant="ghost"
                           loading={loadingId === item.id}
                           onClick={() => setCorrecting({ id: item.id, version: item.version })}
-                        >
-                          Corrigir presença
-                        </Button>
+                          icon="edit_note"
+                          iconOnly
+                          aria-label="Corrigir presença"
+                        />
                       )}
                       {item.status !== 'CANCELADO' && (
                         <Button
                           variant="ghost"
                           loading={loadingId === item.id}
                           onClick={() => void changeStatus(item.id, 'CANCELADO', item.version)}
-                        >
-                          Cancelar
-                        </Button>
+                          icon="block"
+                          iconOnly
+                          aria-label="Cancelar participação"
+                        />
                       )}
                     </div>
                   )}

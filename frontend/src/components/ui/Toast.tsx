@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useContext, useState } from 'react'
+import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from 'react'
 import { Icon } from '../Icon'
 
 type Toast = { id: number; kind: 'success' | 'error'; message: string }
@@ -7,19 +7,17 @@ const ToastContext = createContext<ToastContextValue | null>(null)
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [notificacoes, setNotificacoes] = useState<Toast[]>([])
+  const sequence = useRef(0)
+  const timers = useRef<ReturnType<typeof window.setTimeout>[]>([])
+  useEffect(() => () => timers.current.forEach(window.clearTimeout), [])
+  const remover = (id: number) => setNotificacoes((atuais) => atuais.filter((item) => item.id !== id))
   const adicionarNotificacao = (tipo: Toast['kind'], mensagem: string) => {
-    const identificador = Date.now()
+    const identificador = ++sequence.current
     setNotificacoes((notificacoesAtuais) => [
       ...notificacoesAtuais,
       { id: identificador, kind: tipo, message: mensagem },
     ])
-    window.setTimeout(
-      () =>
-        setNotificacoes((notificacoesAtuais) =>
-          notificacoesAtuais.filter((notificacao) => notificacao.id !== identificador),
-        ),
-      4500,
-    )
+    if (tipo === 'success') timers.current.push(window.setTimeout(() => remover(identificador), 6000))
   }
   return (
     <ToastContext.Provider
@@ -29,11 +27,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-      <div className="toasts" aria-live="polite">
+      <div className="toasts" aria-label="Mensagens do sistema">
         {notificacoes.map((notificacao) => (
           <div className={`toast ${notificacao.kind}`} key={notificacao.id}>
             <Icon name={notificacao.kind === 'success' ? 'check_circle' : 'error'} />
-            {notificacao.message}
+            <span role={notificacao.kind === 'error' ? 'alert' : 'status'}>{notificacao.message}</span>
+            <button
+              type="button"
+              className="toast-close"
+              aria-label="Dispensar mensagem"
+              onClick={() => remover(notificacao.id)}
+            >
+              <Icon name="close" />
+            </button>
           </div>
         ))}
       </div>

@@ -8,12 +8,25 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 class PageableFactoryTest {
 
   private final PageableFactory factory = new PageableFactory();
   private final Map<String, String> allowedSorts =
-      Map.of("name", "name", "createdAt", "createdAt", "id", "id");
+      Map.of(
+          "name",
+          "name",
+          "createdAt",
+          "createdAt",
+          "id",
+          "id",
+          "nome",
+          "name",
+          "criadaEm",
+          "createdAt",
+          "valor",
+          "amount");
 
   @Test
   void appliesDefaultPageSizeAndStableIdOrder() {
@@ -39,5 +52,81 @@ class PageableFactoryTest {
     assertThrows(
         InvalidSortException.class,
         () -> factory.create(new PageQuery(0, 20, List.of("password,asc")), allowedSorts));
+  }
+
+  @Test
+  void joinsSplitCreationFieldAndDescendingDirection() {
+    Pageable pageable =
+        factory.create(new PageQuery(0, 20, List.of("criadaEm", "desc")), allowedSorts);
+    assertEquals(Sort.by(Sort.Order.desc("createdAt"), Sort.Order.asc("id")), pageable.getSort());
+  }
+
+  @Test
+  void joinsSplitNameFieldAndAscendingDirection() {
+    Pageable pageable = factory.create(new PageQuery(0, 20, List.of("nome", "asc")), allowedSorts);
+    assertEquals(Sort.by(Sort.Order.asc("name"), Sort.Order.asc("id")), pageable.getSort());
+  }
+
+  @Test
+  void joinsMultipleSplitSortCriteriaInTheirOriginalOrder() {
+    Pageable pageable =
+        factory.create(new PageQuery(0, 20, List.of("nome", "asc", "valor", "desc")), allowedSorts);
+    assertEquals(
+        Sort.by(Sort.Order.asc("name"), Sort.Order.desc("amount"), Sort.Order.asc("id")),
+        pageable.getSort());
+  }
+
+  @Test
+  void defaultsFieldWithoutDirectionToAscending() {
+    Pageable pageable = factory.create(new PageQuery(0, 20, List.of("nome")), allowedSorts);
+    assertEquals(Sort.by(Sort.Order.asc("name"), Sort.Order.asc("id")), pageable.getSort());
+  }
+
+  @Test
+  void rejectsDirectionWithoutPrecedingField() {
+    InvalidSortException exception =
+        assertThrows(
+            InvalidSortException.class,
+            () -> factory.create(new PageQuery(0, 20, List.of("desc")), allowedSorts));
+    assertEquals("Ordenação não permitida: desc.", exception.getMessage());
+  }
+
+  @Test
+  void rejectsTwoConsecutiveDirections() {
+    InvalidSortException exception =
+        assertThrows(
+            InvalidSortException.class,
+            () ->
+                factory.create(new PageQuery(0, 20, List.of("nome", "asc", "desc")), allowedSorts));
+    assertEquals("Ordenação não permitida: desc.", exception.getMessage());
+  }
+
+  @Test
+  void rejectsUnknownFieldAfterRejoiningItsDirection() {
+    InvalidSortException exception =
+        assertThrows(
+            InvalidSortException.class,
+            () ->
+                factory.create(
+                    new PageQuery(0, 20, List.of("campoInexistente", "desc")), allowedSorts));
+    assertEquals("Ordenação não permitida: campoInexistente.", exception.getMessage());
+  }
+
+  @Test
+  void acceptsMixedGroupedCriteriaAndDirectionsWithSpacesAndMixedCase() {
+    Pageable pageable =
+        factory.create(new PageQuery(0, 20, List.of("nome,asc", "valor", " DeSc ")), allowedSorts);
+    assertEquals(
+        Sort.by(Sort.Order.asc("name"), Sort.Order.desc("amount"), Sort.Order.asc("id")),
+        pageable.getSort());
+  }
+
+  @Test
+  void preservesOriginalTextWhenRejectingOrphanDirection() {
+    InvalidSortException exception =
+        assertThrows(
+            InvalidSortException.class,
+            () -> factory.create(new PageQuery(0, 20, List.of(" DeSc ")), allowedSorts));
+    assertEquals("Ordenação não permitida:  DeSc .", exception.getMessage());
   }
 }

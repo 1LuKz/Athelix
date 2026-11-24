@@ -18,6 +18,7 @@ export type NotificacaoPage = {
 }
 export const notificacoesApi = {
   resumo: () => http<{ naoLidas: number }>('/notificacoes/resumo'),
-  listar: () => http<NotificacaoPage>('/notificacoes?apenasNaoLidas=false&page=0&size=20&sort=criadaEm,desc'),
+  listar: (page = 0, signal?: AbortSignal) =>
+    http<NotificacaoPage>(`/notificacoes?apenasNaoLidas=false&page=${page}&size=100&sort=criadaEm,desc`, { signal }),
   ler: (id: number) => http<Notificacao>(`/notificacoes/${id}/ler`, { method: 'PATCH' }),
 }

@@ -56,9 +56,13 @@ function TabelaCargos({ cargos, aoEditar }: { cargos: Cargo[]; aoEditar: (cargo:
             <Badge tone={cargo.ativo ? 'success' : 'neutral'}>{cargo.ativo ? 'Ativo' : 'Inativo'}</Badge>
           </td>
           <td>
-            <Button variant="secondary" onClick={() => aoEditar(cargo)}>
-              Editar
-            </Button>
+            <Button
+              variant="secondary"
+              icon="edit"
+              iconOnly
+              aria-label="Editar cargo"
+              onClick={() => aoEditar(cargo)}
+            />
           </td>
         </tr>
       ))}

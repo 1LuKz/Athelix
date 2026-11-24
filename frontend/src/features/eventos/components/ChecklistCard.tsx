@@ -1,4 +1,4 @@
-import { Card, LoadingState } from '../../../components/ui'
+import { Card, LoadingState, Table } from '../../../components/ui'
 import { enumLabel, statusTarefaLabels } from '../../../lib/labels'
 import type { ChecklistEvento, ChecklistItem } from '../types'
 
@@ -44,23 +44,28 @@ export function ChecklistCard({
               style={{ width: `${checklist.total === 0 ? 0 : checklist.progresso}%` }}
             />
           </div>
-          {checklist.itens.map((item) => (
-            <label className="check-item" key={item.id}>
-              <input
-                type="checkbox"
-                disabled={!podeGerenciar || togglingTask === item.id}
-                checked={item.concluida}
-                onChange={() => void onToggle(item)}
-              />
-              {item.titulo}
-              <small>
-                {item.atrasada
-                  ? `Atrasada · ${enumLabel(statusTarefaLabels, item.status)}`
-                  : enumLabel(statusTarefaLabels, item.status)}
-              </small>
-              {togglingTask === item.id && <span>Atualizando…</span>}
-            </label>
-          ))}
+          <Table caption="Checklist de tarefas" columns={['Tarefa', 'Situação']}>
+            {checklist.itens.map((item) => (
+              <tr key={item.id}>
+                <td>
+                  <label className="check-item">
+                    <input
+                      type="checkbox"
+                      disabled={!podeGerenciar || togglingTask === item.id}
+                      checked={item.concluida}
+                      onChange={() => void onToggle(item)}
+                    />
+                    {item.titulo}
+                  </label>
+                </td>
+                <td>
+                  {item.atrasada
+                    ? `Atrasada · ${enumLabel(statusTarefaLabels, item.status)}`
+                    : enumLabel(statusTarefaLabels, item.status)}
+                </td>
+              </tr>
+            ))}
+          </Table>
         </>
       )}
     </Card>

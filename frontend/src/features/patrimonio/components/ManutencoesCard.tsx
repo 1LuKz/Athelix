@@ -55,9 +55,13 @@ export function ManutencoesCard({
               </td>
               <td>
                 {podeGerenciar && !manutencao.concluidaEm && (
-                  <Button variant="secondary" onClick={() => solicitarConclusao(manutencao.id, manutencao.version)}>
-                    Concluir
-                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => solicitarConclusao(manutencao.id, manutencao.version)}
+                    icon="task_alt"
+                    iconOnly
+                    aria-label="Concluir manutenção"
+                  />
                 )}
               </td>
             </tr>

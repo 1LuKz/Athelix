@@ -1,4 +1,4 @@
-import { Input, Select } from '../../../components/ui'
+import { FilterTable, Button, Input, Select } from '../../../components/ui'
 import type { Departamento, StatusMembro } from '../types'
 
 type FiltrosMembrosProps = {
@@ -21,9 +21,10 @@ export function FiltrosMembros({
   aoAlterarStatus,
 }: FiltrosMembrosProps) {
   return (
-    <div className="filters">
+    <FilterTable>
       <Input
         label="Buscar"
+        type="search"
         placeholder="Nome, curso ou e-mail"
         value={buscaDigitada}
         onChange={(evento) => aoAlterarBusca(evento.target.value)}
@@ -50,6 +51,22 @@ export function FiltrosMembros({
         <option value="ATIVO">Ativo</option>
         <option value="INATIVO">Inativo</option>
       </Select>
-    </div>
+      {(buscaDigitada || departamentoId || status) && (
+        <div className="filter-reset">
+          <span>Filtros ativos</span>
+          <Button
+            variant="ghost"
+            icon="filter_alt_off"
+            onClick={() => {
+              aoAlterarBusca('')
+              aoAlterarDepartamento(undefined)
+              aoAlterarStatus(undefined)
+            }}
+          >
+            Limpar filtros
+          </Button>
+        </div>
+      )}
+    </FilterTable>
   )
 }

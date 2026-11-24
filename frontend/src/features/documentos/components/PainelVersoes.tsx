@@ -89,9 +89,13 @@ export function PainelVersoes({
                 <td>Membro #{versao.enviadoPorMembroId}</td>
                 <td>{versao.observacao ?? '—'}</td>
                 <td>
-                  <Button variant="secondary" onClick={() => void abrirVersao(versao)}>
-                    Visualizar PDF
-                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => void abrirVersao(versao)}
+                    icon="picture_as_pdf"
+                    iconOnly
+                    aria-label="Visualizar PDF"
+                  />
                 </td>
               </tr>
             ))}

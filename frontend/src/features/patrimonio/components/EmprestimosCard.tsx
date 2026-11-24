@@ -47,16 +47,20 @@ export function EmprestimosCard({
               <td>Membro #{emprestimo.membroResponsavelId}</td>
               <td>{emprestimo.quantidade}</td>
               <td>
-                {emprestimo.quantidadeDevolvida} <small>saldo: {emprestimo.saldoAberto}</small>
+                {emprestimo.quantidadeDevolvida} · Saldo: {emprestimo.saldoAberto}
               </td>
               <td>
                 {emprestimo.devolucaoPrevistaEm ? formatDateTime(emprestimo.devolucaoPrevistaEm, fusoHorario) : '—'}
               </td>
               <td>
                 {podeGerenciar && emprestimo.saldoAberto > 0 && (
-                  <Button variant="secondary" onClick={() => setEmprestimoSelecionadoId(emprestimo.id)}>
-                    Registrar devolução
-                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setEmprestimoSelecionadoId(emprestimo.id)}
+                    icon="assignment_return"
+                    iconOnly
+                    aria-label="Registrar devolução"
+                  />
                 )}
               </td>
             </tr>

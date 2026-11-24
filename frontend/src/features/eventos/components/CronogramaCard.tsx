@@ -15,6 +15,7 @@ import {
   Modal,
   Select,
   Textarea,
+  Table,
   useToast,
 } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
@@ -85,18 +86,16 @@ export function CronogramaCard({
       }
     >
       {atividades.length ? (
-        <div className="event-list">
+        <Table caption="Cronograma do evento" columns={['Atividade', 'Início', 'Fim', 'Ordem', 'Situação', 'Ações']}>
           {atividades.map((atividade) => (
-            <article className="event-list-item" key={atividade.id}>
-              <div>
-                <strong>{atividade.titulo}</strong>
-                <small>
-                  {formatDateTime(atividade.inicio, timeZone)}
-                  {atividade.fim && ` até ${formatDateTime(atividade.fim, timeZone)}`} · Ordem {atividade.ordem}
-                </small>
-                {atividade.descricao && <p>{atividade.descricao}</p>}
-              </div>
-              <div className="event-list-actions">
+            <tr key={atividade.id}>
+              <td>
+                <strong title={atividade.descricao ?? undefined}>{atividade.titulo}</strong>
+              </td>
+              <td>{formatDateTime(atividade.inicio, timeZone)}</td>
+              <td>{atividade.fim ? formatDateTime(atividade.fim, timeZone) : '—'}</td>
+              <td>{atividade.ordem}</td>
+              <td>
                 <Badge
                   tone={
                     atividade.status === 'CONCLUIDO'
@@ -108,20 +107,32 @@ export function CronogramaCard({
                 >
                   {statusLabels[atividade.status]}
                 </Badge>
-                {podeGerenciar && (
-                  <>
-                    <Button variant="ghost" icon="edit" onClick={() => setEditing(atividade)}>
-                      Editar
-                    </Button>
-                    <Button variant="ghost" icon="delete" onClick={() => setRemoving(atividade)}>
-                      Remover
-                    </Button>
-                  </>
-                )}
-              </div>
-            </article>
+              </td>
+              <td>
+                <div className="row-actions">
+                  {podeGerenciar && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        icon="edit"
+                        onClick={() => setEditing(atividade)}
+                        iconOnly
+                        aria-label="Editar atividade"
+                      />
+                      <Button
+                        variant="ghost"
+                        icon="delete"
+                        onClick={() => setRemoving(atividade)}
+                        iconOnly
+                        aria-label="Remover atividade"
+                      />
+                    </>
+                  )}
+                </div>
+              </td>
+            </tr>
           ))}
-        </div>
+        </Table>
       ) : (
         <EmptyState title="Sem atividades" description="Adicione os momentos importantes do evento." />
       )}

@@ -1,3 +1,4 @@
+import { carregarColecao } from '../../../lib/carregarColecao'
 import { useQuery } from '@tanstack/react-query'
 import { useToast } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
@@ -20,7 +21,8 @@ export function useMembrosResponsaveis() {
   const { activeVinculo } = useAuthSession()
   return useQuery({
     queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'membros-ativos-patrimonio'),
-    queryFn: ({ signal }) => membrosApi.list({ page: 0, size: 100, status: 'ATIVO' }, signal),
+    queryFn: ({ signal }) =>
+      carregarColecao((page) => membrosApi.list({ page, size: 100, status: 'ATIVO' }, signal), signal),
   })
 }
 

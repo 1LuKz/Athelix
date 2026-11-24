@@ -1,7 +1,7 @@
-import { type ReactNode, useEffect, useRef } from 'react'
+import { Children, cloneElement, isValidElement, type ReactNode, useEffect, useId, useRef } from 'react'
 import { Icon } from '../Icon'
 import { createPortal } from 'react-dom'
-import { PaginasConteudo } from '../PaginasConteudo'
+import { FormContent, FormFields } from './FormFields'
 
 const seletorElementosFocaveis = [
   'button:not([disabled])',
@@ -26,13 +26,20 @@ export function Modal({
   footer?: ReactNode
 }) {
   const dialogo = useRef<HTMLDivElement>(null)
+  const titleId = useId()
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
 
   useEffect(() => {
     if (!open) return
     const elementoAnterior = document.activeElement as HTMLElement | null
     const tratarTecla = (evento: KeyboardEvent) => {
       if (evento.key === 'Escape') {
-        onClose()
+        evento.preventDefault()
+        evento.stopPropagation()
+        onCloseRef.current()
         return
       }
       if (evento.key !== 'Tab') return
@@ -45,7 +52,10 @@ export function Modal({
       }
       const primeiroElemento = elementosFocaveis[0]
       const ultimoElemento = elementosFocaveis[elementosFocaveis.length - 1]
-      if (evento.shiftKey && document.activeElement === primeiroElemento) {
+      if (!elementosFocaveis.includes(document.activeElement as HTMLElement)) {
+        evento.preventDefault()
+        ;(evento.shiftKey ? ultimoElemento : primeiroElemento).focus()
+      } else if (evento.shiftKey && document.activeElement === primeiroElemento) {
         evento.preventDefault()
         ultimoElemento.focus()
       } else if (!evento.shiftKey && document.activeElement === ultimoElemento) {
@@ -54,18 +64,24 @@ export function Modal({
       }
     }
     document.addEventListener('keydown', tratarTecla)
-    window.setTimeout(
+    const focoInicial = window.setTimeout(
       () =>
         (
-          dialogo.current?.querySelector<HTMLElement>('button, input, select, textarea, [href]') ?? dialogo.current
+          dialogo.current?.querySelector<HTMLElement>(
+            'input:not([disabled]), select:not([disabled]), textarea:not([disabled])',
+          ) ??
+          dialogo.current?.querySelector<HTMLElement>('.table-scroll') ??
+          dialogo.current?.querySelector<HTMLElement>('.modal-body') ??
+          dialogo.current
         )?.focus(),
       0,
     )
     return () => {
       document.removeEventListener('keydown', tratarTecla)
+      window.clearTimeout(focoInicial)
       elementoAnterior?.focus()
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
 
@@ -75,21 +91,32 @@ export function Modal({
         className="modal"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="modal-title"
+        aria-labelledby={titleId}
         tabIndex={-1}
         ref={dialogo}
         onMouseDown={(evento) => evento.stopPropagation()}
       >
         <header>
-          <h2 id="modal-title">{title}</h2>
+          <h2 id={titleId}>{title}</h2>
           <button className="icon-button" type="button" onClick={onClose} aria-label="Fechar">
             <Icon name="close" />
           </button>
         </header>
-        <div className="modal-body">
-          <PaginasConteudo rotulo={title} ajustarAltura>
-            {children}
-          </PaginasConteudo>
+        <div className="modal-body" role="region" aria-label={`Conteúdo de ${title}`} tabIndex={-1}>
+          {Children.map(children, (child) => {
+            if (!isValidElement<{ children?: ReactNode; className?: string }>(child)) {
+              return child
+            }
+            if (child.props.className?.split(' ').includes('form-grid')) {
+              return <FormFields>{child.props.children}</FormFields>
+            }
+            if (child.type !== 'form') return child
+            return cloneElement(
+              child,
+              { className: `${child.props.className ?? ''} form-with-table` },
+              <FormContent>{child.props.children}</FormContent>,
+            )
+          })}
         </div>
         {footer && <footer>{footer}</footer>}
       </div>

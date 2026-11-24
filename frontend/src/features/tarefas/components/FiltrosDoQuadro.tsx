@@ -1,4 +1,4 @@
-import { Card, Select } from '../../../components/ui'
+import { FilterTable, Button, Card, Select } from '../../../components/ui'
 import type { Evento } from '../../eventos/api'
 import type { Membro } from '../../membros/types'
 import type { FiltrosTarefas } from '../hooks/useTarefas'
@@ -13,7 +13,7 @@ type FiltrosDoQuadroProps = {
 export function FiltrosDoQuadro({ filtros, eventos, membros, onChange }: FiltrosDoQuadroProps) {
   return (
     <Card>
-      <div className="filters">
+      <FilterTable>
         <Select
           label="Evento"
           value={filtros.eventoId}
@@ -48,7 +48,19 @@ export function FiltrosDoQuadro({ filtros, eventos, membros, onChange }: Filtros
           <option value="MEDIA">Média</option>
           <option value="BAIXA">Baixa</option>
         </Select>
-      </div>
+        {(filtros.eventoId || filtros.responsavelMembroId || filtros.prioridade) && (
+          <div className="filter-reset">
+            <span>Filtros ativos</span>
+            <Button
+              variant="ghost"
+              icon="filter_alt_off"
+              onClick={() => onChange({ ...filtros, eventoId: '', responsavelMembroId: '', prioridade: '' })}
+            >
+              Limpar filtros
+            </Button>
+          </div>
+        )}
+      </FilterTable>
     </Card>
   )
 }

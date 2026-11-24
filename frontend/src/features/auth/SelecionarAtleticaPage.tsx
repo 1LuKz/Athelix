@@ -1,6 +1,6 @@
 import { perfilAcessoLabels } from '../../lib/labels'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { Button, LoadingState, useToast } from '../../components/ui'
+import { Button, Table, LoadingState, useToast } from '../../components/ui'
 import { useAuthSession } from './AuthSessionProvider'
 import { errorFeedback } from '../../lib/errorFeedback'
 
@@ -23,17 +23,24 @@ export function SelecionarAtleticaPage() {
     <section className="auth-card selection-card">
       <h1>Escolha sua atlética</h1>
       <p>Selecione o vínculo que deseja usar nesta sessão.</p>
-      <div className="atletica-options">
+      <Table caption="Atléticas disponíveis" columns={['Atlética', 'Perfil', 'Ação']}>
         {state.vinculosAtivos.map((vinculo) => (
-          <article key={vinculo.membroId}>
-            <div>
+          <tr key={vinculo.membroId}>
+            <td>
               <strong>{vinculo.atleticaNome}</strong>
-              <span>{perfilAcessoLabels[vinculo.perfilAcesso]}</span>
-            </div>
-            <Button onClick={() => void escolher(vinculo.membroId)}>Acessar</Button>
-          </article>
+            </td>
+            <td>{perfilAcessoLabels[vinculo.perfilAcesso]}</td>
+            <td>
+              <Button
+                icon="login"
+                iconOnly
+                aria-label={`Acessar ${vinculo.atleticaNome}`}
+                onClick={() => void escolher(vinculo.membroId)}
+              />
+            </td>
+          </tr>
         ))}
-      </div>
+      </Table>
     </section>
   )
 }

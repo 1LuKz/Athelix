@@ -1,7 +1,8 @@
+import { carregarColecao } from '../../../lib/carregarColecao'
 import { areaResponsabilidadeLabels } from '../../../lib/labels'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Button, Card, ConfirmDialog, EmptyState, Select, useToast } from '../../../components/ui'
+import { Button, Card, ConfirmDialog, EmptyState, Select, Table, useToast } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
 import { membrosApi } from '../../membros/api'
 import { detalheEventoApi } from '../detalheApi'
@@ -24,7 +25,8 @@ export function ResponsaveisCard({
 }) {
   const members = useQuery({
     queryKey: ['membros-ativos-para-evento'],
-    queryFn: () => membrosApi.list({ status: 'ATIVO', page: 0, size: 100 }),
+    queryFn: ({ signal }) =>
+      carregarColecao((page) => membrosApi.list({ status: 'ATIVO', page, size: 100 }, signal), signal),
     enabled: podeGerenciar,
   })
   const [selected, setSelected] = useState<Partial<Record<AreaResponsabilidadeEvento, string>>>({})
@@ -70,48 +72,57 @@ export function ResponsaveisCard({
       {podeGerenciar && members.isError && (
         <p className="form-note">Não foi possível carregar os membros ativos para a designação.</p>
       )}
-      <div className="responsibility-list">
+      <Table caption="Responsáveis pelo evento" columns={['Área', 'Responsável', 'Ações']}>
         {areas.map((area) => {
           const current = responsaveis.find((item) => item.area === area.id && item.ativa)
           return (
-            <section className="responsibility-item" key={area.id}>
-              <div>
+            <tr key={area.id}>
+              <td>
                 <strong>{area.label}</strong>
-                <p>{current?.membroNome ?? 'Não definido'}</p>
-              </div>
-              {podeGerenciar && (
-                <div className="responsibility-actions">
-                  <Select
-                    label={`Membro para ${area.label}`}
-                    value={selected[area.id] ?? ''}
-                    onChange={(event) => setSelected({ ...selected, [area.id]: event.target.value })}
-                  >
-                    <option value="">Selecione um membro ativo</option>
-                    {members.data?.items.map((member) => (
-                      <option key={member.id} value={member.id}>
-                        {member.nome}
-                      </option>
-                    ))}
-                  </Select>
-                  <Button
-                    variant="secondary"
-                    loading={loadingArea === area.id}
-                    disabled={!selected[area.id]}
-                    onClick={() => void assign(area.id)}
-                  >
-                    {current ? 'Substituir' : 'Designar'}
-                  </Button>
-                  {current && (
-                    <Button variant="ghost" loading={loadingArea === area.id} onClick={() => setRemoving(current)}>
-                      Remover
-                    </Button>
-                  )}
-                </div>
-              )}
-            </section>
+              </td>
+              <td>{current?.membroNome ?? 'Não definido'}</td>
+              <td>
+                {podeGerenciar && (
+                  <div className="row-actions responsibility-actions">
+                    <Select
+                      label={`Membro para ${area.label}`}
+                      hideLabel
+                      value={selected[area.id] ?? ''}
+                      onChange={(event) => setSelected({ ...selected, [area.id]: event.target.value })}
+                    >
+                      <option value="">Selecione um membro ativo</option>
+                      {members.data?.items.map((member) => (
+                        <option key={member.id} value={member.id}>
+                          {member.nome}
+                        </option>
+                      ))}
+                    </Select>
+                    <Button
+                      variant="secondary"
+                      loading={loadingArea === area.id}
+                      disabled={!selected[area.id]}
+                      onClick={() => void assign(area.id)}
+                      iconOnly
+                      icon={current ? 'swap_horiz' : 'person_add'}
+                      aria-label={current ? 'Substituir responsável' : 'Designar responsável'}
+                    />
+                    {current && (
+                      <Button
+                        variant="ghost"
+                        loading={loadingArea === area.id}
+                        onClick={() => setRemoving(current)}
+                        icon="delete"
+                        iconOnly
+                        aria-label="Remover responsável"
+                      />
+                    )}
+                  </div>
+                )}
+              </td>
+            </tr>
           )
         })}
-      </div>
+      </Table>
       {!podeGerenciar && !responsaveis.length && <EmptyState title="Sem responsáveis definidos" />}
       <ConfirmDialog
         open={Boolean(removing)}

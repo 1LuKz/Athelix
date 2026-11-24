@@ -161,7 +161,12 @@ Os resumos financeiros para associados não devem expor dados pessoais de contra
 - A página é indexada a partir de zero.
 - O tamanho padrão é 20 e o máximo é 100.
 - A resposta contém `items`, `page`, `size`, `totalItems` e `totalPages`.
-- Cada endpoint declara explicitamente os campos aceitos por `sort=campo,direcao`. A ordenação sempre recebe `id` como critério final para manter estabilidade.
+- Cada endpoint declara explicitamente os campos aceitos por `sort`.
+- Cada critério usa `sort=campo` (direção padrão `asc`) ou `sort=campo,asc|desc`.
+  Para combinar critérios, repita o parâmetro: `sort=campo,asc&sort=outroCampo,desc`.
+  A direção ignora maiúsculas e espaços ao redor; uma direção isolada ou duas direções seguidas são inválidas.
+- A ordem dos critérios é preservada, com `id` como desempate final quando não informado.
+  Campos não permitidos ou critérios inválidos retornam HTTP 400 com código `INVALID_SORT`.
 
 ## Operação, privacidade e retenção
 

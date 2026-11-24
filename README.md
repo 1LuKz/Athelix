@@ -149,3 +149,4 @@ A política inicial é reter o histórico operacional e de auditoria enquanto ho
 - [Regras de negócio](docs/regras-de-negocio.md)
 - [Guia de desenvolvimento](docs/athletix-guia-de-desenvolvimento.md)
 - [Arquitetura](docs/arquitetura.md)
+- [Padrões de UI/UX](docs/ui-ux.md)

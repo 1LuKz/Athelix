@@ -15,7 +15,6 @@ type ListaMembrosProps = {
   aoAlterarBusca: (busca: string) => void
   aoAlterarDepartamento: (departamentoId: number | undefined) => void
   aoAlterarStatus: (status: StatusMembro | undefined) => void
-  aoAlterarPagina: (pagina: number) => void
   aoEditarMembro: (membro: Membro) => void
   aoAprovarMembro: (membro: Membro) => void
   aoInativarMembro: (membro: Membro) => void
@@ -33,7 +32,6 @@ export function ListaMembros({
   aoAlterarBusca,
   aoAlterarDepartamento,
   aoAlterarStatus,
-  aoAlterarPagina,
   aoEditarMembro,
   aoAprovarMembro,
   aoInativarMembro,
@@ -58,7 +56,6 @@ export function ListaMembros({
         <TabelaMembros
           paginaMembros={membros}
           administrador={administrador}
-          aoAlterarPagina={aoAlterarPagina}
           aoEditarMembro={aoEditarMembro}
           aoAprovarMembro={aoAprovarMembro}
           aoInativarMembro={aoInativarMembro}

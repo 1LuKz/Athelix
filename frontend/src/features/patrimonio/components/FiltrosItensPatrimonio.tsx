@@ -1,4 +1,4 @@
-import { Input, Select } from '../../../components/ui'
+import { FilterTable, Input, Select } from '../../../components/ui'
 import type { useCategoriasPatrimonio } from '../hooks/usePatrimonioQueries'
 import type { FiltrosPatrimonio } from '../types'
 
@@ -10,7 +10,7 @@ type FiltrosItensPatrimonioProps = {
 
 export function FiltrosItensPatrimonio({ categorias, filtros, onAlterarFiltro }: FiltrosItensPatrimonioProps) {
   return (
-    <div className="filters patrimonio-filters">
+    <FilterTable>
       <Input
         label="Buscar por nome"
         value={filtros.nome}
@@ -49,6 +49,6 @@ export function FiltrosItensPatrimonio({ categorias, filtros, onAlterarFiltro }:
         <option value="EMPRESTADO">Emprestado</option>
         <option value="EM_MANUTENCAO">Em manutenção</option>
       </Select>
-    </div>
+    </FilterTable>
   )
 }

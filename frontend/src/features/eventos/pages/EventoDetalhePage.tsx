@@ -3,7 +3,7 @@ import { formatDateTime } from '../../../lib/format'
 import { statusEventoLabels } from '../../../lib/labels'
 import { useAtleticaTimeZone } from '../../auth/AuthSessionProvider'
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Badge, Button, ErrorState, LoadingState, Tabs, useToast } from '../../../components/ui'
 import { MotivoDialog } from '../../../components/MotivoDialog'
@@ -27,9 +27,11 @@ function exigeMotivoRetorno(statusAtual: StatusTarefaChecklist, proximoStatus: S
 export function EventoDetalhePage() {
   const timeZone = useAtleticaTimeZone()
   const { id = '' } = useParams()
+  const [searchParams] = useSearchParams()
   const { state } = useAuthSession()
   const podeGerenciar = state?.capacidades.includes('GERENCIAR_EVENTOS_E_TAREFAS') ?? false
   const [tab, setTab] = useState('visao')
+  const [painelAtivo, setPainelAtivo] = useState('cronograma')
   const [editing, setEditing] = useState(false)
   const [togglingTask, setTogglingTask] = useState<number | null>(null)
   const [retornoChecklist, setRetornoChecklist] = useState<ChecklistItem | null>(null)
@@ -70,7 +72,7 @@ export function EventoDetalhePage() {
   const current = evento.data
   return (
     <>
-      <Link className="back-link" to="/eventos">
+      <Link className="back-link" to={`/eventos${searchParams.size ? `?${searchParams}` : ''}`}>
         ← Eventos
       </Link>
       <div className="event-detail-head">
@@ -97,40 +99,64 @@ export function EventoDetalhePage() {
         ]}
       />
       {tab === 'visao' && (
-        <div className="detail-grid">
-          {cronograma.isError ? (
-            <ErrorState message={errorFeedback(cronograma.error)} onRetry={() => void cronograma.refetch()} />
-          ) : (
-            <CronogramaCard
-              eventoId={id}
-              atividades={cronograma.data ?? []}
-              podeGerenciar={podeGerenciar}
-              onChanged={invalidateEvent}
-            />
+        <>
+          <Tabs
+            active={painelAtivo}
+            onChange={setPainelAtivo}
+            tabs={[
+              { id: 'cronograma', label: 'Cronograma' },
+              { id: 'responsaveis', label: 'Responsáveis' },
+              { id: 'checklist', label: 'Checklist' },
+              { id: 'financeiro', label: 'Resumo financeiro' },
+            ]}
+          />
+          {painelAtivo === 'cronograma' && (
+            <>
+              {cronograma.isError ? (
+                <ErrorState message={errorFeedback(cronograma.error)} onRetry={() => void cronograma.refetch()} />
+              ) : (
+                <CronogramaCard
+                  eventoId={id}
+                  atividades={cronograma.data ?? []}
+                  podeGerenciar={podeGerenciar}
+                  onChanged={invalidateEvent}
+                />
+              )}
+            </>
           )}
-          {responsaveis.isError ? (
-            <ErrorState message={errorFeedback(responsaveis.error)} onRetry={() => void responsaveis.refetch()} />
-          ) : (
-            <ResponsaveisCard
-              eventoId={id}
-              responsaveis={responsaveis.data ?? []}
-              podeGerenciar={podeGerenciar}
-              onChanged={invalidateEvent}
-            />
+          {painelAtivo === 'responsaveis' && (
+            <>
+              {responsaveis.isError ? (
+                <ErrorState message={errorFeedback(responsaveis.error)} onRetry={() => void responsaveis.refetch()} />
+              ) : (
+                <ResponsaveisCard
+                  eventoId={id}
+                  responsaveis={responsaveis.data ?? []}
+                  podeGerenciar={podeGerenciar}
+                  onChanged={invalidateEvent}
+                />
+              )}
+            </>
           )}
-          {checklist.isError ? (
-            <ErrorState message={errorFeedback(checklist.error)} onRetry={() => void checklist.refetch()} />
-          ) : (
-            <ChecklistCard
-              checklist={checklist.data}
-              loading={checklist.isLoading}
-              podeGerenciar={podeGerenciar}
-              togglingTask={togglingTask}
-              onToggle={toggleChecklist}
-            />
+          {painelAtivo === 'checklist' && (
+            <>
+              {checklist.isError ? (
+                <ErrorState message={errorFeedback(checklist.error)} onRetry={() => void checklist.refetch()} />
+              ) : (
+                <ChecklistCard
+                  checklist={checklist.data}
+                  loading={checklist.isLoading}
+                  podeGerenciar={podeGerenciar}
+                  togglingTask={togglingTask}
+                  onToggle={toggleChecklist}
+                />
+              )}
+            </>
           )}
-          <FinanceiroEventoCard resumo={financeiro.data} loading={financeiro.isLoading} />
-        </div>
+          {painelAtivo === 'financeiro' && (
+            <FinanceiroEventoCard resumo={financeiro.data} loading={financeiro.isLoading} />
+          )}
+        </>
       )}
       {tab === 'participantes' &&
         (participantes.isError ? (

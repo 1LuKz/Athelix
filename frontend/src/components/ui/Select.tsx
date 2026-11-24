@@ -2,18 +2,19 @@ import { type ReactNode, useId } from 'react'
 
 type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
   label: string
+  hideLabel?: boolean
   hint?: string
   error?: string
   children: ReactNode
 }
 
-export function Select({ label, hint, error, id: idFornecido, children, ...props }: SelectProps) {
+export function Select({ label, hideLabel = false, hint, error, id: idFornecido, children, ...props }: SelectProps) {
   const identificadorGerado = useId()
   const identificador = idFornecido ?? identificadorGerado
   const detalhe = error || hint
 
   return (
-    <label className="field" htmlFor={identificador}>
+    <label className={`field${hideLabel ? ' field-label-hidden' : ''}`} htmlFor={identificador}>
       <span>{label}</span>
       <select
         id={identificador}

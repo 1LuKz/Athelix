@@ -29,12 +29,20 @@ export function SolicitacoesVinculo({ solicitacoes, carregando, aoDecidir }: Sol
             <td>
               {solicitacao.status === 'PENDENTE' && (
                 <div className="row-actions">
-                  <Button variant="ghost" onClick={() => aoDecidir(solicitacao, 'APROVAR')}>
-                    Aprovar
-                  </Button>
-                  <Button variant="ghost" onClick={() => aoDecidir(solicitacao, 'REJEITAR')}>
-                    Rejeitar
-                  </Button>
+                  <Button
+                    variant="ghost"
+                    icon="check_circle"
+                    iconOnly
+                    aria-label="Aprovar solicitação"
+                    onClick={() => aoDecidir(solicitacao, 'APROVAR')}
+                  />
+                  <Button
+                    variant="ghost"
+                    icon="cancel"
+                    iconOnly
+                    aria-label="Rejeitar solicitação"
+                    onClick={() => aoDecidir(solicitacao, 'REJEITAR')}
+                  />
                 </div>
               )}
             </td>

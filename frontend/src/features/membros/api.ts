@@ -28,7 +28,8 @@ export const membrosApi = {
     http<Membro>(`/membros/${id}/inativar`, { method: 'PATCH', body: { version } }),
   exportar: (filters: { busca?: string; departamentoId?: number; status?: StatusMembro }) =>
     http<string>(`/membros/exportacao${query(filters)}`),
-  solicitacoes: () => http<Page<SolicitacaoVinculo>>('/membros/solicitacoes-vinculo?page=0&size=20'),
+  solicitacoes: (page = 0, signal?: AbortSignal) =>
+    http<Page<SolicitacaoVinculo>>(`/membros/solicitacoes-vinculo?page=${page}&size=100`, { signal }),
   decidir: (id: number, body: Record<string, unknown>) =>
     http<SolicitacaoVinculo>(`/membros/solicitacoes-vinculo/${id}/decisao`, { method: 'PATCH', body }),
 }

@@ -1,6 +1,5 @@
 import { Badge, Card, EmptyState, ErrorState, LoadingState, Table } from '../../../components/ui'
 import { formatDate, formatMoney } from '../../../lib/format'
-import { enumLabel, statusAprovacaoLabels } from '../../../lib/labels'
 import type { ContaAberta } from '../api'
 
 type ContasAPagarEReceberProps = {
@@ -36,7 +35,6 @@ function TabelaContasAbertas({ contas }: { contas: ContaAberta[] }) {
           <td>{formatMoney(conta.valor)}</td>
           <td>
             <Badge tone={conta.atrasada ? 'danger' : 'warning'}>{conta.atrasada ? 'Vencida' : 'Em aberto'}</Badge>
-            <small>{enumLabel(statusAprovacaoLabels, conta.statusAprovacao)}</small>
           </td>
         </tr>
       ))}

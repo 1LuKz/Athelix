@@ -29,7 +29,6 @@ export function PatrimonioPage() {
   const { activeVinculo, state } = useAuthSession()
   const clienteDeConsultas = useQueryClient()
   const [abaAtiva, setAbaAtiva] = useState<AbaPatrimonio>('itens')
-  const [paginaAtual, setPaginaAtual] = useState(0)
   const [modalAberto, setModalAberto] = useState<ModalPatrimonio>(null)
   const [itemEmEdicao, setItemEmEdicao] = useState<Item | null>(null)
   const [filtros, setFiltros] = useState<FiltrosPatrimonio>({
@@ -42,7 +41,7 @@ export function PatrimonioPage() {
   const possuiVinculoAtivo = Boolean(activeVinculo)
   const resumo = useResumoPatrimonio(activeVinculo?.atleticaId, possuiVinculoAtivo)
   const categorias = useCategoriasPatrimonio(activeVinculo?.atleticaId, possuiVinculoAtivo)
-  const itens = useItensPatrimonio(activeVinculo?.atleticaId, filtros, paginaAtual, possuiVinculoAtivo)
+  const itens = useItensPatrimonio(activeVinculo?.atleticaId, filtros, possuiVinculoAtivo)
   const emprestimos = useEmprestimos(activeVinculo?.atleticaId, possuiVinculoAtivo && abaAtiva === 'emprestimos')
   const manutencoes = useManutencoes(activeVinculo?.atleticaId, possuiVinculoAtivo && abaAtiva === 'manutencoes')
   const conferencias = useConferenciasPatrimonio(activeVinculo?.atleticaId, possuiVinculoAtivo, abaAtiva)
@@ -53,7 +52,6 @@ export function PatrimonioPage() {
 
   const alterarFiltro = (campo: keyof FiltrosPatrimonio, valor: string) => {
     setFiltros({ ...filtros, [campo]: valor })
-    setPaginaAtual(0)
   }
 
   const fecharModalEAAtualizarDados = async () => {
@@ -88,7 +86,6 @@ export function PatrimonioPage() {
           categorias={categorias.data}
           filtros={filtros}
           itens={itens}
-          paginaAtual={paginaAtual}
           podeGerenciar={podeGerenciar}
           onAlterarFiltro={alterarFiltro}
           onEditarItem={(item) => {
@@ -96,7 +93,6 @@ export function PatrimonioPage() {
             setModalAberto('item')
           }}
           onAbrirModal={setModalAberto}
-          onMudarPagina={setPaginaAtual}
         />
       )}
       {abaAtiva === 'emprestimos' && (

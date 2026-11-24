@@ -44,7 +44,8 @@ export const detalheEventoApi = {
     http<void>(`/eventos/${eventoId}/responsaveis/${responsabilidadeId}?version=${version}`, { method: 'DELETE' }),
   checklist: (id: string) => http<ChecklistEvento>(`/eventos/${id}/checklist`),
   financeiro: (id: string) => http<ResumoFinanceiroEvento>(`/eventos/${id}/financeiro/resumo`),
-  participantes: (id: string) => http<PageParticipacaoEvento>(`/eventos/${id}/participacoes?page=0&size=50`),
+  participantes: (id: string, page = 0, signal?: AbortSignal) =>
+    http<PageParticipacaoEvento>(`/eventos/${id}/participacoes?page=${page}&size=100`, { signal }),
   criarParticipacao: (id: string, body: { membroId?: number; nomeParticipante?: string; emailParticipante?: string }) =>
     http<ParticipacaoEvento>(`/eventos/${id}/participacoes`, { method: 'POST', body }),
   atualizarParticipacao: (

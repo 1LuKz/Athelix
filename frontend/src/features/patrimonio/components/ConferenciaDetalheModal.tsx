@@ -88,9 +88,10 @@ export function ConferenciaDetalheModal({ conferencia, podeGerenciar, onClose, o
                           version: itemConferencia.version,
                         })
                       }
-                    >
-                      Conferir
-                    </Button>
+                      icon="fact_check"
+                      iconOnly
+                      aria-label="Conferir item"
+                    />
                   )}
                 </td>
               </tr>

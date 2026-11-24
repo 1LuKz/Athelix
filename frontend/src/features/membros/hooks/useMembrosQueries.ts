@@ -1,3 +1,4 @@
+import { carregarColecao } from '../../../lib/carregarColecao'
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '../../../lib/query'
 import { useAuthSession } from '../../auth/AuthSessionProvider'
@@ -22,7 +23,8 @@ export function useMembrosQueries({
   const atleticaId = activeVinculo?.atleticaId
   const membros = useQuery({
     queryKey: queryKeys.scoped(atleticaId, 'membros', filtros),
-    queryFn: ({ signal }) => membrosApi.list(filtros, signal),
+    queryFn: ({ signal }) =>
+      carregarColecao((page) => membrosApi.list({ ...filtros, page, size: 100 }, signal), signal),
     enabled: possuiVinculoAtivo,
   })
   const cargos = useQuery({
@@ -37,7 +39,7 @@ export function useMembrosQueries({
   })
   const solicitacoes = useQuery({
     queryKey: queryKeys.scoped(atleticaId, 'solicitacoes-vinculo'),
-    queryFn: membrosApi.solicitacoes,
+    queryFn: ({ signal }) => carregarColecao((page) => membrosApi.solicitacoes(page, signal), signal),
     enabled: administrador && abaAtiva === 'solicitacoes',
   })
 

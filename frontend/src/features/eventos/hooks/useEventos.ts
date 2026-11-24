@@ -1,10 +1,9 @@
+import { carregarColecao } from '../../../lib/carregarColecao'
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '../../../lib/query'
 import { eventosApi } from '../api'
 
 type FiltrosEventos = {
-  page: number
-  size: number
   grupoStatus?: string
   status?: string
 }
@@ -12,7 +11,8 @@ type FiltrosEventos = {
 export function useEventos(atleticaId: number | undefined, filtros: FiltrosEventos) {
   return useQuery({
     queryKey: queryKeys.scoped(atleticaId, 'eventos', filtros),
-    queryFn: ({ signal }) => eventosApi.list(filtros, signal),
+    queryFn: ({ signal }) =>
+      carregarColecao((page) => eventosApi.list({ ...filtros, page, size: 100 }, signal), signal),
     enabled: Boolean(atleticaId),
   })
 }

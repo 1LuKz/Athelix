@@ -1,3 +1,4 @@
+import { carregarColecao } from '../../../lib/carregarColecao'
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '../../../lib/query'
 import { useAuthSession } from '../../auth/AuthSessionProvider'
@@ -7,7 +8,6 @@ import { mesComDeslocamento } from '../utils/financeiro'
 
 type UseFinanceiroQueriesParams = {
   filtros: FiltrosLancamentos
-  paginaAtual: number
   abaSelecionada: string
   podeGerenciar: boolean
   fusoHorario: string
@@ -15,7 +15,6 @@ type UseFinanceiroQueriesParams = {
 
 export function useFinanceiroQueries({
   filtros,
-  paginaAtual,
   abaSelecionada,
   podeGerenciar,
   fusoHorario,
@@ -44,14 +43,18 @@ export function useFinanceiroQueries({
     enabled: possuiVinculoAtivo && podeGerenciar,
   })
   const lancamentos = useQuery({
-    queryKey: queryKeys.scoped(atleticaId, 'financeiro-lancamentos', { ...filtros, page: paginaAtual }),
+    queryKey: queryKeys.scoped(atleticaId, 'financeiro-lancamentos', filtros),
     queryFn: ({ signal }) =>
-      financeiroApi.lancamentos({ ...filtros, page: paginaAtual, size: 12, sort: 'dataCompetencia,desc' }, signal),
+      carregarColecao(
+        (page) => financeiroApi.lancamentos({ ...filtros, page, size: 100, sort: 'dataCompetencia,desc' }, signal),
+        signal,
+      ),
     enabled: possuiVinculoAtivo && podeGerenciar,
   })
   const contas = useQuery({
     queryKey: queryKeys.scoped(atleticaId, 'financeiro-contas'),
-    queryFn: ({ signal }) => financeiroApi.contas({ page: 0, size: 30, sort: 'dataVencimento,asc' }, signal),
+    queryFn: ({ signal }) =>
+      carregarColecao((page) => financeiroApi.contas({ page, size: 100, sort: 'dataVencimento,asc' }, signal), signal),
     enabled: possuiVinculoAtivo && abaSelecionada === 'contas',
   })
 

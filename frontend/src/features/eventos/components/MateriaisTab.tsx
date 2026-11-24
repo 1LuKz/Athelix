@@ -12,6 +12,7 @@ import {
   Modal,
   Select,
   Textarea,
+  Table,
   useToast,
 } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
@@ -61,29 +62,31 @@ export function MateriaisTab({
       }
     >
       {anexos?.length ? (
-        <div className="event-list">
+        <Table caption="Materiais do evento" columns={['Arquivo', 'Tipo', 'Descrição', 'Ação']}>
           {anexos.map((anexo) => (
-            <article className="event-list-item" key={anexo.id}>
-              <div>
+            <tr key={anexo.id}>
+              <td>
                 <a href={`/api/v1/arquivos/${anexo.arquivoId}/conteudo`} target="_blank" rel="noreferrer">
                   <strong>{anexo.titulo}</strong>
                 </a>
-                <small>{typeLabels[anexo.tipoMaterial]}</small>
-                {anexo.descricao && <p>{anexo.descricao}</p>}
-              </div>
-              {podeGerenciar && !eventoConcluido && (
-                <Button
-                  variant="ghost"
-                  icon="delete"
-                  loading={removingFile && removing?.id === anexo.id}
-                  onClick={() => setRemoving(anexo)}
-                >
-                  Remover
-                </Button>
-              )}
-            </article>
+              </td>
+              <td>{typeLabels[anexo.tipoMaterial]}</td>
+              <td>{anexo.descricao ?? '—'}</td>
+              <td>
+                {podeGerenciar && !eventoConcluido && (
+                  <Button
+                    variant="ghost"
+                    icon="delete"
+                    loading={removingFile && removing?.id === anexo.id}
+                    onClick={() => setRemoving(anexo)}
+                    iconOnly
+                    aria-label="Remover material"
+                  />
+                )}
+              </td>
+            </tr>
           ))}
-        </div>
+        </Table>
       ) : (
         <EmptyState title="Sem materiais" description="Envie artes, regulamentos ou outros arquivos do evento." />
       )}

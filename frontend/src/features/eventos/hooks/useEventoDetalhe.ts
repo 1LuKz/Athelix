@@ -1,3 +1,4 @@
+import { carregarColecao } from '../../../lib/carregarColecao'
 import { useQuery } from '@tanstack/react-query'
 import { eventosApi } from '../api'
 import { detalheEventoApi } from '../detalheApi'
@@ -22,7 +23,7 @@ export function useEventoDetalhe(eventoId: string, abaAtiva: string) {
   })
   const participantes = useQuery({
     queryKey: ['evento', eventoId, 'participantes'],
-    queryFn: () => detalheEventoApi.participantes(eventoId),
+    queryFn: ({ signal }) => carregarColecao((page) => detalheEventoApi.participantes(eventoId, page, signal), signal),
     enabled: abaAtiva === 'participantes',
   })
   const resumo = useQuery({

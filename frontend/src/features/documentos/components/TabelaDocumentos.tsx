@@ -1,9 +1,9 @@
 import { Badge, Button, Card, EmptyState, Table } from '../../../components/ui'
 import { formatDateTime } from '../../../lib/format'
-import { categoriaDocumentoLabels, visibilidadeDocumentoLabels } from '../../../lib/labels'
+import { categoriaDocumentoLabels } from '../../../lib/labels'
 import type { Documento } from '../api'
 
-const colunasDocumentos = ['Título / arquivo', 'Categoria', 'Envio', 'Responsável', 'Ações']
+const colunasDocumentos = ['Título', 'Categoria', 'Envio', 'Responsável', 'Ações']
 
 export function TabelaDocumentos({
   documentos,
@@ -28,32 +28,41 @@ export function TabelaDocumentos({
           <tr key={documento.id}>
             <td>
               <b>{documento.titulo}</b>
-              <small>
-                {documento.versaoAtual?.nomeArquivo ?? 'Sem arquivo'} {documento.arquivado && ' · Arquivado'}
-              </small>
+              {documento.arquivado && <> · Arquivado</>}
             </td>
             <td>
               <Badge tone={documento.visibilidade === 'DIRETORIA' ? 'info' : 'success'}>
                 {categoriaDocumentoLabels[documento.categoria]}
               </Badge>
-              <small>{visibilidadeDocumentoLabels[documento.visibilidade]}</small>
             </td>
             <td>{documento.versaoAtual ? formatDateTime(documento.versaoAtual.enviadoEm, fusoHorario) : '—'}</td>
             <td>{documento.versaoAtual ? `Membro #${documento.versaoAtual.enviadoPorMembroId}` : '—'}</td>
             <td>
               <div className="row-actions">
-                <Button variant="secondary" onClick={() => aoDetalhar(documento)}>
-                  Detalhes
-                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => aoDetalhar(documento)}
+                  icon="visibility"
+                  iconOnly
+                  aria-label="Ver detalhes do documento"
+                />
                 {podePublicar && (
-                  <Button variant="ghost" onClick={() => aoEditar(documento)}>
-                    Editar metadados
-                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => aoEditar(documento)}
+                    icon="edit_note"
+                    iconOnly
+                    aria-label="Editar metadados"
+                  />
                 )}
                 {podePublicar && !documento.arquivado && (
-                  <Button variant="ghost" onClick={() => aoArquivar(documento)}>
-                    Arquivar
-                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => aoArquivar(documento)}
+                    icon="archive"
+                    iconOnly
+                    aria-label="Arquivar documento"
+                  />
                 )}
               </div>
             </td>

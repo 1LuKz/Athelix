@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Card, Input, useToast } from '../../../components/ui'
+import { Button, Card, FormFields, Input, useToast } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
 import { perfilApi, type Perfil } from '../api'
 
@@ -28,7 +28,7 @@ export function AlterarSenhaTab({ perfil }: { perfil: Perfil }) {
   return (
     <Card title="Alterar senha" className="password-change">
       <p className="form-note">Use de 10 a 64 caracteres. A confirmação não é enviada ao servidor.</p>
-      <div className="form-grid">
+      <FormFields>
         <Input
           label="Senha atual"
           type="password"
@@ -50,7 +50,7 @@ export function AlterarSenhaTab({ perfil }: { perfil: Perfil }) {
           value={valores.confirmacao}
           onChange={(event) => setValores({ ...valores, confirmacao: event.target.value })}
         />
-      </div>
+      </FormFields>
       <Button loading={saving} onClick={() => void save()}>
         Alterar senha
       </Button>

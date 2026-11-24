@@ -1,0 +1,436 @@
+/* A janela e os painéis ficam fixos. Somente tabelas oferecem rolagem de conteúdo. */
+.screen-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+  min-width: 0;
+  overflow: clip;
+}
+.screen-content > * {
+  flex-shrink: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.screen-content .card:has(.table-scroll) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+  min-width: 0;
+  overflow: clip;
+}
+.screen-content > .card:has(.table-scroll:not(.filter-table)) {
+  flex: 1 1 0;
+}
+.screen-content .card:has(.table-scroll) > :not(.table-scroll) {
+  flex-shrink: 0;
+}
+.table-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.screen-content .card > .table-scroll:not(.filter-table) {
+  flex: 1 1 0;
+}
+.table-scroll table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.table-scroll:not(.field-table):not(.filter-table):not(.notification-table) :is(th, td) {
+  padding: 0.5rem 0.75rem;
+  white-space: nowrap;
+}
+.table-scroll:not(.field-table):not(.filter-table):not(.notification-table) td {
+  line-height: 1.35;
+}
+.table-scroll .late {
+  display: inline;
+}
+.table-scroll .field-label-hidden {
+  margin-top: 0;
+}
+.table-scroll .check-item {
+  margin-bottom: 0;
+}
+.table-scroll .check-field {
+  padding-top: 0;
+}
+.table-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  box-shadow: 0 1px 0 var(--border);
+}
+.table-scroll tbody th {
+  letter-spacing: normal;
+  text-transform: none;
+}
+.table-scroll:focus-visible {
+  outline-offset: -3px;
+}
+.filter-table {
+  flex: 0 0 auto;
+  margin-bottom: 0.25rem;
+  max-height: 9rem;
+}
+.filter-table table {
+  min-width: max(100%, 30rem);
+  table-layout: auto;
+}
+.filter-table th {
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+.filter-table td {
+  min-width: 10rem;
+  padding: 0.5rem;
+  vertical-align: top;
+}
+.filter-table .field > span:first-child {
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+.filter-table .field {
+  gap: 0;
+}
+.filter-table .filter-reset {
+  gap: 0.25rem;
+}
+.filter-table .filter-reset > span {
+  display: none;
+}
+.filter-table .check-field {
+  padding: 0;
+}
+.filter-table .field select {
+  min-width: 10rem;
+}
+.screen-content .card-header {
+  flex-shrink: 0;
+  margin-bottom: 0.25rem;
+}
+.screen-content .page-title,
+.screen-content .event-detail-head {
+  margin: 0;
+}
+.screen-content .tabs {
+  flex-shrink: 0;
+  margin: 0;
+  overflow: clip;
+  flex-wrap: wrap;
+  gap: 0 1rem;
+}
+.screen-content .profile-grid,
+.screen-content .detail-grid {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  margin: 0;
+  overflow: clip;
+}
+.screen-content .profile-grid {
+  grid-template-rows: minmax(0, 1fr);
+}
+.screen-content .detail-grid {
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+.screen-content .profile-grid > .card,
+.screen-content .detail-grid > .card {
+  min-height: 0;
+  min-width: 0;
+}
+.screen-content .finance-summary,
+.screen-content .document-counts {
+  margin: 0;
+  gap: 0.5rem;
+}
+.screen-content .finance-summary .card,
+.screen-content .document-counts .card {
+  padding: 0.75rem;
+}
+.screen-content .finance-summary strong,
+.screen-content .document-counts strong {
+  font-size: 1.25rem;
+}
+.screen-content .finance-chart {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  margin: 0;
+}
+.screen-content .finance-chart .compact-chart {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+}
+.screen-content .summary-note {
+  margin: 0;
+  font-size: var(--text-xs);
+}
+.screen-content .state {
+  min-height: 0;
+  flex: 1;
+}
+.screen-content .total-label {
+  flex-shrink: 0;
+  margin: 0;
+  font-size: var(--text-xs);
+}
+.sidebar,
+.notification-body,
+.modal-body,
+.transition-list {
+  overflow: clip;
+}
+.notification-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.notification-table {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.notification-table table {
+  min-width: 0;
+  table-layout: fixed;
+  width: 100%;
+}
+.notification-table :is(th, td) {
+  padding: 0.5rem;
+  line-height: 1.35;
+  vertical-align: middle;
+}
+.notification-table :is(th, td):nth-child(2) {
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  width: 5.75rem;
+}
+.notification-table :is(th, td):nth-child(3) {
+  text-align: center;
+  white-space: nowrap;
+  width: 3.75rem;
+}
+.notification-table td:first-child a {
+  align-items: flex-start;
+  color: inherit;
+  display: flex;
+  gap: 0.375rem;
+  min-width: 0;
+  text-decoration: none;
+}
+.notification-table td:first-child a > .material-symbols-rounded {
+  flex-shrink: 0;
+  font-size: 1.125rem;
+}
+.notification-table strong {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  display: -webkit-box;
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.notification-table tr.read {
+  opacity: 0.65;
+}
+.compact-navigation {
+  display: none;
+}
+.sidebar .compact-navigation .field {
+  color: #fff;
+}
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: min(36rem, calc(100dvh - 12rem));
+  min-height: 0;
+}
+.modal-body > :not(form):not(.table-scroll) {
+  flex-shrink: 0;
+}
+.modal-body > .table-scroll {
+  flex: 1 1 auto;
+}
+.form-with-table {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+  min-width: 0;
+}
+.field-table {
+  min-height: 0;
+}
+.field-table table {
+  min-width: 0;
+  table-layout: fixed;
+  width: 100%;
+}
+.field-table th:first-child {
+  width: 35%;
+}
+.field-table td {
+  padding: 0.75rem;
+  overflow-wrap: anywhere;
+}
+.field-table th {
+  font-size: var(--text-sm);
+  letter-spacing: normal;
+  text-transform: none;
+}
+.field-table .field > span:first-child {
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+.field-table .field {
+  gap: 0.25rem;
+}
+.field-table .field textarea {
+  resize: none;
+  min-height: 5rem;
+  max-height: none;
+}
+.status-page {
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+}
+@media (max-height: 740px) {
+  .sidebar > nav {
+    display: none;
+  }
+  .compact-navigation {
+    display: block;
+  }
+}
+@media (max-width: 800px) {
+  .screen-content .detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .screen-content .profile-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+  }
+  .screen-content .document-counts {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .screen-content .document-counts span {
+    font-size: var(--text-xs);
+    overflow-wrap: anywhere;
+  }
+  .screen-content .document-counts .card {
+    padding: 0.5rem;
+  }
+  .screen-content .finance-summary {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .screen-content .finance-summary .card {
+    padding: 0.5rem;
+  }
+  .screen-content .finance-summary span {
+    font-size: var(--text-xs);
+  }
+  .screen-content .finance-summary strong {
+    font-size: 1rem;
+    overflow-wrap: anywhere;
+  }
+  .screen-content .detail-grid .card {
+    padding: 0.5rem;
+  }
+  .screen-content .detail-grid .card-header h2 {
+    font-size: var(--text-xs);
+  }
+  .screen-content .detail-grid .ui-button {
+    padding-inline: 0.5rem;
+    font-size: var(--text-xs);
+  }
+}
+.tabs-control {
+  flex-shrink: 0;
+  min-width: 0;
+}
+.compact-tabs {
+  display: none;
+}
+.compact-tabs .field {
+  gap: 0;
+}
+.compact-tabs .field > span:first-child {
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  width: 1px;
+}
+@media (max-width: 600px), (max-height: 650px) {
+  .tabs-control > .tabs {
+    display: none;
+  }
+  .compact-tabs {
+    display: block;
+  }
+}
+@media (max-width: 800px) {
+  .screen-content {
+    gap: 0.375rem;
+  }
+  .screen-content > .card {
+    padding: 0.5rem;
+  }
+  .screen-content .finance-summary .card {
+    gap: 0.25rem;
+    padding: 0.375rem;
+  }
+  .screen-content .finance-summary span {
+    font-size: 0.75rem;
+  }
+  .content:has(> .screen-content) .app-header {
+    min-height: 0;
+    padding-top: 4rem;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .content:has(> .screen-content) .page-heading h1 {
+    font-size: 1.25rem;
+  }
+  .content:has(> .screen-content) .page-subtitle {
+    display: none;
+  }
+  .filter-table th {
+    padding: 0.375rem 0.5rem;
+  }
+  .filter-table td {
+    padding: 0.25rem;
+  }
+}
+.support-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  height: 100%;
+  min-height: 0;
+  overflow: clip;
+}
+.support-shell > :not(.table-scroll) {
+  flex-shrink: 0;
+}

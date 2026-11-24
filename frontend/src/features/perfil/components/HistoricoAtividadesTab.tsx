@@ -1,4 +1,4 @@
-import { Card, EmptyState, ErrorState, LoadingState, Pagination, Table } from '../../../components/ui'
+import { Card, EmptyState, ErrorState, LoadingState, Table } from '../../../components/ui'
 import { formatDateTime } from '../../../lib/format'
 import { errorFeedback } from '../../../lib/errorFeedback'
 import { humanizeCode } from '../../../lib/labels'
@@ -10,15 +10,11 @@ export function HistoricoAtividadesTab({
   carregando,
   erro,
   fusoHorario,
-  pagina,
-  aoMudarPagina,
 }: {
   atividades: Page<Atividade> | undefined
   carregando: boolean
   erro: Error | null
   fusoHorario: string | undefined
-  pagina: number
-  aoMudarPagina: (pagina: number) => void
 }) {
   if (carregando) return <LoadingState />
   if (erro) return <ErrorState message={errorFeedback(erro)} />
@@ -40,7 +36,6 @@ export function HistoricoAtividadesTab({
           </tr>
         ))}
       </Table>
-      <Pagination page={pagina} totalPages={atividades.totalPages} onPageChange={aoMudarPagina} />
     </Card>
   )
 }

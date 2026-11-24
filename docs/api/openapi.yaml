@@ -252,8 +252,9 @@ paths:
       operationId: listMembros
       description: >-
         Pesquisa sem distinção de caixa por nome, e-mail ou curso. Aceita somente
-        `sort=nome|email|curso|status|cargo|departamento|membroDesde,direcao`;
-        `direcao` é `asc` ou `desc`. Administradores recebem contato; os demais
+        `sort=campo` (crescente) ou `sort=campo,direcao`, com direção `asc` ou `desc`.
+        Os campos permitidos são `nome`, `email`, `curso`, `status`, `cargo`, `departamento` e `membroDesde`.
+        Repita `sort` para combinar critérios. Administradores recebem contato; os demais
         perfis autorizados não recebem e-mail ou telefone.
       parameters:
         - $ref: '#/components/parameters/BuscaMembro'
@@ -3996,7 +3997,15 @@ components:
     SortItemPatrimonio:
       name: sort
       in: query
-      description: "Pode ser repetido: `nome`, `conservacao`, `localizacao`, `valorEstimadoUnitario` ou `createdAt`, com `asc` ou `desc`."
+      description: >-
+        Use `sort=campo` (direção padrão `asc`) ou `sort=campo,direcao`, com direção `asc` ou `desc`.
+        Repita o parâmetro para combinar critérios: `sort=campo,asc&sort=outroCampo,desc`.
+        A ordem dos critérios é preservada, com `id` como desempate final quando não informado.
+        Direção sem campo é inválida. A direção ignora maiúsculas e espaços ao redor.
+        Campos permitidos: `nome`, `conservacao`, `localizacao`, `valorEstimadoUnitario` ou `createdAt`, com
+        `asc` ou `desc`.
+      style: form
+      explode: true
       schema:
         type: array
         items: {type: string, pattern: '^(nome|conservacao|localizacao|valorEstimadoUnitario|createdAt)(,(asc|desc|ASC|DESC))?$'}
@@ -4072,35 +4081,72 @@ components:
     SortTarefa:
       name: sort
       in: query
-      description: "Pode ser repetido: `prazo`, `titulo` ou `createdAt`, com `asc` ou `desc`."
+      description: >-
+        Use `sort=campo` (direção padrão `asc`) ou `sort=campo,direcao`, com direção `asc` ou `desc`.
+        Repita o parâmetro para combinar critérios: `sort=campo,asc&sort=outroCampo,desc`.
+        A ordem dos critérios é preservada, com `id` como desempate final quando não informado.
+        Direção sem campo é inválida. A direção ignora maiúsculas e espaços ao redor.
+        Campos permitidos: `prazo`, `titulo` ou `createdAt`, com `asc` ou `desc`.
+      style: form
+      explode: true
       schema:
         type: array
         items: {type: string, pattern: '^(prazo|titulo|createdAt)(,(asc|desc|ASC|DESC))?$'}
     SortNotificacao:
       name: sort
       in: query
-      description: "Pode ser repetido: `criadaEm` ou `lidaEm`, com `asc` ou `desc`. Padrão: `criadaEm,desc`."
+      description: >-
+        Use `sort=campo` (direção padrão `asc`) ou `sort=campo,direcao`, com direção `asc` ou `desc`.
+        Repita o parâmetro para combinar critérios: `sort=campo,asc&sort=outroCampo,desc`.
+        A ordem dos critérios é preservada, com `id` como desempate final quando não informado.
+        Direção sem campo é inválida. A direção ignora maiúsculas e espaços ao redor.
+        Campos permitidos: `criadaEm` ou `lidaEm`, com `asc` ou `desc`. Padrão: `criadaEm,desc`.
+      style: form
+      explode: true
       schema:
         type: array
         items: {type: string, pattern: '^(criadaEm|lidaEm)(,(asc|desc|ASC|DESC))?$'}
     SortLancamentoFinanceiro:
       name: sort
       in: query
-      description: "Pode ser repetido: `dataCompetencia`, `dataVencimento`, `dataLiquidacao`, `descricao`, `valor` ou `createdAt`, com `asc` ou `desc`."
+      description: >-
+        Use `sort=campo` (direção padrão `asc`) ou `sort=campo,direcao`, com direção `asc` ou `desc`.
+        Repita o parâmetro para combinar critérios: `sort=campo,asc&sort=outroCampo,desc`.
+        A ordem dos critérios é preservada, com `id` como desempate final quando não informado.
+        Direção sem campo é inválida. A direção ignora maiúsculas e espaços ao redor.
+        Campos permitidos: `dataCompetencia`, `dataVencimento`, `dataLiquidacao`, `descricao`, `valor` ou
+        `createdAt`, com `asc` ou `desc`.
+      style: form
+      explode: true
       schema:
         type: array
         items: {type: string, pattern: '^(dataCompetencia|dataVencimento|dataLiquidacao|descricao|valor|createdAt)(,(asc|desc|ASC|DESC))?$'}
     SortContaAberta:
       name: sort
       in: query
-      description: "Pode ser repetido: `dataVencimento`, `descricao`, `valor` ou `createdAt`, com `asc` ou `desc`."
+      description: >-
+        Use `sort=campo` (direção padrão `asc`) ou `sort=campo,direcao`, com direção `asc` ou `desc`.
+        Repita o parâmetro para combinar critérios: `sort=campo,asc&sort=outroCampo,desc`.
+        A ordem dos critérios é preservada, com `id` como desempate final quando não informado.
+        Direção sem campo é inválida. A direção ignora maiúsculas e espaços ao redor.
+        Campos permitidos: `dataVencimento`, `descricao`, `valor` ou `createdAt`, com `asc` ou `desc`.
+      style: form
+      explode: true
       schema:
         type: array
         items: {type: string, pattern: '^(dataVencimento|descricao|valor|createdAt)(,(asc|desc|ASC|DESC))?$'}
     SortMembro:
       name: sort
       in: query
-      description: "Pode ser repetido. Campo permitido e direção: `nome`, `email`, `curso`, `status`, `cargo`, `departamento` ou `membroDesde`, com `asc` ou `desc`."
+      description: >-
+        Use `sort=campo` (direção padrão `asc`) ou `sort=campo,direcao`, com direção `asc` ou `desc`.
+        Repita o parâmetro para combinar critérios: `sort=campo,asc&sort=outroCampo,desc`.
+        A ordem dos critérios é preservada, com `id` como desempate final quando não informado.
+        Direção sem campo é inválida. A direção ignora maiúsculas e espaços ao redor.
+        Campos permitidos: `nome`, `email`, `curso`, `status`, `cargo`, `departamento` ou `membroDesde`, com
+        `asc` ou `desc`.
+      style: form
+      explode: true
       schema:
         type: array
         items:
@@ -4109,7 +4155,14 @@ components:
     SortAtividade:
       name: sort
       in: query
-      description: "Pode ser repetido: `ocorridaEm`, `acao` ou `tipoRecurso`, com `asc` ou `desc`."
+      description: >-
+        Use `sort=campo` (direção padrão `asc`) ou `sort=campo,direcao`, com direção `asc` ou `desc`.
+        Repita o parâmetro para combinar critérios: `sort=campo,asc&sort=outroCampo,desc`.
+        A ordem dos critérios é preservada, com `id` como desempate final quando não informado.
+        Direção sem campo é inválida. A direção ignora maiúsculas e espaços ao redor.
+        Campos permitidos: `ocorridaEm`, `acao` ou `tipoRecurso`, com `asc` ou `desc`.
+      style: form
+      explode: true
       schema:
         type: array
         items:
@@ -4118,7 +4171,14 @@ components:
     SortParticipacaoEvento:
       name: sort
       in: query
-      description: "Pode ser repetido: `status` ou `inscritoEm`, com `asc` ou `desc`."
+      description: >-
+        Use `sort=campo` (direção padrão `asc`) ou `sort=campo,direcao`, com direção `asc` ou `desc`.
+        Repita o parâmetro para combinar critérios: `sort=campo,asc&sort=outroCampo,desc`.
+        A ordem dos critérios é preservada, com `id` como desempate final quando não informado.
+        Direção sem campo é inválida. A direção ignora maiúsculas e espaços ao redor.
+        Campos permitidos: `status` ou `inscritoEm`, com `asc` ou `desc`.
+      style: form
+      explode: true
       schema:
         type: array
         items:

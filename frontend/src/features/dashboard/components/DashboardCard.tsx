@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Card, ErrorState, LoadingState } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
+import { Icon } from '../../../components/Icon'
 
 export function MetricaDashboard({
   label,
@@ -9,22 +10,36 @@ export function MetricaDashboard({
   detail,
   indicator,
   to,
+  icon,
+  indicatorTone = 'neutral',
 }: {
   label: string
   value: string
   detail: string
   indicator: ReactNode
-  to: string
+  to?: string
+  icon: string
+  indicatorTone?: 'neutral' | 'success' | 'danger'
 }) {
-  return (
+  const content = (
+    <Card>
+      <div className="metric-top">
+        <span className="metric-icon">
+          <Icon name={icon} />
+        </span>
+        <span className={`metric-indicator ${indicatorTone}`}>{indicator}</span>
+      </div>
+      <span className="metric-label">{label}</span>
+      <strong>{value}</strong>
+      <small>{detail}</small>
+    </Card>
+  )
+  return to ? (
     <Link className="dashboard-metric" to={to}>
-      <Card>
-        <span>{label}</span>
-        <strong>{value}</strong>
-        <small>{detail}</small>
-        <small>{indicator}</small>
-      </Card>
+      {content}
     </Link>
+  ) : (
+    <div className="dashboard-metric">{content}</div>
   )
 }
 
@@ -41,6 +56,7 @@ export function SecaoDashboard({
 }) {
   return (
     <Card
+      className="dashboard-panel"
       title={title}
       action={
         <Link className="section-link" to={to}>
@@ -48,13 +64,15 @@ export function SecaoDashboard({
         </Link>
       }
     >
-      {query.isLoading ? (
-        <LoadingState />
-      ) : query.isError ? (
-        <ErrorState message={errorFeedback(query.error)} />
-      ) : (
-        children
-      )}
+      <div className="dashboard-panel-body">
+        {query.isLoading ? (
+          <LoadingState />
+        ) : query.isError ? (
+          <ErrorState message={errorFeedback(query.error)} />
+        ) : (
+          children
+        )}
+      </div>
     </Card>
   )
 }

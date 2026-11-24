@@ -1,8 +1,18 @@
 import type { ReactNode } from 'react'
 
-export function Table({ columns, children, caption }: { columns: string[]; children: ReactNode; caption: string }) {
+export function Table({
+  columns,
+  children,
+  caption,
+  className = '',
+}: {
+  columns: string[]
+  children: ReactNode
+  caption: string
+  className?: string
+}) {
   return (
-    <div className="table-scroll">
+    <div className={`table-scroll ${className}`} role="region" aria-label={caption} tabIndex={0}>
       <table>
         <caption>{caption}</caption>
         <thead>

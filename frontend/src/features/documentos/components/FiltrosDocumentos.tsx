@@ -1,4 +1,4 @@
-import { Input, Select } from '../../../components/ui'
+import { FilterTable, Button, Input, Select } from '../../../components/ui'
 import { categoriaDocumentoLabels } from '../../../lib/labels'
 import { categoriasDocumento } from '../types'
 
@@ -18,9 +18,11 @@ export function FiltrosDocumentos({
   aoAlterarArquivados: (valor: boolean) => void
 }) {
   return (
-    <div className="filters">
+    <FilterTable>
       <Input
         label="Buscar por título ou arquivo"
+        type="search"
+        placeholder="Nome do documento ou arquivo"
         value={busca}
         onChange={(evento) => aoAlterarBusca(evento.target.value)}
       />
@@ -40,6 +42,22 @@ export function FiltrosDocumentos({
         />{' '}
         Mostrar arquivados
       </label>
-    </div>
+      {(busca || categoria || incluirArquivados) && (
+        <div className="filter-reset">
+          <span>Filtros ativos</span>
+          <Button
+            variant="ghost"
+            icon="filter_alt_off"
+            onClick={() => {
+              aoAlterarBusca('')
+              aoAlterarCategoria('')
+              aoAlterarArquivados(false)
+            }}
+          >
+            Limpar filtros
+          </Button>
+        </div>
+      )}
+    </FilterTable>
   )
 }

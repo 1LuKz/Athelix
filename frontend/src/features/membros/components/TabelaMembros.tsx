@@ -1,4 +1,4 @@
-import { Badge, Button, EmptyState, Pagination, Table } from '../../../components/ui'
+import { Badge, Button, EmptyState, Table } from '../../../components/ui'
 import { statusMembroLabels } from '../../../lib/labels'
 import type { Membro, Page } from '../types'
 
@@ -8,7 +8,6 @@ const colunasTabelaMembros = ['Membro', 'Curso', 'Cargo', 'Departamento', 'Statu
 type TabelaMembrosProps = {
   paginaMembros: Page<Membro> | undefined
   administrador: boolean
-  aoAlterarPagina: (pagina: number) => void
   aoEditarMembro: (membro: Membro) => void
   aoAprovarMembro: (membro: Membro) => void
   aoInativarMembro: (membro: Membro) => void
@@ -17,7 +16,6 @@ type TabelaMembrosProps = {
 export function TabelaMembros({
   paginaMembros,
   administrador,
-  aoAlterarPagina,
   aoEditarMembro,
   aoAprovarMembro,
   aoInativarMembro,
@@ -53,7 +51,6 @@ export function TabelaMembros({
           </tr>
         ))}
       </Table>
-      <Pagination page={paginaMembros.page} totalPages={paginaMembros.totalPages} onPageChange={aoAlterarPagina} />
       <p className="total-label">{paginaMembros.totalItems} membro(s) encontrado(s)</p>
     </>
   )
@@ -69,18 +66,24 @@ type AcoesMembroProps = {
 function AcoesMembro({ membro, aoEditarMembro, aoAprovarMembro, aoInativarMembro }: AcoesMembroProps) {
   return (
     <div className="row-actions member-actions">
-      <Button variant="ghost" icon="edit" onClick={() => aoEditarMembro(membro)}>
-        Editar
-      </Button>
+      <Button variant="ghost" icon="edit" iconOnly aria-label="Editar membro" onClick={() => aoEditarMembro(membro)} />
       {membro.status === 'PENDENTE' && (
-        <Button variant="ghost" icon="verified" onClick={() => aoAprovarMembro(membro)}>
-          Aprovar
-        </Button>
+        <Button
+          variant="ghost"
+          icon="verified"
+          iconOnly
+          aria-label="Aprovar membro"
+          onClick={() => aoAprovarMembro(membro)}
+        />
       )}
       {membro.status !== 'INATIVO' && (
-        <Button variant="ghost" icon="person_off" onClick={() => aoInativarMembro(membro)}>
-          Inativar
-        </Button>
+        <Button
+          variant="ghost"
+          icon="person_off"
+          iconOnly
+          aria-label="Inativar membro"
+          onClick={() => aoInativarMembro(membro)}
+        />
       )}
     </div>
   )

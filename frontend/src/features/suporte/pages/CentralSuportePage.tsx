@@ -1,3 +1,4 @@
+import { Table } from '../../../components/ui'
 import { useState } from 'react'
 import { ajudaPorModulo } from '../content'
 import type { ConfiguracaoSuporte } from '../types'
@@ -29,19 +30,15 @@ export function CentralSuportePage({ onBack, configuracao }: Props) {
           placeholder="Ex.: empréstimos, convite, financeiro"
         />
       </label>
-      <section className="help-grid" aria-label="Tópicos de ajuda">
+      <Table caption="Tópicos de ajuda" columns={['Assunto', 'Resumo', 'Passos']}>
         {artigos.map((artigo) => (
-          <article key={artigo.id} className="help-card">
-            <h2>{artigo.titulo}</h2>
-            <p>{artigo.resumo}</p>
-            <ol>
-              {artigo.passos.map((passo) => (
-                <li key={passo}>{passo}</li>
-              ))}
-            </ol>
-          </article>
+          <tr key={artigo.id}>
+            <th scope="row">{artigo.titulo}</th>
+            <td>{artigo.resumo}</td>
+            <td>{artigo.passos.map((passo, index) => `${index + 1}. ${passo}`).join(' · ')}</td>
+          </tr>
         ))}
-      </section>
+      </Table>
       {artigos.length === 0 && <p className="empty-help">Nenhuma orientação encontrada para esta pesquisa.</p>}
       {configuracao?.canalContato && (
         <aside className="contact-card">

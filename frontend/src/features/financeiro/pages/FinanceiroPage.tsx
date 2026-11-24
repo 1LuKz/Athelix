@@ -22,7 +22,6 @@ export function FinanceiroPage() {
   const { activeVinculo, state } = useAuthSession()
   const fusoHorario = useAtleticaTimeZone() ?? 'America/Sao_Paulo'
   const [abaAtiva, setAbaAtiva] = useState('lancamentos')
-  const [paginaAtual, setPaginaAtual] = useState(0)
   const [tipoNovoLancamento, setTipoNovoLancamento] = useState<TipoLancamento | null>(null)
   const [lancamentoEmEdicao, setLancamentoEmEdicao] = useState<Lancamento | null>(null)
   const [novaCategoria, setNovaCategoria] = useState(false)
@@ -30,14 +29,13 @@ export function FinanceiroPage() {
   const [acaoSelecionada, setAcaoSelecionada] = useState<AcaoLancamento | null>(null)
   const podeGerenciar = podeGerenciarFinanceiro(state?.capacidades ?? [])
   const abaSelecionada = selecionarAbaFinanceira(podeGerenciar, abaAtiva)
-  const consultas = useFinanceiroQueries({ filtros, paginaAtual, abaSelecionada, podeGerenciar, fusoHorario })
+  const consultas = useFinanceiroQueries({ filtros, abaSelecionada, podeGerenciar, fusoHorario })
   const invalidarConsultasFinanceiras = useInvalidarFinanceiroQueries()
   const mutacaoLancamento = useLancamentoMutations(() => setAcaoSelecionada(null), fusoHorario)
   const criarCategoria = useCriarCategoriaFinanceiraMutation()
   const exportarRelatorio = useExportarRelatorioFinanceiro(filtros)
   const alterarFiltro = (campo: keyof FiltrosLancamentosValores, valor: string) => {
     setFiltros((filtrosAtuais) => ({ ...filtrosAtuais, [campo]: valor }))
-    setPaginaAtual(0)
   }
   const concluirEdicaoLancamento = async () => {
     setLancamentoEmEdicao(null)
@@ -63,26 +61,26 @@ export function FinanceiroPage() {
       {consultas.resumo.data && (
         <>
           <ResumoFinanceiroCards resumo={consultas.resumo.data} />
-          <EvolucaoMensalChart dados={consultas.evolucao.data} carregando={consultas.evolucao.isLoading} />
           <AbasFinanceiras podeGerenciar={podeGerenciar} abaSelecionada={abaSelecionada} aoAlterarAba={setAbaAtiva} />
-          <ConteudoFinanceiro
-            abaSelecionada={abaSelecionada}
-            podeGerenciar={podeGerenciar}
-            filtros={filtros}
-            categorias={consultas.categorias.data ?? []}
-            lancamentos={consultas.lancamentos.data?.items ?? []}
-            totalPaginas={consultas.lancamentos.data?.totalPages}
-            contas={consultas.contas.data?.items}
-            carregandoContas={consultas.contas.isLoading}
-            contasComErro={consultas.contas.isError}
-            paginaAtual={paginaAtual}
-            membroAtualId={activeVinculo?.membroId}
-            aoAlterarFiltro={alterarFiltro}
-            aoAlterarPagina={setPaginaAtual}
-            aoEditarLancamento={setLancamentoEmEdicao}
-            aoSelecionarAcao={setAcaoSelecionada}
-            aoExportarRelatorio={exportarRelatorio}
-          />
+          {abaSelecionada === 'evolucao' ? (
+            <EvolucaoMensalChart dados={consultas.evolucao.data} carregando={consultas.evolucao.isLoading} />
+          ) : (
+            <ConteudoFinanceiro
+              abaSelecionada={abaSelecionada}
+              podeGerenciar={podeGerenciar}
+              filtros={filtros}
+              categorias={consultas.categorias.data ?? []}
+              lancamentos={consultas.lancamentos.data?.items ?? []}
+              contas={consultas.contas.data?.items}
+              carregandoContas={consultas.contas.isLoading}
+              contasComErro={consultas.contas.isError}
+              membroAtualId={activeVinculo?.membroId}
+              aoAlterarFiltro={alterarFiltro}
+              aoEditarLancamento={setLancamentoEmEdicao}
+              aoSelecionarAcao={setAcaoSelecionada}
+              aoExportarRelatorio={exportarRelatorio}
+            />
+          )}
         </>
       )}
       {novaCategoria && (

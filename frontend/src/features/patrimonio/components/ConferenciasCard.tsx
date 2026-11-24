@@ -45,9 +45,13 @@ export function ConferenciasCard({ conferencias, carregando, podeGerenciar, onNe
                 </Badge>
               </td>
               <td>
-                <Button variant="secondary" onClick={() => setConferenciaSelecionada(conferencia)}>
-                  Ver campanha
-                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => setConferenciaSelecionada(conferencia)}
+                  icon="fact_check"
+                  iconOnly
+                  aria-label="Ver campanha"
+                />
               </td>
             </tr>
           ))}

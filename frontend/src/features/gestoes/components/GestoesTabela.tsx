@@ -70,9 +70,13 @@ export function GestoesTabela({
                 <td>{gestao.encerradaEm ? formatDateTime(gestao.encerradaEm, fusoHorario) : '—'}</td>
                 <td>
                   {gestao.status === 'PLANEJADA' && (
-                    <Button variant="secondary" onClick={() => aoPreparar(gestao)}>
-                      Preparar transferência
-                    </Button>
+                    <Button
+                      variant="secondary"
+                      icon="swap_horiz"
+                      iconOnly
+                      aria-label="Preparar transferência"
+                      onClick={() => aoPreparar(gestao)}
+                    />
                   )}
                 </td>
               </tr>

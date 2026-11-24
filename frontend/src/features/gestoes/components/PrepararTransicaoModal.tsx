@@ -1,6 +1,7 @@
+import { carregarColecao } from '../../../lib/carregarColecao'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Button, Modal, Select, useToast } from '../../../components/ui'
+import { Button, Modal, Select, Table, useToast } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
 import { humanizeCode } from '../../../lib/labels'
 import { queryKeys } from '../../../lib/query'
@@ -23,7 +24,8 @@ export function PrepararTransicao({
   const [draft, setDraft] = useState(transicao)
   const membros = useQuery({
     queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'membros-transicao'),
-    queryFn: ({ signal }) => membrosApi.list({ page: 0, size: 100, status: 'ATIVO' }, signal),
+    queryFn: ({ signal }) =>
+      carregarColecao((page) => membrosApi.list({ page, size: 100, status: 'ATIVO' }, signal), signal),
   })
   const cargos = useQuery({
     queryKey: queryKeys.scoped(activeVinculo?.atleticaId, 'cargos-transicao'),
@@ -78,13 +80,17 @@ export function PrepararTransicao({
         A composição abaixo mostra quem continuará, mudará de cargo/departamento ou sairá. Salve alterações para
         atualizar a prévia.
       </p>
-      <div className="transition-list">
+      <Table
+        caption="Composição da próxima gestão"
+        columns={['Membro', 'Cargo destino', 'Departamento destino', 'Permanência']}
+      >
         {draft.itens.map((item) => (
-          <section key={item.membroId}>
-            <strong>{memberName(item.membroId)}</strong>
-            <div>
+          <tr key={item.membroId}>
+            <th scope="row">{memberName(item.membroId)}</th>
+            <td>
               <Select
-                label="Cargo destino"
+                label={`Cargo de ${memberName(item.membroId)}`}
+                hideLabel
                 value={item.cargoDestinoId}
                 onChange={(event) => updateItem(item.membroId, 'cargoDestinoId', Number(event.target.value))}
               >
@@ -96,8 +102,11 @@ export function PrepararTransicao({
                     </option>
                   ))}
               </Select>
+            </td>
+            <td>
               <Select
-                label="Departamento destino"
+                label={`Departamento de ${memberName(item.membroId)}`}
+                hideLabel
                 value={item.departamentoDestinoId}
                 onChange={(event) => updateItem(item.membroId, 'departamentoDestinoId', Number(event.target.value))}
               >
@@ -109,35 +118,37 @@ export function PrepararTransicao({
                     </option>
                   ))}
               </Select>
+            </td>
+            <td>
               <label className="check-field">
                 <input
                   type="checkbox"
                   checked={item.continuaAtivo}
                   onChange={(event) => updateItem(item.membroId, 'continuaAtivo', event.target.checked)}
-                />{' '}
+                />
                 Permanece ativo
               </label>
-            </div>
-          </section>
+            </td>
+          </tr>
         ))}
-      </div>
-      {previa.data && (
-        <section className="transition-preview">
-          <h3>Prévia de impactos</h3>
-          <p>
-            <b>{previa.data.acessosEntram}</b> acessos entram · <b>{previa.data.acessosSaem}</b> acessos saem ·{' '}
-            <b>{previa.data.responsaveisSubstituidos}</b> responsabilidades substituídas.
-          </p>
-          <h4>Pendências que continuam abertas</h4>
-          <ul>
+        {previa.data && (
+          <>
+            <tr>
+              <th scope="row">Prévia de impactos</th>
+              <td colSpan={3}>
+                {previa.data.acessosEntram} acessos entram · {previa.data.acessosSaem} acessos saem ·
+                {previa.data.responsaveisSubstituidos} responsabilidades substituídas.
+              </td>
+            </tr>
             {Object.entries(previa.data.pendencias).map(([name, count]) => (
-              <li key={name}>
-                {humanizeCode(name)}: {count}
-              </li>
+              <tr key={name}>
+                <th scope="row">{humanizeCode(name)}</th>
+                <td colSpan={3}>{count} pendências continuam abertas</td>
+              </tr>
             ))}
-          </ul>
-        </section>
-      )}
+          </>
+        )}
+      </Table>
     </Modal>
   )
 }

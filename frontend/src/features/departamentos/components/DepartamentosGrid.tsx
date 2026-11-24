@@ -1,4 +1,4 @@
-import { Badge, Button, Card, EmptyState } from '../../../components/ui'
+import { Badge, Button, Card, EmptyState, Table } from '../../../components/ui'
 import { enumLabel, situacaoDepartamentoLabels } from '../../../lib/labels'
 import type { Departamento } from '../../membros/types'
 
@@ -10,7 +10,7 @@ type DepartamentosGridProps = {
 }
 
 export function DepartamentosGrid({ departamentos, podeAdministrar, onEditar, onInativar }: DepartamentosGridProps) {
-  if (!departamentos.length) {
+  if (!departamentos.length)
     return (
       <EmptyState
         title="Nenhum departamento ativo"
@@ -21,18 +21,21 @@ export function DepartamentosGrid({ departamentos, podeAdministrar, onEditar, on
         }
       />
     )
-  }
-
   return (
-    <div className="department-grid">
-      {departamentos.map((departamento) => (
-        <Card key={departamento.id} className="department-card">
-          <div className="department-heading">
-            <div className="department-avatar">
-              {departamento.responsavelNome ? obterIniciais(departamento.responsavelNome) : '?'}
-            </div>
-            <div>
-              <h2>{departamento.nome}</h2>
+    <Card>
+      <Table
+        caption="Departamentos da atlética"
+        columns={['Departamento', 'Descrição', 'Responsável', 'Membros ativos', 'Situação', 'Ações']}
+      >
+        {departamentos.map((departamento) => (
+          <tr key={departamento.id}>
+            <td>
+              <strong>{departamento.nome}</strong>
+            </td>
+            <td>{departamento.descricao || 'Sem descrição cadastrada.'}</td>
+            <td>{departamento.responsavelNome ?? 'A definir'}</td>
+            <td>{departamento.quantidadeMembros}</td>
+            <td>
               <Badge
                 tone={
                   departamento.situacao === 'ATIVO'
@@ -44,52 +47,34 @@ export function DepartamentosGrid({ departamentos, podeAdministrar, onEditar, on
               >
                 {enumLabel(situacaoDepartamentoLabels, departamento.situacao)}
               </Badge>
-            </div>
-          </div>
-          <p>{departamento.descricao || 'Sem descrição cadastrada.'}</p>
-          <dl>
-            <div>
-              <dt>Responsável</dt>
-              <dd>{departamento.responsavelNome ?? 'A definir'}</dd>
-            </div>
-            <div>
-              <dt>Membros ativos</dt>
-              <dd>{departamento.quantidadeMembros}</dd>
-            </div>
-          </dl>
-          {departamento.situacao === 'EM_CONFIGURACAO' && podeAdministrar && (
-            <p className="configuration-tip">
-              Fluxo: cadastre/aprove o primeiro membro, designe-o como responsável e então ative o departamento.
-            </p>
-          )}
-          {podeAdministrar && (
-            <div className="department-actions">
-              <Button variant="ghost" icon="edit" onClick={() => onEditar(departamento)}>
-                Editar
-              </Button>
-              {departamento.situacao === 'EM_CONFIGURACAO' && (
-                <Button variant="ghost" icon="rocket_launch" onClick={() => onEditar(departamento)}>
-                  Concluir configuração
-                </Button>
+            </td>
+            <td>
+              {podeAdministrar && (
+                <div className="row-actions">
+                  <Button
+                    variant="ghost"
+                    icon="edit"
+                    iconOnly
+                    aria-label={
+                      departamento.situacao === 'EM_CONFIGURACAO' ? 'Concluir configuração' : 'Editar departamento'
+                    }
+                    onClick={() => onEditar(departamento)}
+                  />
+                  {departamento.situacao === 'ATIVO' && (
+                    <Button
+                      variant="ghost"
+                      icon="toggle_off"
+                      iconOnly
+                      aria-label="Inativar departamento"
+                      onClick={() => onInativar(departamento)}
+                    />
+                  )}
+                </div>
               )}
-              {departamento.situacao === 'ATIVO' && (
-                <Button variant="ghost" icon="toggle_off" onClick={() => onInativar(departamento)}>
-                  Inativar
-                </Button>
-              )}
-            </div>
-          )}
-        </Card>
-      ))}
-    </div>
+            </td>
+          </tr>
+        ))}
+      </Table>
+    </Card>
   )
-}
-
-function obterIniciais(valor: string) {
-  return valor
-    .split(' ')
-    .map((parte) => parte[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase()
 }

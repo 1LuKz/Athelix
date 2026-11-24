@@ -1,4 +1,4 @@
-import { Card, Pagination } from '../../../components/ui'
+import { Card } from '../../../components/ui'
 import type { CategoriaFinanceira, ContaAberta, Lancamento } from '../api'
 import type { AcaoLancamento, FiltrosLancamentos as FiltrosLancamentosValores } from '../types'
 import { ContasAPagarEReceber } from './ContasAPagarEReceber'
@@ -12,14 +12,11 @@ type ConteudoFinanceiroProps = {
   filtros: FiltrosLancamentosValores
   categorias: CategoriaFinanceira[]
   lancamentos: Lancamento[]
-  totalPaginas: number | undefined
   contas: ContaAberta[] | undefined
   carregandoContas: boolean
   contasComErro: boolean
-  paginaAtual: number
   membroAtualId: number | undefined
   aoAlterarFiltro: (campo: keyof FiltrosLancamentosValores, valor: string) => void
-  aoAlterarPagina: (pagina: number) => void
   aoEditarLancamento: (lancamento: Lancamento) => void
   aoSelecionarAcao: (acao: AcaoLancamento) => void
   aoExportarRelatorio: () => void
@@ -31,14 +28,11 @@ export function ConteudoFinanceiro({
   filtros,
   categorias,
   lancamentos,
-  totalPaginas,
   contas,
   carregandoContas,
   contasComErro,
-  paginaAtual,
   membroAtualId,
   aoAlterarFiltro,
-  aoAlterarPagina,
   aoEditarLancamento,
   aoSelecionarAcao,
   aoExportarRelatorio,
@@ -76,9 +70,6 @@ export function ConteudoFinanceiro({
         aoEditar={aoEditarLancamento}
         aoSelecionarAcao={aoSelecionarAcao}
       />
-      {totalPaginas !== undefined && (
-        <Pagination page={paginaAtual} totalPages={totalPaginas} onPageChange={aoAlterarPagina} />
-      )}
     </Card>
   )
 }

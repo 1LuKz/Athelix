@@ -21,15 +21,14 @@ export function MembrosPage() {
   const [busca, setBusca] = useState('')
   const [departamentoId, setDepartamentoId] = useState<number | undefined>()
   const [status, setStatus] = useState<StatusMembro | undefined>()
-  const [paginaAtual, setPaginaAtual] = useState(0)
   const [abaAtiva, setAbaAtiva] = useState('lista')
   const [membroEmEdicao, setMembroEmEdicao] = useState<Membro | 'novo' | null>(null)
   const [membroParaInativar, setMembroParaInativar] = useState<Membro | null>(null)
   const administrador = state?.capacidades.includes('GERENCIAR_MEMBROS') ?? false
   const podeConfigurarEstrutura = state?.capacidades.includes('CONFIGURAR_ESTRUTURA') ?? false
   const filtros = useMemo(
-    () => ({ busca, departamentoId, status, page: paginaAtual, size: 20 }),
-    [busca, departamentoId, status, paginaAtual],
+    () => ({ busca, departamentoId, status, page: 0, size: 100 }),
+    [busca, departamentoId, status],
   )
   const consultas = useMembrosQueries({ filtros, administrador, podeConfigurarEstrutura, abaAtiva })
   const mutacoes = useMembrosMutations(fusoHorario)
@@ -38,7 +37,6 @@ export function MembrosPage() {
   useEffect(() => {
     const temporizador = window.setTimeout(() => {
       setBusca(buscaDigitada)
-      setPaginaAtual(0)
     }, 300)
     return () => window.clearTimeout(temporizador)
   }, [buscaDigitada])
@@ -61,11 +59,8 @@ export function MembrosPage() {
           membros={consultas.membros.data}
           administrador={administrador}
           aoAlterarBusca={setBuscaDigitada}
-          aoAlterarDepartamento={(novoDepartamentoId) =>
-            alterarDepartamento(novoDepartamentoId, setDepartamentoId, setPaginaAtual)
-          }
-          aoAlterarStatus={(novoStatus) => alterarStatus(novoStatus, setStatus, setPaginaAtual)}
-          aoAlterarPagina={setPaginaAtual}
+          aoAlterarDepartamento={setDepartamentoId}
+          aoAlterarStatus={setStatus}
           aoEditarMembro={setMembroEmEdicao}
           aoAprovarMembro={mutacoes.aprovarMembro}
           aoInativarMembro={setMembroParaInativar}
@@ -145,22 +140,4 @@ function montarAbasMembros(administrador: boolean, podeConfigurarEstrutura: bool
     ...(administrador ? [{ id: 'solicitacoes', label: 'Solicitações' }] : []),
     ...(podeConfigurarEstrutura ? [{ id: 'cargos', label: 'Cargos e perfis' }] : []),
   ]
-}
-
-function alterarDepartamento(
-  departamentoId: number | undefined,
-  definirDepartamentoId: (valor: number | undefined) => void,
-  definirPagina: (pagina: number) => void,
-) {
-  definirDepartamentoId(departamentoId)
-  definirPagina(0)
-}
-
-function alterarStatus(
-  status: StatusMembro | undefined,
-  definirStatus: (valor: StatusMembro | undefined) => void,
-  definirPagina: (pagina: number) => void,
-) {
-  definirStatus(status)
-  definirPagina(0)
 }

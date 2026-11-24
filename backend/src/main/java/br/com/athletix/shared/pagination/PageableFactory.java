@@ -17,7 +17,7 @@ public class PageableFactory {
 
   public Pageable create(PageQuery query, Map<String, String> allowedSorts) {
     List<Sort.Order> orders = new ArrayList<>();
-    List<String> requestedSorts = query.sort() == null ? List.of() : query.sort();
+    List<String> requestedSorts = normalizeRequestedSorts(query.sort());
 
     for (String requestedSort : requestedSorts) {
       orders.add(toOrder(requestedSort, allowedSorts));
@@ -30,6 +30,30 @@ public class PageableFactory {
     }
 
     return PageRequest.of(query.resolvedPage(), query.resolvedSize(), Sort.by(orders));
+  }
+
+  private List<String> normalizeRequestedSorts(List<String> requestedSorts) {
+    List<String> normalizedSorts = new ArrayList<>();
+    if (requestedSorts == null) {
+      return normalizedSorts;
+    }
+    for (String requestedSort : requestedSorts) {
+      String direction = requestedSort.trim();
+      if (!direction.equalsIgnoreCase("asc") && !direction.equalsIgnoreCase("desc")) {
+        normalizedSorts.add(requestedSort);
+        continue;
+      }
+      if (normalizedSorts.isEmpty()) {
+        throw new InvalidSortException(requestedSort);
+      }
+      int previousIndex = normalizedSorts.size() - 1;
+      String previousSort = normalizedSorts.get(previousIndex);
+      if (previousSort.isBlank() || previousSort.contains(",")) {
+        throw new InvalidSortException(requestedSort);
+      }
+      normalizedSorts.set(previousIndex, previousSort + "," + direction);
+    }
+    return normalizedSorts;
   }
 
   private Sort.Order toOrder(String requestedSort, Map<String, String> allowedSorts) {

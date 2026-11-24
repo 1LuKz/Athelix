@@ -1,3 +1,4 @@
+import { carregarColecao } from '../../../lib/carregarColecao'
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '../../../lib/query'
 import { patrimonioApi } from '../api'
@@ -19,15 +20,11 @@ export function useCategoriasPatrimonio(atleticaId: number | undefined, habilita
   })
 }
 
-export function useItensPatrimonio(
-  atleticaId: number | undefined,
-  filtros: FiltrosPatrimonio,
-  paginaAtual: number,
-  habilitada: boolean,
-) {
+export function useItensPatrimonio(atleticaId: number | undefined, filtros: FiltrosPatrimonio, habilitada: boolean) {
   return useQuery({
-    queryKey: queryKeys.scoped(atleticaId, 'patrimonio-itens', { ...filtros, page: paginaAtual }),
-    queryFn: ({ signal }) => patrimonioApi.itens({ ...filtros, page: paginaAtual, size: 12, sort: 'nome,asc' }, signal),
+    queryKey: queryKeys.scoped(atleticaId, 'patrimonio-itens', filtros),
+    queryFn: ({ signal }) =>
+      carregarColecao((page) => patrimonioApi.itens({ ...filtros, page, size: 100, sort: 'nome,asc' }, signal), signal),
     enabled: habilitada,
   })
 }

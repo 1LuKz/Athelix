@@ -1,4 +1,4 @@
-import { Input, Select } from '../../../components/ui'
+import { FilterTable, Input, Select } from '../../../components/ui'
 import type { CategoriaFinanceira } from '../api'
 import type { FiltrosLancamentos as FiltrosLancamentosValores } from '../types'
 
@@ -10,7 +10,7 @@ type FiltrosLancamentosProps = {
 
 export function FiltrosLancamentos({ filtros, categorias, aoAlterar }: FiltrosLancamentosProps) {
   return (
-    <div className="filters finance-filters">
+    <FilterTable>
       <Select
         label="Base de data"
         value={filtros.modoData}
@@ -60,6 +60,6 @@ export function FiltrosLancamentos({ filtros, categorias, aoAlterar }: FiltrosLa
         <option value="CANCELADO">Cancelado</option>
         <option value="VENCIDO">Vencido</option>
       </Select>
-    </div>
+    </FilterTable>
   )
 }

@@ -1,3 +1,4 @@
+import { carregarColecao } from '../../../lib/carregarColecao'
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '../../../lib/query'
 import { useAuthSession } from '../../auth/AuthSessionProvider'
@@ -15,7 +16,7 @@ export function useLancamentoFormQueries() {
   })
   const eventos = useQuery({
     queryKey: queryKeys.scoped(atleticaId, 'eventos-financeiro'),
-    queryFn: ({ signal }) => eventosApi.list({ page: 0, size: 100 }, signal),
+    queryFn: ({ signal }) => carregarColecao((page) => eventosApi.list({ page, size: 100 }, signal), signal),
     enabled: possuiVinculoAtivo,
   })
 

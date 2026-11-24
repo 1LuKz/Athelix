@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom'
-import { Button, Modal } from '../../components/ui'
+import { Button, Modal, Table } from '../../components/ui'
 
 const mensagemAjudaMembros =
   'Use busca e filtros para localizar vínculos. Aprovar, inativar e alterar acessos exigem autorização administrativa.'
@@ -54,10 +54,16 @@ export function HelpPanel({ open, onClose }: { open: boolean; onClose: () => voi
   }
   return (
     <Modal open={open} title={current.title} onClose={onClose} footer={<Button onClick={onClose}>Entendi</Button>}>
-      <p>{current.text}</p>
-      <p className="form-note">
-        Atalhos: use Tab para navegar, Enter para acionar controles e Esc para fechar esta janela.
-      </p>
+      <Table caption="Orientações de suporte" columns={['Assunto', 'Orientação']}>
+        <tr>
+          <th scope="row">Nesta tela</th>
+          <td>{current.text}</td>
+        </tr>
+        <tr>
+          <th scope="row">Atalhos</th>
+          <td>Use Tab para navegar, Enter para acionar controles e Esc para fechar esta janela.</td>
+        </tr>
+      </Table>
     </Modal>
   )
 }

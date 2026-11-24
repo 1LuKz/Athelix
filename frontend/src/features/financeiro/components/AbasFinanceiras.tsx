@@ -12,6 +12,7 @@ export function AbasFinanceiras({ podeGerenciar, abaSelecionada, aoAlterarAba }:
     { id: 'aprovacoes', label: 'Pendências de aprovação' },
   ]
   const abasFinanceiras = [
+    { id: 'evolucao', label: 'Evolução mensal' },
     { id: 'contas', label: 'Contas a pagar e receber' },
     { id: 'relatorio', label: 'Prestação de contas' },
   ]

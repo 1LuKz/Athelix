@@ -2,7 +2,7 @@ import { TituloPagina } from '../../../components/TituloPagina'
 import { useState } from 'react'
 import { ErrorState, LoadingState, Tabs } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
-import { useAtleticaTimeZone, useAuthSession } from '../../auth/AuthSessionProvider'
+import { useAtleticaTimeZone } from '../../auth/AuthSessionProvider'
 import { AlterarSenhaTab } from '../components/AlterarSenhaTab'
 import { DadosPessoaisTab } from '../components/DadosPessoaisTab'
 import { HistoricoAtividadesTab } from '../components/HistoricoAtividadesTab'
@@ -11,11 +11,9 @@ import { useAtualizarPerfil, usePerfil } from '../hooks/usePerfil'
 
 export function PerfilPage() {
   const fusoHorario = useAtleticaTimeZone()
-  const { state } = useAuthSession()
   const [abaAtiva, setAbaAtiva] = useState('dados')
   const [solicitacaoAberta, setSolicitacaoAberta] = useState(false)
-  const [paginaAtual, setPaginaAtual] = useState(0)
-  const consultas = usePerfil(paginaAtual, abaAtiva)
+  const consultas = usePerfil(abaAtiva)
   const atualizarPerfil = useAtualizarPerfil()
   if (consultas.perfil.isLoading) return <LoadingState label="Carregando perfil..." />
   if (consultas.perfil.isError || !consultas.perfil.data)
@@ -33,14 +31,15 @@ export function PerfilPage() {
         onChange={setAbaAtiva}
         tabs={[
           { id: 'dados', label: 'Dados pessoais' },
+          { id: 'vinculo', label: 'Vínculo e permissões' },
           { id: 'senha', label: 'Alterar senha' },
           { id: 'historico', label: 'Histórico de atividades' },
         ]}
       />
-      {abaAtiva === 'dados' && (
+      {(abaAtiva === 'dados' || abaAtiva === 'vinculo') && (
         <DadosPessoaisTab
+          abaAtiva={abaAtiva}
           perfil={consultas.perfil.data}
-          capacidades={state?.capacidades ?? []}
           onRequest={() => setSolicitacaoAberta(true)}
           onDone={atualizarPerfil}
         />
@@ -52,8 +51,6 @@ export function PerfilPage() {
           carregando={consultas.atividades.isLoading}
           erro={consultas.atividades.isError ? consultas.atividades.error : null}
           fusoHorario={fusoHorario}
-          pagina={paginaAtual}
-          aoMudarPagina={setPaginaAtual}
         />
       )}
       {solicitacaoAberta && <SolicitarVinculoModal onClose={() => setSolicitacaoAberta(false)} />}

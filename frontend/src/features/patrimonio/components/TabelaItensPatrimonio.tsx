@@ -31,11 +31,10 @@ export function TabelaItensPatrimonio({
         <tr key={item.id}>
           <td>
             <b>{item.nome}</b>
-            <small>{item.descricao ?? 'Sem descrição'}</small>
           </td>
           <td>{item.categoriaNome}</td>
           <td>
-            {item.quantidadeDisponivel} disponível<small>{item.quantidadeTotal} total</small>
+            {item.quantidadeDisponivel} disponível / {item.quantidadeTotal} total
           </td>
           <td>{conservacaoLabels[item.conservacao]}</td>
           <td>{item.localizacao}</td>
@@ -47,15 +46,27 @@ export function TabelaItensPatrimonio({
           <td>
             {podeGerenciar && (
               <div className="row-actions">
-                <Button variant="secondary" onClick={() => onEditarItem(item)}>
-                  Editar
-                </Button>
-                <Button variant="ghost" onClick={() => onAbrirModal('emprestimo')}>
-                  Retirar
-                </Button>
-                <Button variant="ghost" onClick={() => onAbrirModal('manutencao')}>
-                  Manutenção
-                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => onEditarItem(item)}
+                  icon="edit"
+                  iconOnly
+                  aria-label="Editar item"
+                />
+                <Button
+                  variant="ghost"
+                  onClick={() => onAbrirModal('emprestimo')}
+                  icon="output"
+                  iconOnly
+                  aria-label="Registrar retirada"
+                />
+                <Button
+                  variant="ghost"
+                  onClick={() => onAbrirModal('manutencao')}
+                  icon="build"
+                  iconOnly
+                  aria-label="Enviar para manutenção"
+                />
               </div>
             )}
           </td>

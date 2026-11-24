@@ -1,6 +1,6 @@
 import { Badge, Button, EmptyState, Table } from '../../../components/ui'
 import { formatDate, formatMoney } from '../../../lib/format'
-import { enumLabel, statusAprovacaoLabels, statusLiquidacaoLabels } from '../../../lib/labels'
+import { statusLiquidacaoLabels } from '../../../lib/labels'
 import type { Lancamento } from '../api'
 import type { AcaoLancamento } from '../types'
 
@@ -32,9 +32,6 @@ export function TabelaLancamentos({
           <td>{formatDate(lancamento.dataCompetencia)}</td>
           <td>
             <b>{lancamento.descricao}</b>
-            <small>
-              {lancamento.tipo === 'RECEITA' ? 'Receita' : 'Despesa'} · {lancamento.vencido && 'Vencida'}
-            </small>
           </td>
           <td>{lancamento.categoriaNome}</td>
           <td className={lancamento.tipo === 'RECEITA' ? 'amount-income' : 'amount-expense'}>
@@ -46,7 +43,6 @@ export function TabelaLancamentos({
             >
               {statusLiquidacaoLabels[lancamento.statusLiquidacao]}
             </Badge>
-            <small>{enumLabel(statusAprovacaoLabels, lancamento.statusAprovacao)}</small>
           </td>
           <td>
             {podeGerenciar && (
@@ -75,34 +71,58 @@ function AcoesLancamento({ lancamento, membroAtualId, aoEditar, aoSelecionarAcao
   return (
     <div className="row-actions">
       {lancamento.statusLiquidacao === 'ABERTO' && (
-        <Button variant="secondary" onClick={() => aoEditar(lancamento)}>
-          Editar
-        </Button>
+        <Button
+          variant="secondary"
+          onClick={() => aoEditar(lancamento)}
+          icon="edit"
+          iconOnly
+          aria-label="Editar lançamento"
+        />
       )}
       {lancamento.statusAprovacao === 'PENDENTE' && lancamento.criadoPorMembroId !== membroAtualId && (
         <>
-          <Button variant="secondary" onClick={() => aoSelecionarAcao({ kind: 'APROVAR', item: lancamento })}>
-            Aprovar
-          </Button>
-          <Button variant="ghost" onClick={() => aoSelecionarAcao({ kind: 'REJEITAR', item: lancamento })}>
-            Rejeitar
-          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => aoSelecionarAcao({ kind: 'APROVAR', item: lancamento })}
+            icon="check_circle"
+            iconOnly
+            aria-label="Aprovar lançamento"
+          />
+          <Button
+            variant="ghost"
+            onClick={() => aoSelecionarAcao({ kind: 'REJEITAR', item: lancamento })}
+            icon="cancel"
+            iconOnly
+            aria-label="Rejeitar lançamento"
+          />
         </>
       )}
       {lancamento.statusLiquidacao === 'ABERTO' && lancamento.statusAprovacao !== 'REJEITADA' && (
         <>
-          <Button variant="secondary" onClick={() => aoSelecionarAcao({ kind: 'LIQUIDAR', item: lancamento })}>
-            Liquidar
-          </Button>
-          <Button variant="ghost" onClick={() => aoSelecionarAcao({ kind: 'CANCELAR', item: lancamento })}>
-            Cancelar
-          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => aoSelecionarAcao({ kind: 'LIQUIDAR', item: lancamento })}
+            icon="payments"
+            iconOnly
+            aria-label="Liquidar lançamento"
+          />
+          <Button
+            variant="ghost"
+            onClick={() => aoSelecionarAcao({ kind: 'CANCELAR', item: lancamento })}
+            icon="block"
+            iconOnly
+            aria-label="Cancelar lançamento"
+          />
         </>
       )}
       {lancamento.statusLiquidacao === 'LIQUIDADO' && (
-        <Button variant="ghost" onClick={() => aoSelecionarAcao({ kind: 'ESTORNAR', item: lancamento })}>
-          Estornar
-        </Button>
+        <Button
+          variant="ghost"
+          onClick={() => aoSelecionarAcao({ kind: 'ESTORNAR', item: lancamento })}
+          icon="undo"
+          iconOnly
+          aria-label="Estornar lançamento"
+        />
       )}
     </div>
   )

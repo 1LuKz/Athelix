@@ -14,9 +14,6 @@ export function ResumoPatrimonio({ resumo }: { resumo: ReturnType<typeof useResu
       <MetricaResumo label="Emprestadas" value={String(resumo.data.quantidadeEmprestada)} />
       <MetricaResumo label="Em manutenção" value={String(resumo.data.quantidadeEmManutencao)} />
       <MetricaResumo label="Valor estimado" value={formatMoney(resumo.data.valorEstimadoTotal)} />
-      <span className="summary-note">
-        {resumo.data.itensAtivos} cadastros ativos · {resumo.data.quantidadeTotal} unidades no total
-      </span>
     </section>
   )
 }

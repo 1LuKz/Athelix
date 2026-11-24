@@ -43,7 +43,7 @@ export function LoginPage() {
   return (
     <section className="auth-card login-card">
       <h1>Bem-vindo de volta</h1>
-      <p>Acesse o painel da sua Atlética e mantenha toda a gestão em movimento.</p>
+      <p>Entre para acessar sua atlética.</p>
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <Input
           label="E-mail institucional"
@@ -72,7 +72,7 @@ export function LoginPage() {
           Entrar
         </Button>
       </form>
-      <small className="auth-footer">© 2026 Athletix · Gestão universitária simplificada</small>
+      <small className="auth-footer">© 2026 Athletix</small>
     </section>
   )
 }

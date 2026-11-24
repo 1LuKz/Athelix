@@ -1,3 +1,4 @@
+import { carregarColecao } from '../../../lib/carregarColecao'
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '../../../lib/query'
 import { eventosApi } from '../../eventos/api'
@@ -15,16 +16,18 @@ export function useTarefas(atleticaId: number | undefined, filtros: FiltrosTaref
   const possuiAtletica = Boolean(atleticaId)
   const tarefas = useQuery({
     queryKey: queryKeys.scoped(atleticaId, 'tarefas', filtros),
-    queryFn: ({ signal }) => tarefasApi.list({ ...filtros, page: 0, size: 100 }, signal),
+    queryFn: ({ signal }) =>
+      carregarColecao((page) => tarefasApi.list({ ...filtros, page, size: 100 }, signal), signal),
     enabled: possuiAtletica,
   })
   const eventos = useQuery({
     queryKey: queryKeys.scoped(atleticaId, 'eventos-select'),
-    queryFn: () => eventosApi.list({ page: 0, size: 100 }),
+    queryFn: ({ signal }) => carregarColecao((page) => eventosApi.list({ page, size: 100 }, signal), signal),
   })
   const membros = useQuery({
     queryKey: queryKeys.scoped(atleticaId, 'membros-ativos'),
-    queryFn: ({ signal }) => membrosApi.list({ page: 0, size: 100, status: 'ATIVO' }, signal),
+    queryFn: ({ signal }) =>
+      carregarColecao((page) => membrosApi.list({ page, size: 100, status: 'ATIVO' }, signal), signal),
   })
   const departamentos = useQuery({
     queryKey: queryKeys.scoped(atleticaId, 'departamentos'),

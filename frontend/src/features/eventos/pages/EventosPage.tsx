@@ -1,10 +1,12 @@
 import { TituloPagina } from '../../../components/TituloPagina'
+import { Icon } from '../../../components/Icon'
 import { formatDateTime, formatMoney } from '../../../lib/format'
 import { statusEventoLabels as labels } from '../../../lib/labels'
 import { useAtleticaTimeZone } from '../../auth/AuthSessionProvider'
 import { useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Badge, Button, Card, EmptyState, ErrorState, LoadingState, Pagination, Tabs } from '../../../components/ui'
+import { Badge, Button, Card, EmptyState, ErrorState, LoadingState, Table, Tabs } from '../../../components/ui'
 import { errorFeedback } from '../../../lib/errorFeedback'
 import { useAuthSession } from '../../auth/AuthSessionProvider'
 import type { Evento } from '../api'
@@ -22,14 +24,19 @@ export function EventosPage() {
   const timeZone = useAtleticaTimeZone()
   const { activeVinculo, state } = useAuthSession()
   const admin = state?.capacidades.includes('GERENCIAR_EVENTOS_E_TAREFAS') ?? false
-  const [tab, setTab] = useState('todos')
-  const [page, setPage] = useState(0)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab =
+    searchParams.get('grupoStatus') === 'ATIVOS'
+      ? 'ativos'
+      : searchParams.get('status') === 'PLANEJADO'
+        ? 'planejados'
+        : searchParams.get('status') === 'CONCLUIDO'
+          ? 'concluidos'
+          : 'todos'
   const [edit, setEdit] = useState<Evento | null>(null)
   const client = useQueryClient()
   const filters = useMemo(
     () => ({
-      page,
-      size: 12,
       ...(tab === 'ativos'
         ? { grupoStatus: 'ATIVOS' }
         : tab === 'planejados'
@@ -38,11 +45,12 @@ export function EventosPage() {
             ? { status: 'CONCLUIDO' }
             : {}),
     }),
-    [page, tab],
+    [tab],
   )
   const events = useEventos(activeVinculo?.atleticaId, filters)
+  const totalEventos = Object.values(events.data?.contagensPorStatus ?? {}).reduce((total, count) => total + count, 0)
   const tabs = [
-    { id: 'todos', label: `Todos (${events.data?.totalItems ?? 0})` },
+    { id: 'todos', label: `Todos (${totalEventos})` },
     { id: 'ativos', label: `Ativos (${events.data?.totalAtivos ?? 0})` },
     { id: 'planejados', label: `Planejados (${events.data?.contagensPorStatus.PLANEJADO ?? 0})` },
     { id: 'concluidos', label: `Concluídos (${events.data?.contagensPorStatus.CONCLUIDO ?? 0})` },
@@ -65,8 +73,15 @@ export function EventosPage() {
         tabs={tabs}
         active={tab}
         onChange={(next) => {
-          setTab(next)
-          setPage(0)
+          setSearchParams(
+            next === 'ativos'
+              ? { grupoStatus: 'ATIVOS' }
+              : next === 'planejados'
+                ? { status: 'PLANEJADO' }
+                : next === 'concluidos'
+                  ? { status: 'CONCLUIDO' }
+                  : {},
+          )
         }}
       />
       {events.isLoading ? (
@@ -74,45 +89,51 @@ export function EventosPage() {
       ) : events.isError ? (
         <ErrorState message={errorFeedback(events.error)} onRetry={() => void events.refetch()} />
       ) : events.data?.items.length ? (
-        <>
-          <div className="event-grid">
+        <Card>
+          <Table
+            caption="Eventos da atlética"
+            columns={['Evento', 'Início', 'Local', 'Participação prevista', 'Orçamento', 'Status', 'Ações']}
+          >
             {events.data.items.map((event) => (
-              <Card key={event.id} className="event-card">
-                <div className="event-top">
-                  <Badge tone={tones[event.status]}>{labels[event.status]}</Badge>
-                  <span>{formatDateTime(event.inicio, timeZone)}</span>
-                </div>
-                <h2>{event.nome}</h2>
-                <p className="event-location">
+              <tr key={event.id}>
+                <td>
+                  <strong>{event.nome}</strong>
+                </td>
+                <td>{formatDateTime(event.inicio, timeZone)}</td>
+                <td>
                   {event.local}
                   {event.cidade && ` · ${event.cidade}/${event.uf ?? ''}`}
-                </p>
-                <div className="event-stats">
-                  <span>
-                    <b>Previsão</b>
-                    {event.participantesEsperados ?? '—'}
-                  </span>
-                  <span>
-                    <b>Inscritos</b>Ver detalhes
-                  </span>
-                  <span>
-                    <b>Confirmados</b>Ver detalhes
-                  </span>
-                  <span>
-                    <b>Presentes</b>Ver detalhes
-                  </span>
-                </div>
-                <footer>
-                  <strong>Orçamento: {formatMoney(event.orcamentoPrevisto)}</strong>
-                  <Button variant="ghost" onClick={() => setEdit(event)}>
-                    {admin ? 'Editar' : 'Ver detalhes'}
-                  </Button>
-                </footer>
-              </Card>
+                </td>
+                <td>{event.participantesEsperados ?? 'Não informada'}</td>
+                <td>{formatMoney(event.orcamentoPrevisto)}</td>
+                <td>
+                  <Badge tone={tones[event.status]}>{labels[event.status]}</Badge>
+                </td>
+                <td>
+                  <div className="row-actions">
+                    <Link
+                      className="ui-button secondary icon-only"
+                      aria-label="Ver detalhes do evento"
+                      title="Ver detalhes do evento"
+                      to={`/eventos/${event.id}${searchParams.size ? `?${searchParams}` : ''}`}
+                    >
+                      <Icon name="visibility" />
+                    </Link>
+                    {admin && (
+                      <Button
+                        variant="ghost"
+                        onClick={() => setEdit(event)}
+                        icon="edit"
+                        iconOnly
+                        aria-label="Editar evento"
+                      />
+                    )}
+                  </div>
+                </td>
+              </tr>
             ))}
-          </div>
-          <Pagination page={events.data.page} totalPages={events.data.totalPages} onPageChange={setPage} />
-        </>
+          </Table>
+        </Card>
       ) : (
         <EmptyState description="Não há eventos para estes filtros." />
       )}
